@@ -1,0 +1,45 @@
+# Personal data. Never committed. (Hard rule 4 in CLAUDE.md)
+# me/ holds the master resume, voice rules, answers bank, writing samples.
+# applications/ holds every prep kit (tailored resumes, cover letters, answers).
+# Only the empty .gitkeep files are tracked, so the folders exist on a fresh clone.
+me/*
+!me/.gitkeep
+applications/*
+!applications/.gitkeep
+
+# Secrets. ntfy topic, dashboard password, anything with a token in it.
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+*.secret
+secrets.*
+
+# Generated PDFs and text dumps anywhere (resumes, cover letters, ATS checks)
+*.pdf
+*.docx
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Cloudflare Worker (M5)
+node_modules/
+.wrangler/
+
+# Local scratch
+scratch/
+tmp/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
