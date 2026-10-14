@@ -1,6 +1,6 @@
 # Scout
 
-**Status: M0, setup.** Nothing runs yet. See the [milestones](#milestones).
+**Status: M1, master resume.** The resume builder works; the watcher and alerts are not built yet. See the [milestones](#milestones).
 
 Scout is a personal internship radar. Every few hours it reads the public internship lists, scores each posting against what I'm looking for, and pushes an alert to my phone when a strong match drops. For any posting I pick, it builds a prep kit: a one-page tailored resume, a cover letter if the posting wants one, and draft answers to the usual questions, all in my own voice and all from facts in my master resume.
 
@@ -32,7 +32,8 @@ Cloudflare Worker (free): password-protected dashboard + KV for tracker updates 
 scout/
   CLAUDE.md            the brief and the rules Claude Code works from
   config/              targets.yaml, scoring.yaml, watch-pages.yaml (edit these, not code)
-  scout/               the Python watcher
+  scout/               the Python code: build_resume.py now, the watcher in M2
+  scout/templates/     resume.html, the one-column ATS-safe layout (no personal data)
   tests/               unit tests on saved fixture JSON, no network
   data/                matches.json, seen.json, tracker.json (committed by the cron)
   me/                  master resume, voice rules, answers bank   (gitignored)
@@ -59,8 +60,8 @@ Cloudflare Workers free tier: 100,000 requests a day. ntfy: free. If any of this
 
 | Milestone | Status | What it delivers |
 |---|---|---|
-| M0: setup | In progress | Repo, folder structure, .gitignore, README, reference research ([report](docs/reference-report.md)) |
-| M1: master resume | Not started | `/interview` builds `me/master-resume.md`, voice rules, answers bank, then three one-page PDFs (SWE, PM, IT) |
+| M0: setup | Done | Repo, folder structure, .gitignore, README, reference research ([report](docs/reference-report.md)) |
+| M1: master resume | In progress | `me/master_profile.md` is ground truth, `me/voice.md` holds the voice rules, `me/answer_bank.md` the approved answers. `scout/build_resume.py` turns one JSON file per variant into a one-page PDF and checks the text layer. Three variants built (SWE, PM, IT); a few dates still to confirm |
 | M2: watcher | Not started | Fetch, normalize, dedupe, filter, score. Top 20 with breakdowns, tuned by hand. Tests on fixtures |
 | M3: alerts | Not started | ntfy instant push and 7:00 PM digest, program page watchers, GitHub Actions cron |
 | M4: prep kit | Not started | `/prep`, `/triage`, drafter then reviewer, PDFs via HTML + WeasyPrint |
@@ -70,6 +71,17 @@ Cloudflare Workers free tier: 100,000 requests a day. ntfy: free. If any of this
 ## Borrowed code
 
 Scout borrows small, readable pieces from MIT and Apache licensed projects rather than pulling in frameworks. Every borrowed file is listed with its license in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## Building the resume PDFs
+
+```bash
+brew install pango poppler                      # text layout for WeasyPrint, and pdftotext for checks
+/opt/homebrew/bin/python3.12 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python scout/build_resume.py me/resumes/swe.json me/resumes/pm.json me/resumes/it.json
+```
+
+Each JSON file in `me/resumes/` holds the facts for one variant (all gitignored). The builder renders `scout/templates/resume.html`, writes the PDF next to the JSON, refuses anything longer than one page, and reads the text layer back to confirm the name, contact line, and section headings survive in order, which is what an ATS parser sees.
 
 ## Built with
 

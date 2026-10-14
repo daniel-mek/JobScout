@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ name }} Resume</title>
+<style>
+  /* ATS-safe on purpose: one column, real text, standard headings, no tables,
+     no icons, no images. Contact info is in the body, not a page header.
+     Letter paper, half-inch margins. Everything is sized to fit one page. */
+  @page { size: Letter; margin: 0.45in 0.5in; }
+  html { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 10pt; line-height: 1.18; color: #111; }
+  body { margin: 0; }
+  h1 { font-size: 16pt; font-weight: 700; text-align: center; margin: 0 0 1pt 0; letter-spacing: 0.2pt; }
+  .contact { text-align: center; font-size: 9.4pt; margin: 0 0 4pt 0; }
+  .summary { margin: 0 0 3pt 0; }
+  h2 { font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6pt;
+       border-bottom: 0.8pt solid #111; margin: 5pt 0 2pt 0; padding-bottom: 1pt; }
+  .entry { margin: 0 0 3pt 0; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .title { font-weight: 700; }
+  .right { white-space: nowrap; margin-left: 10pt; }
+  .sub { font-style: italic; }
+  ul { margin: 1pt 0 0 0; padding-left: 13pt; }
+  li { margin: 0 0 1pt 0; }
+  .skills p { margin: 0 0 1pt 0; }
+</style>
+</head>
+<body>
+  <h1>{{ name }}</h1>
+  <p class="contact">{{ contact | join(" | ") }}</p>
+
+  {% if summary %}
+  <p class="summary">{{ summary }}</p>
+  {% endif %}
+
+  {% for section in sections %}
+  <h2>{{ section.heading }}</h2>
+  {% if section.lines %}
+  <div class="skills">
+    {% for line in section.lines %}
+    <p><strong>{{ line.label }}:</strong> {{ line.text }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% for e in section.entries %}
+  <div class="entry">
+    <div class="row">
+      <span class="title">{{ e.title }}{% if e.title_note %} <span class="sub">{{ e.title_note }}</span>{% endif %}</span>
+      {% if e.right %}<span class="right">{{ e.right }}</span>{% endif %}
+    </div>
+    {% if e.subtitle or e.subright %}
+    <div class="row">
+      <span class="sub">{{ e.subtitle }}</span>
+      {% if e.subright %}<span class="right">{{ e.subright }}</span>{% endif %}
+    </div>
+    {% endif %}
+    {% if e.bullets %}
+    <ul>
+      {% for b in e.bullets %}<li>{{ b }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+  {% endfor %}
+  {% endfor %}
+</body>
+</html>

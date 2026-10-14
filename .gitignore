@@ -38,6 +38,9 @@ node_modules/
 scratch/
 tmp/
 
+# Pastes and exports the Claude app drops into the project folder (can hold personal data)
+Claude outputs/
+
 # OS and editors
 .DS_Store
 Thumbs.db
