@@ -1,0 +1,69 @@
+# Scout cron. Free on a private repo (2,000 Actions minutes a month; this uses about 270).
+#
+# Two schedules, both in UTC because GitHub cron cannot follow daylight saving:
+#   every 3 hours at :30     -> watch mode (score, instant pushes, page watchers)
+#   23:00 and 00:00 UTC      -> digest mode; the script itself checks that it is 7:00 PM in New York
+#                               and exits quietly on the other run (7 PM EDT = 23:00 UTC, 7 PM EST = 00:00 UTC)
+# The :30 offset keeps every run at least 45 minutes away from the 6:45 AM Morning Brief.
+name: scout
+
+on:
+  schedule:
+    - cron: "30 0,3,6,9,12,15,18,21 * * *"
+    - cron: "0 23,0 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "watch, digest, or test"
+        default: "watch"
+
+permissions:
+  contents: write   # the run commits data/ back to the repo
+
+concurrency:
+  group: scout
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Pick the mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ github.event.inputs.mode }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 23,0 * * *" ]; then
+            echo "mode=digest" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=watch" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run Scout
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python -m scout.run --mode "${{ steps.mode.outputs.mode }}" ${{ steps.mode.outputs.mode == 'digest' && '--force' || '' }}
+
+      - name: Commit data
+        if: always()
+        run: |
+          git config user.name "scout-bot"
+          git config user.email "scout-bot@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "data: ${{ steps.mode.outputs.mode }} run $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git pull --rebase --autostash origin main
+            git push origin HEAD:main
+          fi
