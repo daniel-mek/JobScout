@@ -44,6 +44,17 @@ class Watching(unittest.TestCase):
             self.assertEqual([e["kind"] for e in changed], ["changed"])
             self.assertIn("Apply by October 31", changed[0]["summary"])
 
+    def test_region_token_and_removals_do_not_alert(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            state = {}
+            self.run_once(state, PAGE_V1 + "<p>served from us-east-1</p>", tmp)
+            # the same page from another server: region differs, nothing new was written
+            events = self.run_once(state, PAGE_V1 + "<p>served from us-west-2</p>", tmp)
+            self.assertEqual(events, [], "a region string must not count as a change")
+            # a line removed is recorded but not alerted
+            events = self.run_once(state, PAGE_V1.replace("<p>Applications open in September.</p>", ""), tmp)
+            self.assertEqual([e["kind"] for e in events], ["shuffled"])
+
     def test_unreadable_alerts_after_two_failures(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = {}

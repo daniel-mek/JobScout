@@ -33,12 +33,16 @@ THIN_PAGE_CHARS = 400          # less text than this means the page is a JavaScr
 FAILURES_BEFORE_ALERT = 2      # one bad fetch is noise; two in a row is worth a message
 
 _TAGS = re.compile(r"<script.*?</script>|<style.*?</style>|<noscript.*?</noscript>|<!--.*?-->|<[^>]+>", re.S | re.I)
-# Things that change on every load without meaning anything: hex hashes, long tokens, big numbers.
+# Things that change on every load without meaning anything: hex hashes, long tokens, big numbers,
+# and the cloud region a page was served from (Amazon's page says us-east-1 or us-west-2 depending on
+# which server answered, which is what set off the very first alert).
 _NOISE = [
     re.compile(r"\b[0-9a-f]{16,}\b", re.I),
     re.compile(r"\b[A-Za-z0-9_\-]{32,}\b"),
     re.compile(r"\b\d{6,}\b"),
+    re.compile(r"\b[a-z]{2}-(?:[a-z]+-)+\d\b", re.I),
 ]
+MEANINGFUL_LINE_CHARS = 12   # an added line shorter than this is a token, not a sentence
 
 
 def load_pages(path: Path = CONFIG_PATH) -> list[dict]:
@@ -73,10 +77,15 @@ def text_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
 
+def added_lines(old: str, new: str) -> list[str]:
+    """Lines present in the new text and absent from the old, ignoring short tokens."""
+    added = [line[2:] for line in difflib.ndiff(old.splitlines(), new.splitlines()) if line.startswith("+ ")]
+    return [a for a in added if len(a) >= MEANINGFUL_LINE_CHARS]
+
+
 def summarize_change(old: str, new: str, limit: int = 4) -> str:
     """The first few lines that are new on the page, so the alert says what changed."""
-    added = [line[2:] for line in difflib.ndiff(old.splitlines(), new.splitlines()) if line.startswith("+ ")]
-    added = [a for a in added if len(a) > 12][:limit]
+    added = added_lines(old, new)[:limit]
     return "\n".join(f"+ {a[:140]}" for a in added) if added else "(text changed, nothing new added; something was removed or reordered)"
 
 
@@ -96,9 +105,9 @@ def check_pages(pages: list[dict], state: dict, fetch=fetch_text, text_dir: Path
                 now: float | None = None) -> list[dict]:
     """Fetch every page, update state in place, and return the events worth telling him about.
 
-    Event kinds: "changed" (alert), "unreadable" (alert, after two failures in a row),
-    "thin" (alert once: the page gives a server no text, so a better URL is needed),
-    "baseline" (first time seen, no alert).
+    Event kinds: "changed" (alert: new lines appeared), "shuffled" (no alert: lines removed or reordered),
+    "unreadable" (alert, after two failures in a row), "thin" (alert once: the page gives a server
+    no text, so a better URL is needed), "baseline" (first time seen, no alert).
     """
     now = now if now is not None else time.time()
     text_dir.mkdir(parents=True, exist_ok=True)
@@ -132,7 +141,10 @@ def check_pages(pages: list[dict], state: dict, fetch=fetch_text, text_dir: Path
         elif new_hash != record["hash"]:
             old = text_file.read_text(encoding="utf-8") if text_file.exists() else ""
             record["changed_at"] = int(now)
-            events.append({"kind": "changed", "name": name, "url": url, "summary": summarize_change(old, text)})
+            # Only new sentences are worth a push. A removed or reordered line (or a leftover token
+            # the noise filter missed) is recorded in the state but never alerted.
+            kind = "changed" if added_lines(old, text) else "shuffled"
+            events.append({"kind": kind, "name": name, "url": url, "summary": summarize_change(old, text)})
         record["hash"] = new_hash
         record["text_len"] = len(text)
         text_file.write_text(text, encoding="utf-8")
