@@ -1,0 +1,88 @@
+"""One stable key per posting, so the same job never alerts twice.
+
+The slug and key functions are adapted from MadsLorentzen/ai-job-search, tools/job_key.py
+(MIT License, Copyright (c) 2025 Mads Lorentzen). See THIRD_PARTY_NOTICES.md.
+The original solved two real problems: keys with "/" or "," in them broke folder names,
+and the same job stored twice because two runs truncated a long title differently.
+Scout keeps the fix (length-capped slugs plus a short hash of the full slug) and drops the
+non-Latin-script handling, which our sources do not need.
+
+Scout also dedupes on the posting URL first, because both source lists carry one.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import re
+import unicodedata
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+COMPANY_MAX = 40
+TITLE_MAX = 60
+HASH_LEN = 6
+
+_NON_SLUG = re.compile(r"[^a-z0-9]+")
+_TRACKING_PARAMS = ("utm_", "ref", "source", "gh_src", "lever-source", "src")
+
+
+def slugify(text: str) -> str:
+    """Lowercase ASCII slug: 'Software Engineer (Intern), Summer' -> 'software-engineer-intern-summer'."""
+    if not text:
+        return ""
+    decomposed = unicodedata.normalize("NFKD", str(text))
+    ascii_only = decomposed.encode("ascii", "ignore").decode("ascii")
+    return _NON_SLUG.sub("-", ascii_only.lower()).strip("-")
+
+
+def _cap(slug: str, limit: int) -> str:
+    """Cap length without making truncation lossy: append a hash of the full slug."""
+    if len(slug) <= limit:
+        return slug
+    digest = hashlib.sha1(slug.encode("utf-8")).hexdigest()[:HASH_LEN]
+    return f"{slug[:limit].rstrip('-')}-{digest}"
+
+
+def make_key(company: str, title: str) -> str:
+    """'Google LLC' + 'Software Engineering Intern, Summer 2027' -> 'google-llc_software-engineering-intern-summer-2027'."""
+    company_slug = _cap(slugify(company), COMPANY_MAX) or "unknown-company"
+    title_slug = _cap(slugify(title), TITLE_MAX) or "untitled"
+    return f"{company_slug}_{title_slug}"
+
+
+def normalize_url(url: str) -> str:
+    """Strip tracking parameters, fragments, and trailing slashes so two links to one posting compare equal."""
+    if not url:
+        return ""
+    parts = urlsplit(url.strip())
+    query = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True)
+             if not k.lower().startswith(_TRACKING_PARAMS)]
+    path = parts.path.rstrip("/")
+    return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), path, urlencode(query), ""))
+
+
+def dedupe(listings: list[dict]) -> list[dict]:
+    """Keep one listing per posting. Prefer the one updated most recently.
+
+    Two listings are the same posting when their normalized URLs match, or when their
+    company+title key matches. The survivor records every source it was seen in.
+    """
+    by_url: dict[str, dict] = {}
+    by_key: dict[str, dict] = {}
+    survivors: list[dict] = []
+
+    for item in sorted(listings, key=lambda x: x.get("date_updated") or 0, reverse=True):
+        url = normalize_url(item.get("url", ""))
+        key = make_key(item.get("company", ""), item.get("title", ""))
+        item["key"] = key
+        existing = (by_url.get(url) if url else None) or by_key.get(key)
+        if existing is not None:
+            sources = existing.setdefault("sources", [existing.get("source")])
+            if item.get("source") not in sources:
+                sources.append(item.get("source"))
+            continue
+        item.setdefault("sources", [item.get("source")])
+        if url:
+            by_url[url] = item
+        by_key[key] = item
+        survivors.append(item)
+    return survivors

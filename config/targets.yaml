@@ -1,0 +1,93 @@
+# What Scout looks for. Edit this file, not the code.
+# Matching is case-insensitive. Short tokens (it, ui, ux, swe, sde, pm, ai, ml) match on word boundaries,
+# so "IT" never matches "Pittsburgh" and "ai" never matches "maintenance".
+
+# Companies. Tier 1 and Tier 2 get an instant push (M3); everything else goes in the daily digest.
+# Each entry is a list of names that count as that company. The WHOLE company name has to match one of
+# them (Inc, LLC, Corp are ignored), so "Apple Inc." is Apple but "Apple Bank" is not, and
+# "Meta Platforms" is Meta but "Meta Marketing Group" is not. Add subsidiaries by name.
+tier1:
+  google: [google, alphabet, youtube, "google deepmind", deepmind, waymo, verily, "google fiber"]
+  apple: [apple]
+  meta: [meta, "meta platforms", facebook, instagram, whatsapp, "reality labs"]
+  amazon: [amazon, aws, "amazon web services", "amazon robotics", "amazon lab126", audible, twitch, "amazon leo", "amazon kuiper"]
+  microsoft: [microsoft, github, linkedin]
+  netflix: [netflix]
+  nvidia: [nvidia]
+
+tier2:
+  adobe: [adobe]
+  figma: [figma]
+  canva: [canva]
+  spotify: [spotify]
+  salesforce: [salesforce, slack, tableau]
+  snap: [snap, snapchat]
+  pinterest: [pinterest]
+  duolingo: [duolingo]
+  notion: [notion]
+  airbnb: [airbnb]
+  uber: [uber]
+  bloomberg: [bloomberg]
+  ibm: [ibm]
+  oracle: [oracle]
+
+# Named programs for freshmen and sophomores. A title or company+title hit here is the strongest signal Scout has.
+# Keys are the company (matched like the tiers above), values are words that appear in the title.
+programs:
+  google: [step, "student training in engineering"]
+  microsoft: [explore]
+  nvidia: [ignite]
+  meta: ["meta university"]
+  any: [freshman, freshmen, sophomore, "first-year", "first year", "second-year", "second year", underclassman, underclassmen, "early insight", "early insights", "early id", "explore"]
+
+# "Early career" on its own is usually just a job level at banks and insurers, not a freshman program,
+# so it gets a small boost, not the big one.
+early_career_weak: ["early career", "early careers"]
+
+# Roles, in priority order. The first group whose words appear in the title wins.
+# "exclude" is checked first: a title with any of these words is not a Scout role at all
+# (hardware, quant, pure data science, mechanical, etc.), unless it also hits a program above.
+roles:
+  exclude: [mechanical, electrical, civil, chemical, aerospace, hardware, firmware, fpga, asic, silicon, "chip design",
+            "analog", "rf ", photonics, manufactur, "test engineer", quant, quantitative, trading, trader,
+            actuarial, accounting, "data scientist", "data science", "research scientist", "applied scientist",
+            "machine learning scientist", phd, "ph.d", biostat, nursing, legal, "sales intern", "marketing intern",
+            "hr intern", "human resources", finance intern, "financial analyst", "supply chain", logistics,
+            "business intelligence", "data engineer", "data analyst", "analytics engineer", "business analyst"]
+  design: [ux, ui, "user experience", "product design", "design engineer", "creative technolog", "visual design",
+           "interaction design", "ux/ui", "ui/ux"]
+  pm: ["product manag", "product management", apm, "associate product", "product intern", "program manag",
+       "technical program", "product analyst", "product owner", "product operations", "product strategy"]
+  it: [it, "information technology", "help desk", "service desk", "it support", "technical support",
+       "desktop support", "support engineer", "solutions engineer", "systems administrator", sysadmin,
+       infrastructure, network, cybersecurity, "security engineer", "systems engineer", "systems intern",
+       "cloud engineer", devops, "site reliability"]
+  swe: [software, swe, sde, developer, "full stack", fullstack, "full-stack", "front end", frontend, "front-end",
+        "back end", backend, "back-end", mobile, ios, android, web, programmer, programming, "application engineer",
+        "applications engineer", "platform engineer", engineer, engineering, "ai engineer", "ml engineer",
+        "machine learning engineer", "ai applications", "applied ai", "developer technology"]
+
+# Where he wants to be, best first. Priority locations and US remote get the full location points,
+# anywhere else in the US gets some, outside the US gets none. Nothing is hidden for location.
+locations:
+  priority: ["nj", "new jersey", newark, "jersey city", princeton, "new brunswick", hoboken, nyc,
+             "new york", ", ny", brooklyn, manhattan, "remote in usa", "remote (us", "remote - us", "remote, us"]
+  remote_words: [remote]          # a bare "Remote" counts as priority unless it names another country
+  non_us_words: [canada, uk, "united kingdom", london, india, ireland, germany, france, singapore, australia,
+                 netherlands, israel, poland, spain, italy, japan, mexico, brazil, "remote in canada",
+                 "remote in uk", "remote in europe", toronto, vancouver, montreal, ottawa, dublin, bangalore,
+                 bengaluru, hyderabad, tel aviv, berlin, paris, amsterdam, sydney, zurich]
+
+# Words he cares about. Each hit in the title adds a few points (see scoring.yaml).
+keywords: [ai, "ai applications", ios, accessibility, "developer tools", "developer experience", cloud,
+           "product", design, automation, "creative"]
+
+# Degree values that mean "graduate students only". A listing whose degrees are ONLY these is dropped.
+graduate_only_degrees: ["Master's", "PhD", "MBA"]
+
+# His expected graduation year, for the page check that reads "graduating in 2027 or 2028" off the posting.
+graduation_year: 2030
+
+# Listings posted more than this many days ago are dropped even if the list still says "active".
+# (The Simplify list only hides rows after about 2 months in its README, but the JSON keeps them active.)
+max_age_days: 240

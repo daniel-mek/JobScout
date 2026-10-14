@@ -1,0 +1,55 @@
+# How Scout turns a listing into a 0 to 100 score. Every number here shows up in the breakdown
+# next to each match, so if a ranking looks wrong, change the number here and rerun.
+# The raw total can go a little over 100; it is capped at 100.
+
+# Role match from the title. SWE is what he wants most, then PM, IT, and design-adjacent roles.
+# A title that matches no role is dropped before scoring, unless it hits a freshman/sophomore program.
+role:
+  swe: 30
+  pm: 24
+  it: 18
+  design: 15
+  none: 0
+
+# Company tier from config/targets.yaml. Tier 3 is "everything else" and gets nothing extra.
+tier:
+  1: 20
+  2: 15
+  3: 0
+
+# Eligibility signals. "strong" is a freshman/sophomore word or a named program (Explore, STEP, Ignite);
+# that is the most valuable find Scout can make, so it is worth almost as much as the role itself.
+# "weak" is a bare "early career(s)" in the title, which is usually just a job level.
+early_career:
+  strong: 25
+  weak: 5
+
+# Degrees field. Listings that say Bachelor's (or Associate's) are a safer bet than ones that say nothing.
+# Graduate-only listings never reach scoring; they are dropped in the filter step.
+degrees:
+  bachelors_listed: 5
+  unknown: 0
+
+# Location. Priority = NJ, NYC, or remote in the US. US = anywhere else in the country. Other = outside the US.
+location:
+  priority: 15
+  us: 6
+  other: 0
+
+# Freshness. Big tech SWE postings can close within days, so new ones float up.
+# Postings older than 90 days are often filled or forgotten even when the list still says "active",
+# so they lose points (the only negative number in this file). Older than max_age_days (targets.yaml) are dropped.
+freshness:
+  under_24h: 10
+  under_7d: 5
+  older: 0
+  over_90d: -10
+
+# Saved keywords from targets.yaml. A few points per hit in the title, capped so keywords never outrank role.
+keywords:
+  per_hit: 3
+  max: 9
+
+# Below this score a listing is still written to data/matches.json but not shown in the top list
+# and (from M3) not alerted. Tune after seeing a real run.
+min_score: 30

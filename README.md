@@ -1,6 +1,6 @@
 # Scout
 
-**Status: M1, master resume.** The resume builder works; the watcher and alerts are not built yet. See the [milestones](#milestones).
+**Status: M2, watcher.** The resume builder and the local watcher work; alerts and the cron are not built yet. See the [milestones](#milestones).
 
 Scout is a personal internship radar. Every few hours it reads the public internship lists, scores each posting against what I'm looking for, and pushes an alert to my phone when a strong match drops. For any posting I pick, it builds a prep kit: a one-page tailored resume, a cover letter if the posting wants one, and draft answers to the usual questions, all in my own voice and all from facts in my master resume.
 
@@ -62,7 +62,7 @@ Cloudflare Workers free tier: 100,000 requests a day. ntfy: free. If any of this
 |---|---|---|
 | M0: setup | Done | Repo, folder structure, .gitignore, README, reference research ([report](docs/reference-report.md)) |
 | M1: master resume | In progress | `me/master_profile.md` is ground truth, `me/voice.md` holds the voice rules, `me/answer_bank.md` the approved answers. `scout/build_resume.py` turns one JSON file per variant into a one-page PDF and checks the text layer. Three variants built (SWE, PM, IT); a few dates still to confirm |
-| M2: watcher | Not started | Fetch, normalize, dedupe, filter, score. Top 20 with breakdowns, tuned by hand. Tests on fixtures |
+| M2: watcher | In progress | `python -m scout.watch` fetches both lists, normalizes, dedupes, filters, scores, and writes `data/matches.json`. Every match prints its score breakdown. 60 unit tests on saved fixtures, no network. Being tuned |
 | M3: alerts | Not started | ntfy instant push and 7:00 PM digest, program page watchers, GitHub Actions cron |
 | M4: prep kit | Not started | `/prep`, `/triage`, drafter then reviewer, PDFs via HTML + WeasyPrint |
 | M5: dashboard + tracker | Not started | Cloudflare Worker, KV, password, mobile layout, prep queue |
@@ -71,6 +71,26 @@ Cloudflare Workers free tier: 100,000 requests a day. ntfy: free. If any of this
 ## Borrowed code
 
 Scout borrows small, readable pieces from MIT and Apache licensed projects rather than pulling in frameworks. Every borrowed file is listed with its license in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## Running the watcher
+
+```bash
+.venv/bin/python -m scout.watch                      # fetch both lists, print the top 20, write data/matches.json
+.venv/bin/python -m scout.watch --top 50 --no-pages  # more rows, skip the graduation-year page check
+.venv/bin/python -m scout.watch --offline tests/fixtures   # saved copies only, no network
+.venv/bin/python -m unittest discover -s tests -t .  # the tests
+```
+
+Pipeline, in order: `scout/listings.py` fetches the Simplify and vanshb03 JSON files and turns every row into one shape; `scout/matching.py` reads `config/targets.yaml` to decide company tier, role, location, freshman-friendliness, and degree requirement; hard drops are inactive rows, non-2027 terms, graduate-only degrees, non-target roles, and postings older than 240 days; `scout/dedupe.py` collapses the same posting across both lists; `scout/scoring.py` applies `config/scoring.yaml` and keeps the breakdown; `scout/eligibility.py` fetches the top 40 posting pages on Greenhouse, Lever, and Ashby and reads them for a graduation-year requirement (cached 14 days in `data/eligibility_cache.json`). Nothing is hidden for location; it only changes the score.
+
+Each match looks like this on the command line:
+
+```
+ 1. [ 75] Google  |  Forward Deployed Engineer Intern
+      NYC, Sunnyvale, CA  |  posted 2d  |  unknown: not checked (not a plain-HTML board)
+      role swe 30 + tier 1 20 + early none 0 + deg 5 + loc priority 15 + fresh 5 + kw 0 = 75
+      https://www.google.com/about/careers/applications/jobs/results/...
+```
 
 ## Building the resume PDFs
 
