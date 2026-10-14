@@ -29,10 +29,19 @@ class Score(unittest.TestCase):
 
     def test_role_order(self):
         swe = scoring.score(described(role="swe"), W, NOW)["score"]
+        amb = scoring.score(described(role="ambassador"), W, NOW)["score"]
         pm = scoring.score(described(role="pm"), W, NOW)["score"]
         it = scoring.score(described(role="it"), W, NOW)["score"]
         design = scoring.score(described(role="design"), W, NOW)["score"]
-        self.assertTrue(swe > pm > it > design)
+        self.assertTrue(swe > amb > pm > it > design)
+
+    def test_program_beats_plain_tier1_swe(self):
+        # A freshman program at an unknown company with no role word in the title must outrank
+        # a plain Tier 1 SWE posting, because he is a freshman and those programs are the point.
+        program = scoring.score(described(role="none", early_career="strong", tier=3, location_class="us"), W, NOW)
+        plain = scoring.score(described(role="swe", tier=1, degree_class="bachelors", location_class="us"), W, NOW)
+        self.assertEqual(program["role"], "program")
+        self.assertGreater(program["score"], plain["score"])
 
     def test_freshness(self):
         self.assertEqual(scoring.freshness_class(NOW - 3600, NOW), "under_24h")

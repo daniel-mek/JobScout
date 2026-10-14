@@ -38,16 +38,25 @@ programs:
   microsoft: [explore]
   nvidia: [ignite]
   meta: ["meta university"]
-  any: [freshman, freshmen, sophomore, "first-year", "first year", "second-year", "second year", underclassman, underclassmen, "early insight", "early insights", "early id", "explore"]
+  any: [freshman, freshmen, sophomore, "rising sophomore", "first-year", "first year", "second-year", "second year",
+        underclassman, underclassmen, "early insight", "early insights", "early id", explore, exploratory,
+        "explore program", "discovery program", "insight program", externship, "pre-internship", "pre internship",
+        "student ambassador", "campus ambassador", "campus expert", "campus leader", "student partner", "campus rep",
+        "campus representative", "student developer champion", "student champion"]
 
 # "Early career" on its own is usually just a job level at banks and insurers, not a freshman program,
 # so it gets a small boost, not the big one.
 early_career_weak: ["early career", "early careers"]
 
 # Roles, in priority order. The first group whose words appear in the title wins.
-# "exclude" is checked first: a title with any of these words is not a Scout role at all
+# "ambassador" is checked before "exclude" so "Campus Ambassador (Marketing)" is not thrown out as marketing.
+# Then "exclude": a title with any of these words is not a Scout role at all
 # (hardware, quant, pure data science, mechanical, etc.), unless it also hits a program above.
 roles:
+  ambassador: ["campus ambassador", "student ambassador", "brand ambassador", "campus expert", "campus leader",
+               "campus rep", "campus representative", "student partner", "student rep", "student representative",
+               "student developer champion", "student champion", "developer student", "campus evangelist",
+               "student evangelist", "campus program", "ambassador"]
   exclude: [mechanical, electrical, civil, chemical, aerospace, hardware, firmware, fpga, asic, silicon, "chip design",
             "analog", "rf ", photonics, manufactur, "test engineer", quant, quantitative, trading, trader,
             actuarial, accounting, "data scientist", "data science", "research scientist", "applied scientist",

@@ -38,8 +38,12 @@ def score(listing: dict, weights: dict, now: float | None = None) -> dict:
     """Attach 'score' and 'breakdown' to a described listing (in place) and return it."""
     w = weights
     loc = listing.get("location_class", "unknown")
+    role = listing.get("role", "none")
+    if role == "none" and listing.get("early_career") == "strong":
+        role = "program"  # "Explore Program" names no role but is exactly what he wants
+        listing["role"] = role
     breakdown = {
-        "role": w["role"].get(listing.get("role", "none"), 0),
+        "role": w["role"].get(role, 0),
         "tier": w["tier"].get(listing.get("tier", 3), 0),
         "early_career": w["early_career"].get(listing.get("early_career", "none"), 0),
         "degrees": w["degrees"]["bachelors_listed"] if listing.get("degree_class") == "bachelors" else w["degrees"]["unknown"],

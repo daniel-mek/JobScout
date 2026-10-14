@@ -52,6 +52,11 @@ class Role(unittest.TestCase):
         # "Pittsburgh" and "Security" contain "it" but are not IT jobs on their own
         self.assertNotEqual(matching.classify_role("Marketing Intern (Pittsburgh)", T), "it")
 
+    def test_ambassador(self):
+        self.assertEqual(matching.classify_role("Student Ambassador Program", T), "ambassador")
+        self.assertEqual(matching.classify_role("Campus Ambassador - Marketing", T), "ambassador")
+        self.assertEqual(matching.classify_role("GitHub Campus Expert", T), "ambassador")
+
     def test_design(self):
         self.assertEqual(matching.classify_role("UX Design Intern", T), "design")
         self.assertEqual(matching.classify_role("Product Design Intern", T), "design")
@@ -70,6 +75,9 @@ class EarlyCareer(unittest.TestCase):
     def test_strong_words(self):
         self.assertEqual(matching.early_career("Software Engineering Intern (Freshman/Sophomore)", None, T), "strong")
         self.assertEqual(matching.early_career("Early Insights Program", None, T), "strong")
+        self.assertEqual(matching.early_career("Exploratory Software Internship", None, T), "strong")
+        self.assertEqual(matching.early_career("Technology Externship", None, T), "strong")
+        self.assertEqual(matching.early_career("Student Ambassador", None, T), "strong")
 
     def test_named_programs(self):
         self.assertEqual(matching.early_career("Explore Internship", "microsoft", T), "strong")

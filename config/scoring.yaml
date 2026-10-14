@@ -2,13 +2,16 @@
 # next to each match, so if a ranking looks wrong, change the number here and rerun.
 # The raw total can go a little over 100; it is capped at 100.
 
-# Role match from the title. SWE is what he wants most, then PM, IT, and design-adjacent roles.
-# A title that matches no role is dropped before scoring, unless it hits a freshman/sophomore program.
+# Role match from the title. SWE is what he wants most, then ambassador programs, PM, IT, and design-adjacent roles.
+# A title that matches no role is dropped before scoring, unless it hits a freshman/sophomore program;
+# a program whose title names no role (e.g. "Explore Program") gets the "program" points instead of 0.
 role:
   swe: 30
+  ambassador: 28
   pm: 24
   it: 18
   design: 15
+  program: 20
   none: 0
 
 # Company tier from config/targets.yaml. Tier 3 is "everything else" and gets nothing extra.
@@ -17,11 +20,13 @@ tier:
   2: 15
   3: 0
 
-# Eligibility signals. "strong" is a freshman/sophomore word or a named program (Explore, STEP, Ignite);
-# that is the most valuable find Scout can make, so it is worth almost as much as the role itself.
-# "weak" is a bare "early career(s)" in the title, which is usually just a job level.
+# Eligibility signals. "strong" is a freshman/sophomore word or a named program (Explore, STEP, Ignite, Student
+# Ambassador). He is a freshman, so these are the most valuable finds Scout can make: the points are set so that
+# any exploratory program, even at a Tier 3 company with no role word in the title, outranks a plain Tier 1 SWE
+# posting (20 + 45 + 6 = 71 beats 30 + 20 + 5 + 6 = 61).
+# "weak" is a bare "early career(s)" in the title, which is usually just a job level at banks.
 early_career:
-  strong: 25
+  strong: 45
   weak: 5
 
 # Degrees field. Listings that say Bachelor's (or Associate's) are a safer bet than ones that say nothing.

@@ -79,9 +79,12 @@ def company_tier(company: str, targets: dict) -> tuple[int, str | None]:
 # ---------------------------------------------------------------- role
 
 def classify_role(title: str, targets: dict) -> str:
-    """Return 'swe' | 'pm' | 'it' | 'design' | 'none' from the title."""
+    """Return 'ambassador' | 'design' | 'pm' | 'it' | 'swe' | 'none' from the title."""
     text = _clean(title)
     roles = targets["roles"]
+    # Ambassador programs first, before the exclusions: they often carry "marketing" in the title.
+    if any(_word_match(text, w) for w in roles.get("ambassador", [])):
+        return "ambassador"
     if any(_word_match(text, w) for w in roles.get("exclude", [])):
         return "none"
     for role in ("design", "pm", "it", "swe"):
