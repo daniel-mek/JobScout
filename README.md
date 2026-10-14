@@ -1,6 +1,6 @@
 # Scout
 
-**Status: M3, alerts.** The watcher runs on a GitHub Actions cron and pushes to my phone through ntfy. See the [milestones](#milestones).
+**Status: M4, prep kit.** The watcher runs on a GitHub Actions cron, pushes to my phone through ntfy, and `/prep` builds a reviewed application kit for any posting. See the [milestones](#milestones).
 
 Scout is a personal internship radar. Every few hours it reads the public internship lists, scores each posting against what I'm looking for, and pushes an alert to my phone when a strong match drops. For any posting I pick, it builds a prep kit: a one-page tailored resume, a cover letter if the posting wants one, and draft answers to the usual questions, all in my own voice and all from facts in my master resume.
 
@@ -63,8 +63,8 @@ Cloudflare Workers free tier: 100,000 requests a day. ntfy: free. If any of this
 | M0: setup | Done | Repo, folder structure, .gitignore, README, reference research ([report](docs/reference-report.md)) |
 | M1: master resume | In progress | `me/master_profile.md` is ground truth, `me/voice.md` holds the voice rules, `me/answer_bank.md` the approved answers. `scout/build_resume.py` turns one JSON file per variant into a one-page PDF and checks the text layer. Three variants built (SWE, PM, IT); a few dates still to confirm |
 | M2: watcher | Done | `python -m scout.watch` fetches both lists, normalizes, dedupes, filters, scores, and writes `data/matches.json`. Every match prints its score breakdown. Freshman/sophomore programs and ambassador roles rank highest |
-| M3: alerts | In progress | `python -m scout.run` sends instant ntfy pushes, the 7:00 PM ET digest, and page-change alerts for nine program pages (`config/watch-pages.yaml`). `.github/workflows/scout.yml` runs it every 3 hours and commits `data/` back. 80 unit tests, no network |
-| M4: prep kit | Not started | `/prep`, `/triage`, drafter then reviewer, PDFs via HTML + WeasyPrint |
+| M3: alerts | Done | `python -m scout.run` sends instant ntfy pushes, the 7:00 PM ET digest, and page-change alerts for nine program pages (`config/watch-pages.yaml`). `.github/workflows/scout.yml` runs it every 3 hours and commits `data/` back |
+| M4: prep kit | Done | `/prep <key>` reads the posting (`scout/posting.py`: Workday, Google Careers, Greenhouse, Lever, Ashby), checks eligibility, drafts a tailored resume, cover letter, answers, and notes from the master profile, runs a reviewer agent that checks every claim, builds the PDFs, and logs the tracker. `/triage` picks the postings worth a kit. `/status` moves the tracker. 86 tests |
 | M5: dashboard + tracker | Not started | Cloudflare Worker, KV, password, mobile layout, prep queue |
 | M6: optional | Not started | Greenhouse, Lever, Ashby boards for Tier 2 companies |
 
@@ -108,6 +108,16 @@ export NTFY_TOPIC="$(cat me/ntfy-topic.txt)"          # the secret topic; also s
 - **Nothing twice:** `data/seen.json` holds every key that was ever pushed or digested.
 - **Failing loudly:** if a source list can't be fetched, one push says so.
 - **Schedule:** every 3 hours at :30 UTC (never within 45 minutes of the 6:45 AM Morning Brief), plus a digest run at 23:00 and 00:00 UTC; the script itself checks it is 7:00 PM in New York and skips the other one.
+
+## Prep kits
+
+Inside Claude Code: `/triage` reads the newest matches and recommends three or four; `/prep <key>` builds `applications/<company>-<role>/` with `resume.json` and its PDF, `cover-letter.md` and its PDF when the posting wants one, `answers.md`, `notes.md`, `posting.txt`, and `match.json`. A drafter writes from `me/master_profile.md` only; a separate reviewer agent then checks every claim against the profile, the voice rules, and the posting's must-haves, and its flags go into `notes.md`. `/status <key> Applied` logs the submission, which I always do by hand.
+
+```bash
+.venv/bin/python -m scout.posting "<url>"                 # read a posting as text (Workday included)
+.venv/bin/python scout/build_letter.py applications/<folder>/cover-letter.md
+.venv/bin/python -m scout.tracker list
+```
 
 ## Building the resume PDFs
 

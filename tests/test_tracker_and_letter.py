@@ -39,7 +39,7 @@ class Letter(unittest.TestCase):
         self.assertEqual(data["closing"], "Sincerely")
 
     def test_dash_check_regex(self):
-        self.assertTrue(build_letter.DASHES.search("a — b"))
+        self.assertTrue(build_letter.DASHES.search("a " + chr(0x2014) + " b"))
         self.assertFalse(build_letter.DASHES.search("a - b"))
 
 
