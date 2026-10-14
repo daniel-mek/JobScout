@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ name }} Cover Letter</title>
+<style>
+  /* Same type as the resume so the two documents look like a set. One page, plain text, no tables. */
+  @page { size: Letter; margin: 0.9in 1in; }
+  html { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 11pt; line-height: 1.4; color: #111; }
+  body { margin: 0; }
+  .name { font-size: 15pt; font-weight: 700; margin: 0; }
+  .contact { font-size: 9.5pt; margin: 2pt 0 18pt 0; }
+  .date, .to { margin: 0 0 12pt 0; white-space: pre-line; }
+  p { margin: 0 0 11pt 0; }
+  .sign { margin-top: 18pt; }
+</style>
+</head>
+<body>
+  <p class="name">{{ name }}</p>
+  <p class="contact">{{ contact | join(" | ") }}</p>
+  <p class="date">{{ date }}</p>
+  {% if to %}<p class="to">{{ to }}</p>{% endif %}
+  {% for para in paragraphs %}
+  <p>{{ para }}</p>
+  {% endfor %}
+  <p class="sign">{{ closing }},<br>{{ name }}</p>
+</body>
+</html>

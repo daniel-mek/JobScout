@@ -33,13 +33,35 @@ class Verdicts(unittest.TestCase):
     def test_years_mentioned(self):
         self.assertEqual(eligibility.years_mentioned("graduating in 2027 or 2028 from an accredited program"), [2027, 2028])
         self.assertEqual(eligibility.years_mentioned("2028 graduates welcome"), [2028])
+        self.assertEqual(eligibility.years_mentioned("Expected graduation dates of December 2028, May 2029, December 2029, or May 2030."),
+                         [2028, 2029, 2030])
+        self.assertEqual(eligibility.years_mentioned("Founded in 2021. We hire great people."), [])
 
-    def test_plain_html_hosts(self):
-        self.assertTrue(eligibility.is_plain_html_board("https://boards.greenhouse.io/acme/jobs/1"))
-        self.assertTrue(eligibility.is_plain_html_board("https://jobs.lever.co/acme/abc"))
-        self.assertTrue(eligibility.is_plain_html_board("https://jobs.ashbyhq.com/acme/abc"))
-        self.assertFalse(eligibility.is_plain_html_board("https://acme.wd5.myworkdayjobs.com/x"))
-        self.assertFalse(eligibility.is_plain_html_board("https://evil-greenhouse.io/x"))
+    def test_lowes_style_list_includes_him(self):
+        text = "Expected graduation dates of December 2028, May 2029, December 2029, or May 2030. 3.0 cumulative GPA or higher."
+        verdict, note = eligibility.verdict_from_text(text, GRAD)
+        self.assertEqual(verdict, "ok")
+        self.assertIn("2030", note)
+
+    def test_readable_boards(self):
+        self.assertTrue(eligibility.is_readable_board("https://boards.greenhouse.io/acme/jobs/1"))
+        self.assertTrue(eligibility.is_readable_board("https://jobs.lever.co/acme/abc"))
+        self.assertTrue(eligibility.is_readable_board("https://jobs.ashbyhq.com/acme/abc"))
+        self.assertTrue(eligibility.is_readable_board("https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/NYC/SWE-Intern_R1"))
+        self.assertTrue(eligibility.is_readable_board("https://www.google.com/about/careers/applications/jobs/results/123"))
+        self.assertFalse(eligibility.is_readable_board("https://evil-greenhouse.io/x"))
+        self.assertFalse(eligibility.is_readable_board("https://www.amazon.jobs/en/jobs/1"))
+
+    def test_upperclass_phrases_are_ineligible(self):
+        text = "This internship is intended for students in their penultimate academic year, pursuing a Bachelor's degree."
+        verdict, note = eligibility.verdict_from_text(text, GRAD)
+        self.assertEqual(verdict, "ineligible")
+        self.assertIn("penultimate", note)
+        self.assertEqual(eligibility.verdict_from_text("Open to rising juniors and seniors.", GRAD)[0], "ineligible")
+
+    def test_explicit_years_beat_upperclass_words(self):
+        text = "Expected graduation dates of December 2028, May 2029, December 2029, or May 2030. Final year students welcome."
+        self.assertEqual(eligibility.verdict_from_text(text, GRAD)[0], "ok")
 
     def test_network_off_gives_unknown_without_fetching(self):
         item = {"url": "https://boards.greenhouse.io/acme/jobs/1"}

@@ -7,8 +7,11 @@ Greenhouse, Lever, Ashby) and reads it.
 
 Verdicts:
   "ok"          the page names a year range that includes his graduation year, or says freshman/sophomore
-  "ineligible"  the page names graduation years and his is not among them
+  "ineligible"  the page names graduation years and his is not among them, or asks for penultimate-year,
+                final-year, junior, or senior students
   "unknown"     the page could not be read, or says nothing about graduation year (never hidden, just labeled)
+
+Reading the page is scout/posting.py's job (Workday, Google Careers, Greenhouse, Lever, Ashby).
 
 Results are cached in data/eligibility_cache.json by URL so a page is fetched once, not every run.
 Posting text is untrusted: it is only ever searched with regular expressions, never executed or followed.
@@ -16,57 +19,45 @@ Posting text is untrusted: it is only ever searched with regular expressions, ne
 
 from __future__ import annotations
 
-import html
 import json
 import re
 import time
-import urllib.request
 from pathlib import Path
-from urllib.parse import urlsplit
+
+from scout import posting
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE_PATH = ROOT / "data" / "eligibility_cache.json"
-USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) scout-internship-watcher/0.1"
 CACHE_DAYS = 14
 
-# Only boards that serve the posting as plain HTML. Everything else (Workday, custom sites) stays "unknown".
-PLAIN_HTML_HOSTS = ("greenhouse.io", "lever.co", "ashbyhq.com")
-
 _TAGS = re.compile(r"<script.*?</script>|<style.*?</style>|<[^>]+>", re.S | re.I)
-_YEAR = r"(20[2-3][0-9])"
-# Phrases that introduce a graduation requirement, followed within a few words by one or two years.
-_GRAD_PATTERNS = [
-    re.compile(rf"graduat\w*[^.\n]{{0,60}}?{_YEAR}(?:[^.\n]{{0,25}}?{_YEAR})?", re.I),
-    re.compile(rf"class of[^.\n]{{0,10}}?{_YEAR}(?:[^.\n]{{0,15}}?{_YEAR})?", re.I),
-    re.compile(rf"{_YEAR}(?:\s*(?:-|to|or|and|/)\s*{_YEAR})?\s+graduat", re.I),
-]
+_YEAR = re.compile(r"\b(20[2-3][0-9])\b")
+# A graduation requirement is a sentence with "graduat..." or "class of" in it. Every year in that
+# sentence counts, so "December 2028, May 2029, December 2029, or May 2030" yields all four.
+_GRAD_SENTENCE = re.compile(r"[^.\n]{0,80}\b(?:graduat\w*|class of)\b[^.\n]{0,160}", re.I)
 _UNDERCLASS = re.compile(r"\b(freshman|freshmen|sophomore|first[- ]year|second[- ]year|underclass\w*)\b", re.I)
+# Phrases that mean "not a freshman": Google writes "penultimate academic year", others say "rising junior".
+_UPPERCLASS = re.compile(
+    r"\b(penultimate|final[- ]year|last[- ]year of|rising (?:junior|senior)s?|junior or senior|juniors and seniors|"
+    r"junior/senior|third[- ]year or fourth[- ]year|(?:junior|senior) standing)\b", re.I)
 
 
-def is_plain_html_board(url: str) -> bool:
-    host = urlsplit(url).netloc.lower()
-    return any(host == h or host.endswith("." + h) for h in PLAIN_HTML_HOSTS)
+def is_readable_board(url: str) -> bool:
+    return posting.is_readable_board(url)
 
 
-def fetch_text(url: str, timeout: int = 15) -> str | None:
-    """Download the page and strip it to text. Returns None when it cannot be read."""
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            raw = response.read(2_000_000).decode("utf-8", errors="replace")
-    except Exception:
-        return None
-    return html.unescape(_TAGS.sub(" ", raw))
+def fetch_text(url: str) -> str | None:
+    """The posting's text, or None when the board cannot be read server-side."""
+    post = posting.read_posting(url)
+    return post["text"] if post else None
 
 
 def years_mentioned(text: str) -> list[int]:
     """Every graduation year the page names, e.g. 'graduating between Dec 2027 and June 2028' -> [2027, 2028]."""
     years: set[int] = set()
-    for pattern in _GRAD_PATTERNS:
-        for match in pattern.finditer(text):
-            for group in match.groups():
-                if group:
-                    years.add(int(group))
+    for sentence in _GRAD_SENTENCE.finditer(text):
+        for year in _YEAR.findall(sentence.group(0)):
+            years.add(int(year))
     return sorted(years)
 
 
@@ -75,6 +66,9 @@ def verdict_from_text(text: str, graduation_year: int) -> tuple[str, str]:
     years = years_mentioned(text)
     if _UNDERCLASS.search(text):
         return "ok", "page mentions freshman/sophomore/underclassmen"
+    upper = _UPPERCLASS.search(text)
+    if upper and not years:
+        return "ineligible", f"page asks for {upper.group(1).lower()} students"
     if not years:
         return "unknown", "page says nothing about graduation year"
     low, high = min(years), max(years)
@@ -102,8 +96,8 @@ def check(listing: dict, graduation_year: int, cache: dict, allow_network: bool 
     if cached and time.time() - cached.get("checked_at", 0) < CACHE_DAYS * 24 * 3600:
         listing["eligibility"], listing["eligibility_note"] = cached["verdict"], cached["note"]
         return listing
-    if not allow_network or not is_plain_html_board(url):
-        listing["eligibility"], listing["eligibility_note"] = "unknown", "not checked (not a plain-HTML board)" if not is_plain_html_board(url) else "not checked (network off)"
+    if not allow_network or not is_readable_board(url):
+        listing["eligibility"], listing["eligibility_note"] = "unknown", "not checked (board can't be read server-side)" if not is_readable_board(url) else "not checked (network off)"
         return listing
     text = fetch_text(url)
     if text is None:
