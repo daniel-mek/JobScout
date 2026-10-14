@@ -1,0 +1,4 @@
+# M1: resume PDFs (HTML + CSS -> PDF). Mac only; WeasyPrint also needs: brew install pango
+weasyprint>=63
+jinja2>=3.1
+pypdf>=5        # reads the PDF text layer back, to check what an ATS parser sees

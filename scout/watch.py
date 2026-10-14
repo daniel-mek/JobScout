@@ -85,12 +85,14 @@ def print_table(matches: list[dict], top: int, now: float) -> None:
         print(f"      {m['url']}")
 
 
-def write_matches(matches: list[dict], counts: Counter, path: Path = MATCHES_PATH) -> None:
+def write_matches(matches: list[dict], counts: Counter, path: Path = MATCHES_PATH, limit: int = 300) -> None:
+    """Write the top `limit` matches. The cron commits this file every run, so it is kept small on purpose."""
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "counts": dict(counts),
-        "matches": matches,
+        "total_matches": len(matches),
+        "matches": matches[:limit],
     }
     path.write_text(json.dumps(payload, indent=1, ensure_ascii=False), encoding="utf-8")
 

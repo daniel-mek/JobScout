@@ -55,6 +55,11 @@ keywords:
   per_hit: 3
   max: 9
 
-# Below this score a listing is still written to data/matches.json but not shown in the top list
-# and (from M3) not alerted. Tune after seeing a real run.
+# Below this score a listing is still written to data/matches.json but never goes in the digest.
 min_score: 30
+
+# Alerts. A Tier 1 or Tier 2 posting at or above instant_min_score pushes the moment it is seen;
+# any freshman/sophomore program or ambassador program pushes regardless of score.
+# Everything else that passed the filters waits for the 7:00 PM digest, which carries the top digest_size.
+instant_min_score: 60
+digest_size: 10

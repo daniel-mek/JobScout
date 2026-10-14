@@ -1,6 +1,6 @@
 # Scout
 
-**Status: M2, watcher.** The resume builder and the local watcher work; alerts and the cron are not built yet. See the [milestones](#milestones).
+**Status: M3, alerts.** The watcher runs on a GitHub Actions cron and pushes to my phone through ntfy. See the [milestones](#milestones).
 
 Scout is a personal internship radar. Every few hours it reads the public internship lists, scores each posting against what I'm looking for, and pushes an alert to my phone when a strong match drops. For any posting I pick, it builds a prep kit: a one-page tailored resume, a cover letter if the posting wants one, and draft answers to the usual questions, all in my own voice and all from facts in my master resume.
 
@@ -62,8 +62,8 @@ Cloudflare Workers free tier: 100,000 requests a day. ntfy: free. If any of this
 |---|---|---|
 | M0: setup | Done | Repo, folder structure, .gitignore, README, reference research ([report](docs/reference-report.md)) |
 | M1: master resume | In progress | `me/master_profile.md` is ground truth, `me/voice.md` holds the voice rules, `me/answer_bank.md` the approved answers. `scout/build_resume.py` turns one JSON file per variant into a one-page PDF and checks the text layer. Three variants built (SWE, PM, IT); a few dates still to confirm |
-| M2: watcher | In progress | `python -m scout.watch` fetches both lists, normalizes, dedupes, filters, scores, and writes `data/matches.json`. Every match prints its score breakdown. 60 unit tests on saved fixtures, no network. Being tuned |
-| M3: alerts | Not started | ntfy instant push and 7:00 PM digest, program page watchers, GitHub Actions cron |
+| M2: watcher | Done | `python -m scout.watch` fetches both lists, normalizes, dedupes, filters, scores, and writes `data/matches.json`. Every match prints its score breakdown. Freshman/sophomore programs and ambassador roles rank highest |
+| M3: alerts | In progress | `python -m scout.run` sends instant ntfy pushes, the 7:00 PM ET digest, and page-change alerts for nine program pages (`config/watch-pages.yaml`). `.github/workflows/scout.yml` runs it every 3 hours and commits `data/` back. 80 unit tests, no network |
 | M4: prep kit | Not started | `/prep`, `/triage`, drafter then reviewer, PDFs via HTML + WeasyPrint |
 | M5: dashboard + tracker | Not started | Cloudflare Worker, KV, password, mobile layout, prep queue |
 | M6: optional | Not started | Greenhouse, Lever, Ashby boards for Tier 2 companies |
@@ -92,12 +92,29 @@ Each match looks like this on the command line:
       https://www.google.com/about/careers/applications/jobs/results/...
 ```
 
+## Alerts and the cron
+
+```bash
+export NTFY_TOPIC="$(cat me/ntfy-topic.txt)"          # the secret topic; also stored as a GitHub Actions secret
+.venv/bin/python -m scout.run --mode test             # one test push
+.venv/bin/python -m scout.run --mode watch --dry-run  # what a run would push, without sending
+.venv/bin/python -m scout.run --mode watch --seed     # first run only: mark today's matches as seen
+.venv/bin/python -m scout.run --mode digest --force   # send the digest now instead of at 7:00 PM
+```
+
+- **Instant push:** a Tier 1 or Tier 2 posting scoring at least 60, any freshman/sophomore program, any ambassador program, or a watched page that changed. Priority is higher for programs.
+- **Daily digest at 7:00 PM ET:** the top 10 new matches that did not push instantly, with links.
+- **Page watchers:** each page in `config/watch-pages.yaml` is fetched, stripped to text with volatile tokens removed, and hashed. A change pushes the first new lines. A page that can't be read two runs in a row, or that serves no text, pushes a warning once. Baselines live in `data/pages/`.
+- **Nothing twice:** `data/seen.json` holds every key that was ever pushed or digested.
+- **Failing loudly:** if a source list can't be fetched, one push says so.
+- **Schedule:** every 3 hours at :30 UTC (never within 45 minutes of the 6:45 AM Morning Brief), plus a digest run at 23:00 and 00:00 UTC; the script itself checks it is 7:00 PM in New York and skips the other one.
+
 ## Building the resume PDFs
 
 ```bash
 brew install pango poppler                      # text layout for WeasyPrint, and pdftotext for checks
 /opt/homebrew/bin/python3.12 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -r requirements.txt -r requirements-resume.txt
 .venv/bin/python scout/build_resume.py me/resumes/swe.json me/resumes/pm.json me/resumes/it.json
 ```
 

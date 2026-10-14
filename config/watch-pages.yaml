@@ -1,0 +1,48 @@
+# Program pages Scout watches for changes. Every run fetches each page, strips it to text, and
+# pushes an alert when the text changes (with the first new lines quoted).
+# Only pages that serve real text to a plain HTTP fetch can be watched; a page that is a
+# JavaScript app gives a server nothing to compare. Checked 2026-10-14.
+#
+# Not watchable this way (checked 2026-10-14):
+#   Meta University / metacareers.com: every URL returns HTTP 400 to a server-side fetch. Meta rows
+#     still arrive through the internship lists.
+#   Microsoft Learn Student Ambassadors (mvp.microsoft.com/studentambassadors): JavaScript app. It is
+#     open enrollment all year, so there is no window to catch anyway.
+#   Notion Campus Leaders, Figma campus programs: JavaScript apps, no public text page found.
+
+pages:
+  - name: Microsoft Explore Program
+    url: https://careers.microsoft.com/v2/global/en/exploremicrosoft
+    note: First- and second-year program. The page that announces when applications open.
+
+  - name: Microsoft students and early-career
+    url: https://careers.microsoft.com/v2/global/en/students
+    note: Lists every student program; a new program shows up here first.
+
+  - name: Google students
+    url: https://www.google.com/about/careers/applications/students/
+    note: Google's student programs overview.
+
+  - name: Google Careers search, STEP intern
+    url: https://www.google.com/about/careers/applications/jobs/results/?q=%22STEP%20intern%22
+    note: Changes when a STEP (first- and second-year) posting appears or closes.
+
+  - name: Google Careers search, Student Ambassador
+    url: https://www.google.com/about/careers/applications/jobs/results/?q=%22Student%20Ambassador%22
+    note: The Google Student Ambassador (Gemini) role is posted here as a job.
+
+  - name: NVIDIA university recruiting
+    url: https://www.nvidia.com/en-us/about-nvidia/careers/university-recruiting/
+    note: Ignite (freshman and sophomore pre-internship) lives on this page.
+
+  - name: Apple students
+    url: https://www.apple.com/careers/us/work-at-apple/students.html
+    note: Apple's student and intern page.
+
+  - name: Amazon university programs
+    url: https://www.amazon.jobs/content/en/career-programs/university
+    note: Amazon's student programs page (Propel, SDE internships).
+
+  - name: GitHub Campus Experts
+    url: https://githubcampus.expert/
+    note: Campus ambassador-style program; applications open in cycles.

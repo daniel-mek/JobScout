@@ -1,8 +1,5 @@
 # Scout Python dependencies. Install into a venv:
-#   /opt/homebrew/bin/python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt
-# WeasyPrint also needs the pango library on the Mac: brew install pango
-
-# M1: resume PDFs (HTML + CSS -> PDF)
-weasyprint>=63
-jinja2>=3.1
-pypdf>=5        # reads the PDF text layer back, to check what an ATS parser sees
+#   /opt/homebrew/bin/python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-resume.txt
+# The watcher (this file) needs only PyYAML. The resume builder's extra packages are in requirements-resume.txt,
+# kept separate so the GitHub Actions cron installs in seconds.
+pyyaml>=6
