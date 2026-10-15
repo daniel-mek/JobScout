@@ -1,0 +1,4 @@
+# Copy to .dev.vars for `npx wrangler dev`. Test values only, never the real ones.
+DASH_PASSWORD=local-test-password
+SESSION_SECRET=any-long-random-string
+INGEST_SECRET=local-ingest-secret

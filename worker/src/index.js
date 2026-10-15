@@ -128,7 +128,7 @@ async function setTracker(request, env) {
   if (!key || !STATES.includes(state)) return json({ error: "need key and a known state" }, 400);
   const [tracker, data] = await Promise.all([get(env, "tracker", {}), get(env, "matches", { matches: [] })]);
   const match = data.matches.find((m) => m.key === key) || {};
-  const today = new Date().toISOString().slice(0, 10);
+  const today = nyDate();
   const row = tracker[key] || { company: match.company || "", title: match.title || "", url: match.url || "", score: match.score ?? null, history: [] };
   row.state = state;
   row.updated = today;
@@ -186,7 +186,7 @@ async function newPage(env) {
       <div class="meta">${esc((m.locations || []).slice(0, 2).join(", ") || "location not listed")} · ${age(m.date_posted)}${m.eligibility_note && m.eligibility !== "unknown" ? " · " + esc(m.eligibility_note) : ""}</div>
       <details class="why"><summary>why ${m.score}?</summary><div class="meta mono">${esc(breakdown(m))}</div></details>
       <div class="actions">
-        <button class="btn accent" data-act="queue" ${queued.has(m.key) ? "disabled" : ""}>${queued.has(m.key) ? "queued for /prep" : "prep this"}</button>
+        <button class="btn accent" data-act="queue" ${queued.has(m.key) ? "disabled" : ""}>${queued.has(m.key) ? "queued ✓" : "prep this"}</button>
         <button class="btn" data-act="pass">pass</button>
         <a class="btn ghost" href="${esc(m.url)}" target="_blank" rel="noopener">posting ↗</a>
       </div>
@@ -195,7 +195,7 @@ async function newPage(env) {
   const hero = `
     <div class="stat">
       <div class="stat-label">you have</div>
-      <div class="stat-big">${rows.length}</div>
+      <div class="stat-big" id="open-count">${rows.length}</div>
       <div class="stat-sub">open matches${fresh.length ? `, <b>${fresh.length} new</b> since your last visit` : ", none new since your last visit"}</div>
       <div class="stat-foot">${programs} freshman friendly · ${queue.length} queued for /prep · updated ${esc(when(data.generated_at))}</div>
     </div>`;
@@ -215,7 +215,7 @@ async function newPage(env) {
     ${fresh.length ? `<h2>fresh off the lists</h2>${fresh.map((m) => card(m, true)).join("")}` : ""}
     <h2>${fresh.length ? "the rest, best first" : "best first"}</h2>
     ${rest.slice(0, 60).map((m) => card(m, false)).join("") || '<p class="note">nothing yet. the cron fills this in every three hours.</p>'}
-    ${passedRows.length ? `<details class="passed-list"><summary><h2>passed (${passedRows.length})</h2></summary><p class="note">changed your mind? unpass puts it back in the list.</p>${passedRows.map(passedCard).join("")}</details>` : ""}`;
+    <details class="passed-list" id="passed" ${passedRows.length ? "" : "hidden"}><summary><h2>passed (<span id="passed-count">${passedRows.length}</span>)</h2></summary><p class="note">changed your mind? unpass puts it back in the list.</p><div id="passed-cards">${passedRows.map(passedCard).join("")}</div></details>`;
   return page(body, { title: "New", page: "new", lead: "let's get", head: "you hired" });
 }
 
@@ -350,6 +350,7 @@ input{flex:1;min-width:150px}
 .pipeline{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
 .step{font-size:12px;font-weight:700;background:var(--cream);border:2px solid var(--ink);border-radius:var(--radius-pill);padding:5px 10px;color:var(--muted)} .step.on{color:var(--ink);background:var(--accent)} .step b{margin-left:6px}
 pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:var(--pad);font-size:var(--small);font-weight:500}
+body[data-page="login"] main,body[data-page="login"] header{max-width:420px} body[data-page="login"] header{justify-content:center} body[data-page="login"] main{display:block} body[data-page="login"] h1{text-align:center} body[data-page="login"] h1 .head{display:inline-block}
 .login{display:flex;flex-direction:column;gap:12px;max-width:360px;margin:10px auto 0;background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px}
 .login label{font-family:var(--display);text-transform:uppercase;font-size:18px} .login input{width:100%} .login .note{color:var(--muted);margin:0} .warn{color:var(--red);font-weight:700;margin:0}
 .dock{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--page);border-top:var(--line) solid var(--ink)}
@@ -373,14 +374,35 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--cream);border:v
 // The only JavaScript the pages need: send a tap to the API and update the card in place.
 const CLIENT_JS = `
 async function post(url, body){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(!r.ok){alert("that didn't save. try again.");throw new Error(r.status)}return r.json()}
-document.addEventListener("click",async(e)=>{const b=e.target.closest("button[data-act]");if(!b)return;const card=b.closest("[data-key]");const key=card&&card.dataset.key;if(!key)return;
- if(b.dataset.act==="queue"){await post("/api/queue",{key});b.textContent="queued for /prep";b.disabled=true}
- else if(b.dataset.act==="pass"){await post("/api/pass",{key});card.classList.add("dim");b.textContent="undo";b.dataset.act="unpass"}
- else if(b.dataset.act==="unpass"){await post("/api/pass",{key,undo:true});if(card.classList.contains("passed")){card.remove();return}card.classList.remove("dim");b.textContent="pass";b.dataset.act="pass"}
- else if(b.dataset.act==="save"){const state=card.querySelector('[data-act="state"]').value;const next=card.querySelector('[data-act="next"]').value;await post("/api/tracker",{key,state,next});b.textContent="saved";setTimeout(()=>b.textContent="save",1500)}
+function bump(id,d){const el=document.getElementById(id);if(el)el.textContent=Math.max(0,(parseInt(el.textContent,10)||0)+d)}
+function syncPassed(){const box=document.getElementById("passed");const n=parseInt((document.getElementById("passed-count")||{}).textContent,10)||0;if(box){box.hidden=n===0;if(n===0)box.open=false}}
+function passedClone(card,key){const a=document.createElement("article");a.className="card passed";a.dataset.key=key;a.dataset.origin="main";
+ const row=document.createElement("div");row.className="row";const h=document.createElement("h3");h.textContent=(card.querySelector("h3")||{}).textContent||"";const sc=document.createElement("span");sc.className="score";sc.textContent=(card.querySelector(".score")||{}).textContent||"";row.append(h,sc);
+ const t=document.createElement("div");t.className="title";t.textContent=(card.querySelector(".title")||{}).textContent||"";
+ const m=document.createElement("div");m.className="meta";m.textContent="passed just now";
+ const acts=document.createElement("div");acts.className="actions";const u=document.createElement("button");u.className="btn accent";u.dataset.act="unpass";u.textContent="unpass";acts.append(u);
+ const link=card.querySelector("a.btn");if(link){const l=link.cloneNode(true);acts.append(l)}
+ a.append(row,t,m,acts);return a}
+function mainCard(key){return [...document.querySelectorAll("main > .card[data-key]")].find(c=>c.dataset.key===key)}
+function clonesFor(key){return [...document.querySelectorAll("#passed-cards .card")].filter(c=>c.dataset.key===key)}
+document.addEventListener("click",async(e)=>{const b=e.target.closest("button[data-act]");if(!b||b.disabled)return;const card=b.closest("[data-key]");const key=card&&card.dataset.key;if(!key)return;b.disabled=true;
+ try{
+ if(b.dataset.act==="queue"){await post("/api/queue",{key});b.textContent="queued ✓";return}
+ if(b.dataset.act==="pass"){await post("/api/pass",{key});card.classList.add("dim");b.textContent="undo";b.dataset.act="unpass";bump("open-count",-1);bump("passed-count",1);const box=document.getElementById("passed-cards");if(box)box.prepend(passedClone(card,key));syncPassed()}
+ else if(b.dataset.act==="unpass"){await post("/api/pass",{key,undo:true});bump("passed-count",-1);bump("open-count",1);
+  if(card.classList.contains("passed")){clonesFor(key).forEach(c=>c.remove());card.remove();const mc=mainCard(key);if(mc){mc.classList.remove("dim");const pb=mc.querySelector('button[data-act="unpass"]');if(pb){pb.textContent="pass";pb.dataset.act="pass"}}else{syncPassed();location.reload();return}}
+  else{card.classList.remove("dim");b.textContent="pass";b.dataset.act="pass";clonesFor(key).forEach(c=>c.remove())}
+  syncPassed()}
+ else if(b.dataset.act==="save"){const state=card.querySelector('[data-act="state"]').value;const next=card.querySelector('[data-act="next"]').value;await post("/api/tracker",{key,state,next});b.textContent="saved";setTimeout(()=>location.reload(),400)}
+ }finally{b.disabled=b.dataset.act==="queue"&&b.textContent.startsWith("queued")}
 });`;
 
 /* ---------------------------------------------------------------- small helpers */
+
+// Today's date in New York (YYYY-MM-DD). The server runs in UTC, which is already tomorrow after 8 PM ET.
+function nyDate() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+}
 
 function roleWord(m) {
   return { swe: "software", pm: "product", it: "IT", design: "design", ambassador: "ambassador", program: "program" }[m.role] || "match";

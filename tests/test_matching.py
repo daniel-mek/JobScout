@@ -65,6 +65,8 @@ class Role(unittest.TestCase):
         self.assertEqual(matching.classify_role("Business Intelligence Engineer Intern", T), "none")
         self.assertEqual(matching.classify_role("Data Engineer Intern", T), "none")
         self.assertEqual(matching.classify_role("Firmware Engineer Intern/Co-op", T), "none")
+        self.assertEqual(matching.classify_role("Electronics Engineering Intern", T), "none")
+        self.assertEqual(matching.classify_role("Consumer Electronics Software Engineer Intern", T), "swe")
         self.assertEqual(matching.classify_role("Mechanical Engineering Intern", T), "none")
         self.assertEqual(matching.classify_role("Quantitative Trading Intern", T), "none")
         self.assertEqual(matching.classify_role("Data Scientist Intern", T), "none")

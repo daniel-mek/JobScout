@@ -57,7 +57,7 @@ roles:
                "campus rep", "campus representative", "student partner", "student rep", "student representative",
                "student developer champion", "student champion", "developer student", "campus evangelist",
                "student evangelist", "campus program", "ambassador"]
-  exclude: [mechanical, electrical, civil, chemical, aerospace, hardware, firmware, fpga, asic, silicon, "chip design",
+  exclude: [mechanical, electrical, civil, chemical, aerospace, hardware, firmware, fpga, asic, silicon, "chip design", "electronics engineer",
             "analog", "rf ", photonics, manufactur, "test engineer", quant, quantitative, trading, trader,
             actuarial, accounting, "data scientist", "data science", "research scientist", "applied scientist",
             "machine learning scientist", phd, "ph.d", biostat, nursing, legal, "sales intern", "marketing intern",
