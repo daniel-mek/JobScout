@@ -1,6 +1,6 @@
 # Scout
 
-**Status: M5, dashboard.** The watcher runs on a GitHub Actions cron, pushes to my phone through ntfy, `/prep` builds a reviewed application kit for any posting, and a password-protected dashboard on Cloudflare shows matches and the tracker on my phone. See the [milestones](#milestones).
+**🚧 In development.** It runs for me every day, but it is built around one person's targets so far. See the [milestones](#milestones) and [where this is going](#where-this-is-going).
 
 Scout is a personal internship radar. Every few hours it reads the public internship lists, scores each posting against what I'm looking for, and pushes an alert to my phone when a strong match drops. For any posting I pick, it builds a prep kit: a one-page tailored resume, a cover letter if the posting wants one, and draft answers to the usual questions, all in my own voice and all from facts in my master resume.
 
@@ -67,6 +67,17 @@ Cloudflare Workers free tier: 100,000 requests a day. ntfy: free. If any of this
 | M4: prep kit | Done | `/prep <key>` reads the posting (`scout/posting.py`: Workday, Google Careers, Greenhouse, Lever, Ashby), checks eligibility, drafts a tailored resume, cover letter, answers, and notes from the master profile, runs a reviewer agent that checks every claim, builds the PDFs, and logs the tracker. `/triage` picks the postings worth a kit. `/status` moves the tracker. 86 tests |
 | M5: dashboard + tracker | Done | `worker/` is one Cloudflare Worker with one KV namespace: New (matches with score breakdowns, "Prep this" and "Pass"), Programs (watched pages and early-career finds), Tracker (state and next action, editable from the phone), Settings (read-only config). Password login with a signed cookie. The cron pushes each run up and pulls phone changes down (`scout/sync.py`) |
 | M6: optional | Not started | Greenhouse, Lever, Ashby boards for Tier 2 companies |
+
+## Where this is going
+
+The plan is for Scout to work for anyone looking for jobs or internships, whatever their major or career, not just a CS student looking at tech. The pieces that are already general: the scoring is driven entirely by `config/targets.yaml` and `config/scoring.yaml` (roles, companies, locations, keywords, weights, all editable without code), the prep kit works from any master profile, and the dashboard and alerts don't care what the postings are. The pieces that are still tech-specific: the two data sources are tech internship lists, and the posting reader knows a handful of job boards. The next step is adding sources per field (and the Greenhouse, Lever, and Ashby board APIs, which cover companies in every industry), then a setup command that asks what you're looking for and writes the config for you.
+
+## Make it yours (today)
+
+1. Fork or clone, create a venv, `pip install -r requirements.txt`.
+2. Edit `config/targets.yaml`: your target roles and the words that identify them, your companies by tier, your locations, your keywords, your graduation year.
+3. Put your own facts in `me/master_profile.md` (the folder is gitignored; see `me/README.md` for the layout) and run `/interview` in Claude Code to build your resumes.
+4. Set the secrets (`NTFY_TOPIC` for alerts; `SCOUT_URL` and `SCOUT_INGEST_SECRET` if you deploy the dashboard) and enable the workflow.
 
 ## Borrowed code
 

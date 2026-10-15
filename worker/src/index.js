@@ -341,6 +341,17 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--cream);border:v
 .dock a{flex:1;max-width:150px;text-align:center;font:700 14px var(--font);color:var(--ink);background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:11px 6px;text-decoration:none;box-shadow:var(--shadow-sm)}
 .dock a.on{background:var(--lime)}
 @media (min-width:700px){.dock{position:static;background:transparent;border:0;max-width:640px;margin:0 auto 20px;padding:0;justify-content:flex-start} body{padding-bottom:40px}}
+/* Wider screens: use the room. The header, headline, and stat card stay full width; cards flow into columns. */
+@media (min-width:900px){
+  main,header,.dock{max-width:1120px}
+  main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px;align-items:start}
+  main > h1,main > .stat,main > h2,main > .note,main > .pipeline,main > pre,main > form{grid-column:1 / -1}
+  main > .card{margin-bottom:20px}
+  h1{font-size:64px} .stat{display:grid;grid-template-columns:auto 1fr;column-gap:28px;align-items:end}
+  .stat-label{grid-column:1} .stat-big{grid-column:1;grid-row:2} .stat-sub{grid-column:2;grid-row:2;padding-bottom:10px} .stat-foot{grid-column:1 / -1}
+  .dock{justify-content:flex-start;gap:12px} .dock a{flex:none;min-width:150px}
+}
+@media (min-width:1400px){main{grid-template-columns:repeat(3,minmax(0,1fr))}}
 `;
 
 // The only JavaScript the pages need: send a tap to the API and update the card in place.

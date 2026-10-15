@@ -46,3 +46,8 @@ Claude outputs/
 Thumbs.db
 .idea/
 .vscode/
+
+# Application tracking lives in the dashboard (Workers KV); the local mirrors say where he is applying, so they stay out of git
+data/tracker.json
+data/queue.json
+data/passed.json
