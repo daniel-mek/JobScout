@@ -199,10 +199,17 @@ async function newPage(env) {
 
   const hero = `
     <div class="stat">
-      <div class="stat-label">you have</div>
-      <div class="stat-big" id="open-count">${rows.length}</div>
-      <div class="stat-sub">open matches${fresh.length ? `, <b>${fresh.length} new</b> since your last visit` : ", none new since your last visit"}</div>
-      <div class="stat-foot">${programs} freshman friendly · ${queue.length} queued for /prep · updated ${esc(when(data.generated_at))}</div>
+      <div class="stat-main">
+        <div class="stat-label">you have</div>
+        <div class="stat-big" id="open-count">${rows.length}</div>
+        <div class="stat-sub">open matches</div>
+      </div>
+      <div class="stat-tiles">
+        <div class="tile${fresh.length ? " hot" : ""}"><b>${fresh.length}</b><span>new since your last visit</span></div>
+        <div class="tile"><b>${programs}</b><span>freshman friendly</span></div>
+        <div class="tile"><b>${queue.length}</b><span>queued for /prep</span></div>
+      </div>
+      <div class="stat-foot">updated ${esc(when(data.generated_at))}</div>
     </div>`;
 
 
@@ -384,8 +391,13 @@ h3{font-family:var(--display);font-size:20px;margin:0;text-transform:uppercase;l
 .stat{background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:var(--pad);margin-bottom:8px}
 .stat-label{font-family:var(--display);text-transform:uppercase;font-size:18px;letter-spacing:0}
 .stat-big{font-family:var(--display);font-size:var(--big);line-height:.9;text-transform:uppercase;margin:4px 0 6px}
-.stat-sub{font-weight:700;font-size:18px} .stat-sub b{background:var(--accent);border-radius:6px;padding:0 6px;border:2px solid var(--ink)}
-.stat-foot{color:var(--muted);font-size:var(--small);font-weight:700;margin-top:10px}
+.stat{display:grid;gap:16px;position:relative}
+.stat-sub{font-weight:700;font-size:18px}
+.stat-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tile{background:#fff;border:2px solid var(--ink);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.tile b{font-family:var(--display);font-size:34px;line-height:1} .tile span{font-size:var(--small);font-weight:700;color:var(--muted);line-height:1.2}
+.tile.hot{background:var(--accent)} .tile.hot span{color:var(--ink)}
+.stat-foot{color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .card{background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:var(--pad);margin:0 0 16px;max-width:100%}
 .card.dim > :not(.actions){opacity:.35} .passed-list > summary{list-style:none;cursor:pointer} .passed-list > summary::-webkit-details-marker{display:none} .passed-list > summary h2::after{content:" ▸"} .passed-list[open] > summary h2::after{content:" ▾"} .card.passed{opacity:.92}
 .card.is-new{outline:4px solid var(--accent);outline-offset:-7px}
@@ -421,8 +433,9 @@ body[data-page="login"] main,body[data-page="login"] header{max-width:420px} bod
   main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px;align-items:start}
   main > h1,main > .stat,main > h2,main > .note,main > .pipeline,main > pre,main > form,main > .passed-list{grid-column:1 / -1}
   main > .card{margin-bottom:20px}
-  h1{font-size:64px} .stat{display:grid;grid-template-columns:auto 1fr;column-gap:28px;align-items:end}
-  .stat-label{grid-column:1} .stat-big{grid-column:1;grid-row:2} .stat-sub{grid-column:2;grid-row:2;padding-bottom:10px} .stat-foot{grid-column:1 / -1}
+  h1{font-size:64px} .stat{grid-template-columns:auto 1fr;column-gap:40px;align-items:center}
+  .stat-tiles{gap:14px} .tile{padding:16px 18px} .tile b{font-size:48px}
+  .stat-foot{position:absolute;top:var(--pad);right:var(--pad)}
   .dock{justify-content:flex-start;gap:12px} .dock a{flex:none;min-width:150px}
 }
 @media (min-width:1400px){main{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -459,11 +472,41 @@ main > *:nth-child(2){animation-delay:.04s} main > *:nth-child(3){animation-dela
 .btn.tapped{animation:wiggle .35s ease}
 @keyframes wiggle{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
 .card.dim{transition:opacity .3s}
-@media (prefers-reduced-motion:reduce){*,*::before{animation:none !important;transition:none !important}}
+/* the hero card: a sheen sweeps across, the number pops and counts up (CLIENT_JS), the tiles bounce in one by one */
+.stat{overflow:hidden;isolation:isolate}
+.stat::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.7) 50%,transparent 65%);background-size:300% 100%;animation:sweep 6s 1s ease-in-out infinite}
+@keyframes sweep{0%{background-position:150% 0}40%,100%{background-position:-50% 0}}
+.stat-big{display:inline-block;transform-origin:20% 80%;animation:big-in .8s .15s cubic-bezier(.3,1.7,.5,1) both}
+@keyframes big-in{from{transform:scale(.3) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
+@media (hover:hover){.stat-big:hover{animation:jelly .6s ease}}
+@keyframes jelly{30%{transform:scale(1.12,.88)}50%{transform:scale(.92,1.08)}70%{transform:scale(1.04,.96)}100%{transform:none}}
+.stat-label,.stat-sub{animation:slide-in .5s cubic-bezier(.2,.9,.3,1.2) both} .stat-label{animation-delay:.05s} .stat-sub{animation-delay:.3s}
+@keyframes slide-in{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
+.tile{animation:tile-in .6s cubic-bezier(.3,1.6,.5,1) both;transition:transform .2s cubic-bezier(.3,1.6,.5,1),box-shadow .2s}
+.tile:nth-child(1){animation-delay:.35s} .tile:nth-child(2){animation-delay:.47s} .tile:nth-child(3){animation-delay:.59s}
+@keyframes tile-in{from{opacity:0;transform:translateY(24px) rotate(4deg) scale(.85)}to{opacity:1;transform:none}}
+@media (hover:hover){.tile:hover{transform:translate(-2px,-3px) rotate(-2deg);box-shadow:5px 5px 0 var(--ink)} .tile:nth-child(2):hover{transform:translate(-2px,-3px) rotate(2deg)}}
+.tile.hot{animation:tile-in .6s .35s cubic-bezier(.3,1.6,.5,1) both,glow 1.8s 1.2s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 var(--ink)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 45%,transparent)}}
+.stat-foot::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);border:2px solid var(--ink);margin-right:7px;vertical-align:0;animation:beat 2s ease-in-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+/* section headings draw an underline in */
+h2{position:relative;width:fit-content}
+h2::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:4px;border-radius:4px;background:var(--accent);transform-origin:left;animation:underline .7s .4s cubic-bezier(.3,1.4,.5,1) both}
+@keyframes underline{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+/* tags pop in one after another; the "new" tag keeps a little wiggle */
+.tag{display:inline-block;animation:pop .45s cubic-bezier(.3,1.8,.5,1) both} .tag:nth-child(1){animation-delay:.2s} .tag:nth-child(2){animation-delay:.28s} .tag:nth-child(3){animation-delay:.36s} .tag:nth-child(n+4){animation-delay:.44s}
+.card.is-new .tag.accent:last-child{animation:pop .45s .44s cubic-bezier(.3,1.8,.5,1) both,nudge 2.4s 1.2s ease-in-out infinite}
+@keyframes nudge{0%,80%,100%{transform:none}85%{transform:rotate(-6deg) scale(1.08)}90%{transform:rotate(6deg) scale(1.08)}95%{transform:rotate(-3deg)}}
+/* the dock buttons bounce in */
+.dock a{animation:pop .5s cubic-bezier(.3,1.8,.5,1) both} .dock a:nth-child(2){animation-delay:.06s} .dock a:nth-child(3){animation-delay:.12s} .dock a:nth-child(4){animation-delay:.18s}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none !important;transition:none !important}}
 `;
 
 // The only JavaScript the pages need: send a tap to the API and update the card in place.
 const CLIENT_JS = `
+// The hero numbers count up from zero on load (about a second, done before anyone can tap pass).
+(function(){if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;document.querySelectorAll(".stat-big,.tile b").forEach(function(el,n){const end=parseInt(el.textContent,10);if(!(end>0))return;const t0=performance.now()+150+n*120,dur=end>20?1100:600;el.textContent="0";requestAnimationFrame(function tick(t){const k=Math.min(1,Math.max(0,(t-t0)/dur));el.textContent=Math.round(end*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(tick)})})})();
 async function post(url, body){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(!r.ok){alert("that didn't save. try again.");throw new Error(r.status)}return r.json()}
 function bump(id,d){const el=document.getElementById(id);if(el)el.textContent=Math.max(0,(parseInt(el.textContent,10)||0)+d)}
 function syncPassed(){const box=document.getElementById("passed");const n=parseInt((document.getElementById("passed-count")||{}).textContent,10)||0;if(box){box.hidden=n===0;if(n===0)box.open=false}}
