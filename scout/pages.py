@@ -54,13 +54,36 @@ def slug(url: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", url.lower()).strip("-")[:80]
 
 
+_ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+def drop_job_carousels(lines: list[str]) -> list[str]:
+    """Remove rotating "latest jobs" cards: a title, then a date line, then a few lines, then "See details".
+
+    Microsoft's program pages show a carousel of whatever jobs were posted most recently, so the page
+    "changes" every day without the program changing at all. A card is any run that starts one line
+    before a bare YYYY-MM-DD line and ends at the next "See details" within eight lines.
+    """
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        if i + 1 < len(lines) and _ISO_DATE.fullmatch(lines[i + 1]):
+            end = next((j for j in range(i + 2, min(i + 9, len(lines))) if lines[j].lower() == "see details"), None)
+            if end is not None:
+                i = end + 1
+                continue
+        out.append(lines[i])
+        i += 1
+    return out
+
+
 def html_to_text(raw: str) -> str:
-    """Strip HTML to readable text, one sentence or line per row, with noise tokens removed."""
+    """Strip HTML to readable text, one sentence or line per row, with noise tokens and job carousels removed."""
     text = html.unescape(_TAGS.sub("\n", raw))
     for pattern in _NOISE:
         text = pattern.sub("", text)
     lines = [re.sub(r"\s+", " ", line).strip() for line in text.splitlines()]
-    return "\n".join(line for line in lines if len(line) >= 3)
+    return "\n".join(drop_job_carousels([line for line in lines if len(line) >= 3]))
 
 
 def fetch_text(url: str, timeout: int = 25) -> str | None:

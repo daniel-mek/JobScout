@@ -12,14 +12,17 @@ Without it, every mode runs as a dry run.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 from scout import alerts, listings, matching, notify, pages, scoring, watch
 
 ROOT = Path(__file__).resolve().parent.parent
-DIGEST_HOUR_ET = 19  # 7:00 PM
+DIGEST_HOUR_ET = 19  # 7:00 PM: the digest goes out on the first run at or after this hour, once a day
+DIGEST_STATE = ROOT / "data" / "digest.json"
 
 
 class Sender:
@@ -84,19 +87,46 @@ def mode_watch(sender: Sender, now: float, seed: bool = False) -> None:
         alerts.save_seen(seen)
         pages.save_state(state)
 
+    # GitHub runs scheduled jobs late or skips them when it is busy, so the digest is not its own
+    # schedule: every run checks whether it is due and sends it at most once per New York day.
+    if digest_due(now):
+        send_digest(sender, matches, weights, now)
 
-def mode_digest(sender: Sender, now: float, force: bool = False) -> None:
-    hour = notify.et_hour(now)
-    if hour != DIGEST_HOUR_ET and not force:
-        print(f"digest skipped: it is {hour}:00 in New York, the digest goes out at 7:00 PM")
-        return
-    matches, weights = score_everything(sender, now, allow_network=False)
+
+def et_date(now: float) -> str:
+    return datetime.fromtimestamp(now, notify.ET).strftime("%Y-%m-%d")
+
+
+def digest_due(now: float, path: Path = DIGEST_STATE) -> bool:
+    """True when it is 7:00 PM or later in New York and today's digest has not gone out."""
+    if notify.et_hour(now) < DIGEST_HOUR_ET:
+        return False
+    try:
+        last = json.loads(path.read_text(encoding="utf-8")).get("last_sent", "")
+    except (OSError, ValueError):
+        last = ""
+    return last != et_date(now)
+
+
+def send_digest(sender: Sender, matches: list, weights: dict, now: float, path: Path = DIGEST_STATE) -> None:
     seen = alerts.load_seen()
     chosen = alerts.select_digest(matches, seen, weights)
     sender.send(notify.digest_push(chosen, now))
-    alerts.mark_seen(seen, chosen, "digest", now)
+    print(f"digest sent with {len(chosen)} match(es)")
     if not sender.dry_run:
+        alerts.mark_seen(seen, chosen, "digest", now)
         alerts.save_seen(seen)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"last_sent": et_date(now)}), encoding="utf-8")
+
+
+def mode_digest(sender: Sender, now: float, force: bool = False) -> None:
+    """Send the digest by hand. Without --force it only goes out when it is due."""
+    if not force and not digest_due(now):
+        print("digest not due: it goes out once a day, on the first run after 7:00 PM in New York")
+        return
+    matches, weights = score_everything(sender, now, allow_network=False)
+    send_digest(sender, matches, weights, now)
 
 
 def main() -> int:

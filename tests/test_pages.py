@@ -27,6 +27,21 @@ class TextExtraction(unittest.TestCase):
         self.assertEqual(pages.text_hash(a), pages.text_hash(b))
 
 
+class Carousel(unittest.TestCase):
+    def test_rotating_job_cards_are_removed(self):
+        lines = ["Explore Microsoft", "Applications open in September.",
+                 "Applied Sciences Intern", "2026-10-15", "United Kingdom, London", "3 days / week in-office",
+                 "<b>Overview</b> long description", "See details",
+                 "Customer Success Account Manager", "2026-10-14", "India", "See details",
+                 "Who should apply"]
+        self.assertEqual(pages.drop_job_carousels(lines),
+                         ["Explore Microsoft", "Applications open in September.", "Who should apply"])
+
+    def test_a_date_without_see_details_is_kept(self):
+        lines = ["Deadline", "2026-11-01", "Apply now"]
+        self.assertEqual(pages.drop_job_carousels(lines), lines)
+
+
 class Watching(unittest.TestCase):
     def run_once(self, state, html, tmp):
         return pages.check_pages([{"name": "Explore", "url": "https://example.com/explore"}], state,

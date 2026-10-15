@@ -215,7 +215,7 @@ async function newPage(env) {
     ${hero}
     ${fresh.length ? `<h2>fresh off the lists</h2>${fresh.map((m) => card(m, true)).join("")}` : ""}
     <h2>${fresh.length ? "the rest, best first" : "best first"}</h2>
-    ${rest.slice(0, 60).map((m) => card(m, false)).join("") || '<p class="note">nothing yet. the cron fills this in every three hours.</p>'}
+    ${rest.slice(0, 60).map((m) => card(m, false)).join("") || '<p class="note">nothing yet. scout checks the lists every hour.</p>'}
     <details class="passed-list" id="passed" ${passedRows.length ? "" : "hidden"}><summary><h2>passed (<span id="passed-count">${passedRows.length}</span>)</h2></summary><p class="note">changed your mind? unpass puts it back in the list.</p><div id="passed-cards">${passedRows.map(passedCard).join("")}</div></details>`;
   return page(body, { title: "New", page: "new", lead: "let's get", head: "you hired" });
 }
@@ -238,7 +238,7 @@ async function programsPage(env) {
       <div class="actions"><a class="btn ghost" href="${esc(m.url)}" target="_blank" rel="noopener">posting ↗</a></div>
     </article>`).join("");
   const body = `
-    <p class="note">these pages are where freshman programs show up first. scout reads them every three hours and pings you when the words change.</p>
+    <p class="note">these pages are where freshman programs show up first. scout reads them every hour and pings you when the words change.</p>
     <h2>watched pages</h2>${watched || '<p class="note">no pages yet.</p>'}
     <h2>found in the lists</h2>${finds || '<p class="note">none in the lists right now. the pages above are the early warning.</p>'}`;
   return page(body, { title: "Programs", page: "programs", lead: "built for", head: "freshmen" });
@@ -284,12 +284,12 @@ function aboutPage(loggedIn) {
   const body = `
     <article class="card">
       <h3>the short version</h3>
-      <p>Scout watches the public internship lists every three hours, scores every posting against what you're looking for, and pings your phone when a strong one shows up. When you pick one, it builds a prep kit: a tailored one page resume, a cover letter if the posting wants one, and draft answers, all from facts you've already confirmed. <b>You always click submit yourself.</b> Scout never applies for you.</p>
+      <p>Scout watches the public internship lists every hour, scores every posting against what you're looking for, and pings your phone when a strong one shows up. When you pick one, it builds a prep kit: a tailored one page resume, a cover letter if the posting wants one, and draft answers, all from facts you've already confirmed. <b>You always click submit yourself.</b> Scout never applies for you.</p>
     </article>
 
     <h2>how it works</h2>
     <ol class="steps">
-      <li class="card"><h3>find</h3><p>Every three hours a free GitHub Actions job pulls two public internship lists (Simplify and Pitt CSC, plus a community list) and reads a handful of company program pages, like Microsoft Explore and NVIDIA's university page, for changes.</p></li>
+      <li class="card"><h3>find</h3><p>Every hour a free GitHub Actions job pulls two public internship lists (Simplify and Pitt CSC, plus a community list) and reads a handful of company program pages, like Microsoft Explore and NVIDIA's university page, for changes.</p></li>
       <li class="card"><h3>score</h3><p>Each posting gets a score out of 100 from plain rules you can read and change: the role (software, product, IT, design, ambassador), the company tier, whether it's built for freshmen and sophomores, the degree it asks for, where it is, and how fresh it is. Tap "why 86?" on any card to see the math.</p></li>
       <li class="card"><h3>alert</h3><p>Big companies with a strong score, any freshman or sophomore program, any ambassador role, and any change on a watched program page push to your phone right away through the free ntfy app. Everything else waits for one digest at 7:00 PM.</p></li>
       <li class="card"><h3>prep</h3><p>Tap "prep this" and the posting waits in a queue. Next time you open Claude Code, /prep reads the posting, checks whether you're eligible, drafts the kit from your master profile, and then a second reviewer pass checks every line against what you've actually done before you see it.</p></li>
@@ -361,7 +361,7 @@ body[data-page="about"] main{display:block} @media (min-width:900px){body[data-p
 .card p{margin:6px 0 0} .change{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:10px 12px;margin:8px 0 6px;font-size:var(--small);font-weight:500;overflow-wrap:anywhere} .change b{display:block;margin-bottom:4px} .card ul{margin:8px 0 0;padding-left:18px} .card li+li{margin-top:4px} .login a,.card a.inline{color:var(--ink);font-weight:700}
 .pill-link{font-size:var(--small);font-weight:700;color:var(--ink);background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:6px 14px;text-decoration:none;box-shadow:var(--shadow-sm)}
 h1{font-family:var(--display);font-size:var(--h1);line-height:.92;text-transform:uppercase;margin:14px 0 20px;letter-spacing:0}
-h1 .lead{display:block;color:var(--on-page)} h1 .head{display:inline-block;color:var(--ink);padding-bottom:16px;background:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20400%2024'%20preserveAspectRatio='none'%3E%3Cpath%20d='M3%2013%20C%2040%206,%2070%2018,%20110%2011%20S%20180%205,%20215%2013%20S%20290%2019,%20330%2010%20S%20380%208,%20397%2012'%20fill='none'%20stroke='%23ffc93c'%20stroke-width='7'%20stroke-linecap='round'/%3E%3Cpath%20d='M12%2019%20C%2060%2013,%20120%2021,%20175%2016%20S%20270%2012,%20320%2018%20S%20370%2020,%20390%2016'%20fill='none'%20stroke='%23ffc93c'%20stroke-width='5.5'%20stroke-linecap='round'/%3E%3C/svg%3E") no-repeat left bottom / 100% 22px}
+h1 .lead{display:block;color:var(--on-page)} h1 .head{display:inline-block;color:var(--ink);padding-bottom:22px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20400%2038%27%20preserveAspectRatio%3D%27none%27%3E%3Cpath%20d%3D%27M3.0%206.9%20Q%203.0%206.9%208.0%2018.6%20Q%2012.9%2030.2%2017.6%2019.2%20Q%2022.3%208.2%2027.9%2016.8%20Q%2033.5%2025.5%2039.6%2015.3%20Q%2045.6%205.2%2051.4%2015.4%20Q%2057.2%2025.6%2062.0%2016.6%20Q%2066.7%207.5%2073.7%2016.8%20Q%2080.7%2026.0%2085.9%2017.4%20Q%2091.0%208.8%2098.4%2019.2%20Q%20105.7%2029.6%20111.4%2020.2%20Q%20117.1%2010.9%20121.7%2021.4%20Q%20126.4%2031.9%20131.7%2018.9%20Q%20137.1%205.9%20142.0%2016.7%20Q%20146.8%2027.5%20153.8%2016.8%20Q%20160.7%206.1%20167.0%2018.1%20Q%20173.2%2030.1%20178.8%2019.2%20Q%20184.4%208.3%20189.1%2016.9%20Q%20193.8%2025.5%20198.9%2017.3%20Q%20204.0%209.1%20209.8%2018.3%20Q%20215.6%2027.5%20221.9%2017.6%20Q%20228.1%207.7%20233.5%2019.5%20Q%20238.9%2031.4%20245.5%2018.9%20Q%20252.1%206.5%20258.3%2017.8%20Q%20264.6%2029.2%20271.7%2019.3%20Q%20278.8%209.4%20284.2%2021.1%20Q%20289.5%2032.8%20294.4%2020.2%20Q%20299.3%207.5%20306.0%2016.9%20Q%20312.8%2026.2%20318.8%2015.7%20Q%20324.7%205.2%20331.2%2018.2%20Q%20337.7%2031.1%20344.0%2020.7%20Q%20350.2%2010.3%20355.6%2020.4%20Q%20361.1%2030.6%20367.3%2019.5%20Q%20373.6%208.5%20379.5%2020.1%20T%20385.4%2031.7%27%20fill%3D%27none%27%20stroke%3D%27%23ffc93c%27%20stroke-width%3D%274.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E") no-repeat left bottom / 100% 30px}
 h2{font-family:var(--display);font-size:20px;text-transform:uppercase;color:var(--on-page);margin:26px 0 10px;letter-spacing:0}
 h3{font-family:var(--display);font-size:20px;margin:0;text-transform:uppercase;line-height:1.05;letter-spacing:0}
 .note{color:var(--on-page);font-weight:700;margin:0 0 14px}

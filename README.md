@@ -54,13 +54,7 @@ scout/
 
 ## Cost
 
-GitHub gives a private repo 2,000 free Actions minutes a month. The watcher runs every 3 hours plus one digest run a day, and each run should finish in about a minute (checkout, Python setup, fetch one JSON file, score, commit).
-
-| Job | Runs per month | Minutes per run | Minutes per month |
-|---|---|---|---|
-| Watcher (every 3 hours) | 240 | about 1 | about 240 |
-| Daily digest (7:00 PM ET) | 30 | about 1 | about 30 |
-| **Total** | | | **about 270 of 2,000** |
+$0. The repo is public, and GitHub Actions minutes are free and unlimited for public repos. The watcher runs about 22 times a day and each run takes about a minute. If the repo ever goes private again, that is roughly 660 minutes a month, still inside the 2,000 free minutes a private repo gets. Cloudflare Workers and KV run on the free tier (100,000 requests a day), and ntfy is free.
 
 Cloudflare Workers free tier: 100,000 requests a day. ntfy: free. If any of this starts costing money, it gets turned off.
 
@@ -71,7 +65,7 @@ Cloudflare Workers free tier: 100,000 requests a day. ntfy: free. If any of this
 | M0: setup | Done | Repo, folder structure, .gitignore, README, reference research ([report](docs/reference-report.md)) |
 | M1: master resume | In progress | `me/master_profile.md` is ground truth, `me/voice.md` holds the voice rules, `me/answer_bank.md` the approved answers. `scout/build_resume.py` turns one JSON file per variant into a one-page PDF and checks the text layer. Three variants built (SWE, PM, IT); a few dates still to confirm |
 | M2: watcher | Done | `python -m scout.watch` fetches both lists, normalizes, dedupes, filters, scores, and writes `data/matches.json`. Every match prints its score breakdown. Freshman/sophomore programs and ambassador roles rank highest |
-| M3: alerts | Done | `python -m scout.run` sends instant ntfy pushes, the 7:00 PM ET digest, and page-change alerts for nine program pages (`config/watch-pages.yaml`). `.github/workflows/scout.yml` runs it every 3 hours and commits `data/` back |
+| M3: alerts | Done | `python -m scout.run` sends instant ntfy pushes, the 7:00 PM ET digest, and page-change alerts for nine program pages (`config/watch-pages.yaml`). `.github/workflows/scout.yml` runs it every hour and commits `data/` back |
 | M4: prep kit | Done | `/prep <key>` reads the posting (`scout/posting.py`: Workday, Google Careers, Greenhouse, Lever, Ashby), checks eligibility, drafts a tailored resume, cover letter, answers, and notes from the master profile, runs a reviewer agent that checks every claim, builds the PDFs, and logs the tracker. `/triage` picks the postings worth a kit. `/status` moves the tracker. 86 tests |
 | M5: dashboard + tracker | Done | `worker/` is one Cloudflare Worker with one KV namespace: New (matches with score breakdowns, "Prep this" and "Pass"), Programs (watched pages and early-career finds), Tracker (state and next action, editable from the phone), Settings (read-only config). Password login with a signed cookie. The cron pushes each run up and pulls phone changes down (`scout/sync.py`) |
 | M6: optional | Not started | Greenhouse, Lever, Ashby boards for Tier 2 companies |
@@ -126,7 +120,8 @@ export NTFY_TOPIC="$(cat me/ntfy-topic.txt)"          # the secret topic; also s
 - **Page watchers:** each page in `config/watch-pages.yaml` is fetched, stripped to text with volatile tokens removed, and hashed. A change pushes the first new lines. A page that can't be read two runs in a row, or that serves no text, pushes a warning once. Baselines live in `data/pages/`.
 - **Nothing twice:** `data/seen.json` holds every key that was ever pushed or digested.
 - **Failing loudly:** if a source list can't be fetched, one push says so.
-- **Schedule:** every 3 hours at :30 UTC (never within 45 minutes of the 6:45 AM Morning Brief), plus a digest run at 23:00 and 00:00 UTC; the script itself checks it is 7:00 PM in New York and skips the other one.
+- **Schedule:** every hour at :17, except the two hours around the 6:45 AM Morning Brief. GitHub runs scheduled jobs late or skips them when it is busy, so the schedule is hourly and the digest is not a schedule of its own: every run checks whether it is after 7:00 PM in New York and today's digest has not gone out yet (`data/digest.json`).
+- **Rotating content is ignored:** program pages that show a carousel of the latest job postings (Microsoft's do) have those cards stripped before comparing, so a page only counts as changed when its own text changes.
 
 ## Prep kits
 
