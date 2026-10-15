@@ -1,4 +1,4 @@
-# Personal data. Never committed. (Hard rule 4 in CLAUDE.md)
+# Personal data. Never committed.
 # me/ holds the master resume, voice rules, answers bank, writing samples.
 # applications/ holds every prep kit (tailored resumes, cover letters, answers).
 # Only the empty .gitkeep files are tracked, so the folders exist on a fresh clone.
@@ -51,3 +51,6 @@ Thumbs.db
 data/tracker.json
 data/queue.json
 data/passed.json
+
+# Claude Code instructions stay on this Mac, never on GitHub
+CLAUDE.md

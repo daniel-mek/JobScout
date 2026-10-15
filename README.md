@@ -38,7 +38,6 @@ Cloudflare Worker (free): password-protected dashboard + KV for tracker updates 
 
 ```
 scout/
-  CLAUDE.md            the brief and the rules Claude Code works from
   config/              targets.yaml, scoring.yaml, watch-pages.yaml (edit these, not code)
   scout/               the Python code: build_resume.py now, the watcher in M2
   scout/templates/     resume.html, the one-column ATS-safe layout (no personal data)
