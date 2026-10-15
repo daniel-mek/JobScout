@@ -12,6 +12,7 @@
  */
 
 import tokens from "./tokens.css";
+import { ICONS } from "./icons.js";
 
 const STATES = ["Found", "Saved", "Prepped", "Applied", "OA", "Interview", "Offer", "Rejected", "Withdrawn", "Passed"];
 const COOKIE = "scout";
@@ -22,6 +23,9 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    // Home-screen icons and the web app manifest are public: iOS fetches them without the login cookie.
+    if (ICONS[path]) return png(ICONS[path]);
+    if (path === "/manifest.webmanifest") return manifest();
     if (path === "/api/health") return json({ ok: true, time: new Date().toISOString() });
     if (path === "/login") return request.method === "POST" ? login(request, env) : loginForm("");
     if (path === "/about") return aboutPage(await validCookie(request, env));
@@ -318,7 +322,7 @@ function page(body, opts, status = 200) {
   const { title, page: name, lead, head, nav = true } = opts;
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="${PAGE_COLORS[name] || "#cf6a2e"}">
-<link rel="icon" href="${FAVICON}"><title>Scout · ${esc(title)}</title><style>${tokens}${BASE_CSS}</style></head><body data-page="${esc(name)}">
+<link rel="icon" href="${FAVICON}"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="apple-mobile-web-app-title" content="Scout"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><title>Scout · ${esc(title)}</title><style>${tokens}${BASE_CSS}</style></head><body data-page="${esc(name)}">
 <header><a class="brand" href="/" aria-label="scout">sc<svg class="o" viewBox="0 0 62 62" aria-hidden="true"><circle cx="31" cy="31" r="26.5" fill="#ffc93c" stroke="#1a1333" stroke-width="9"/><circle cx="31" cy="31" r="11" fill="#f6f9dc" stroke="#1a1333" stroke-width="6"/><circle cx="31" cy="31" r="4" fill="#1a1333"/></svg>ut</a><span class="head-links">${name === "about" ? (nav ? "" : '<a class="pill-link" href="/login">log in</a>') : nav ? '<a class="pill-link q" href="/about" aria-label="what is scout?"><span class="long">what is scout?</span><span class="short">?</span></a>' : ""}${nav ? '<a class="pill-link" href="/logout">log out</a>' : ""}</span></header>
 <main>
   <h1><span class="lead">${esc(lead)}</span><span class="head">${esc(head)}</span></h1>
@@ -410,6 +414,41 @@ body[data-page="login"] main,body[data-page="login"] header{max-width:420px} bod
   .dock{justify-content:flex-start;gap:12px} .dock a{flex:none;min-width:150px}
 }
 @media (min-width:1400px){main{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* ---------- life: gradient backgrounds and motion. Everything here is decoration; reduced-motion users get none of the movement. ---------- */
+body{--page-hi:color-mix(in srgb,var(--page) 62%,#fff);--page-lo:color-mix(in srgb,var(--page) 72%,#1a1333);--page-pop:color-mix(in srgb,var(--page) 55%,var(--accent))}
+body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none;
+  background:radial-gradient(circle at 18% 12%,var(--page-hi) 0,transparent 38%),radial-gradient(circle at 85% 30%,var(--page-pop) 0,transparent 34%),radial-gradient(circle at 70% 90%,var(--page-lo) 0,transparent 45%),var(--page);
+  animation:drift 22s ease-in-out infinite alternate}
+@keyframes drift{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(3%,-2%) rotate(4deg)}100%{transform:translate(-3%,2%) rotate(-3deg)}}
+/* cards rise in one after another on load */
+main > *{animation:rise .5s cubic-bezier(.2,.9,.3,1.2) both}
+main > *:nth-child(2){animation-delay:.04s} main > *:nth-child(3){animation-delay:.08s} main > *:nth-child(4){animation-delay:.12s} main > *:nth-child(5){animation-delay:.16s} main > *:nth-child(6){animation-delay:.2s} main > *:nth-child(7){animation-delay:.24s} main > *:nth-child(n+8){animation-delay:.28s}
+@keyframes rise{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+/* the scribble draws itself left to right */
+h1 .head{animation:scribble .9s .25s cubic-bezier(.6,0,.2,1) both}
+@keyframes scribble{from{background-size:0% 30px}to{background-size:100% 30px}}
+/* buttons lift on hover, squash when pressed */
+.btn,.dock a,.pill-link{transition:transform .15s cubic-bezier(.3,1.6,.5,1),box-shadow .15s ease,background-color .2s}
+@media (hover:hover){.btn:hover:not([disabled]),.dock a:hover,.pill-link:hover{transform:translate(-2px,-2px) rotate(-1deg);box-shadow:6px 6px 0 var(--ink)} .btn.ghost:hover{box-shadow:4px 4px 0 var(--ink)}}
+.btn:active:not([disabled]),.dock a:active,.pill-link:active{transform:translate(3px,3px) scale(.97);box-shadow:0 0 0 var(--ink)}
+.btn.accent:not([disabled]){background-image:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.55) 45%,transparent 60%);background-size:250% 100%;background-position:120% 0}
+@media (hover:hover){.btn.accent:hover:not([disabled]){animation:shine .8s ease}}
+@keyframes shine{from{background-position:120% 0}to{background-position:-30% 0}}
+.dock a.on{animation:pop .45s cubic-bezier(.3,1.8,.5,1)}
+@keyframes pop{0%{transform:scale(.9)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+/* cards tilt up a touch on hover, score pills pop in */
+.card{transition:transform .2s cubic-bezier(.3,1.5,.5,1),box-shadow .2s}
+@media (hover:hover){main > .card:hover{transform:translate(-2px,-3px);box-shadow:9px 9px 0 var(--ink)}}
+.score{animation:pop .5s .35s cubic-bezier(.3,1.8,.5,1) both}
+/* the logo's bullseye spins on hover and when the page loads */
+.brand .o{transition:transform .5s cubic-bezier(.3,1.6,.5,1);animation:spin-in .9s .1s cubic-bezier(.3,1.4,.5,1) both}
+@media (hover:hover){.brand:hover .o{transform:rotate(200deg) scale(1.15)}}
+@keyframes spin-in{from{transform:rotate(-180deg) scale(.4)}to{transform:none}}
+/* a tapped pass/undo/save button gives a little wiggle */
+.btn.tapped{animation:wiggle .35s ease}
+@keyframes wiggle{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+.card.dim{transition:opacity .3s}
+@media (prefers-reduced-motion:reduce){*,*::before{animation:none !important;transition:none !important}}
 `;
 
 // The only JavaScript the pages need: send a tap to the API and update the card in place.
@@ -426,7 +465,7 @@ function passedClone(card,key){const a=document.createElement("article");a.class
  a.append(row,t,m,acts);return a}
 function mainCard(key){return [...document.querySelectorAll("main > .card[data-key]")].find(c=>c.dataset.key===key)}
 function clonesFor(key){return [...document.querySelectorAll("#passed-cards .card")].filter(c=>c.dataset.key===key)}
-document.addEventListener("click",async(e)=>{const b=e.target.closest("button[data-act]");if(!b||b.disabled)return;const card=b.closest("[data-key]");const key=card&&card.dataset.key;if(!key)return;b.disabled=true;
+document.addEventListener("click",async(e)=>{const b=e.target.closest("button[data-act]");if(!b||b.disabled)return;b.classList.remove("tapped");void b.offsetWidth;b.classList.add("tapped");const card=b.closest("[data-key]");const key=card&&card.dataset.key;if(!key)return;b.disabled=true;
  try{
  if(b.dataset.act==="queue"){await post("/api/queue",{key});b.textContent="queued ✓";return}
  if(b.dataset.act==="pass"){await post("/api/pass",{key});card.classList.add("dim");b.textContent="undo";b.dataset.act="unpass";bump("open-count",-1);bump("passed-count",1);const box=document.getElementById("passed-cards");if(box)box.prepend(passedClone(card,key));syncPassed()}
@@ -465,6 +504,21 @@ function when(iso) {
 }
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function png(b64) {
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  return new Response(bytes, { headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" } });
+}
+function manifest() {
+  return new Response(JSON.stringify({
+    name: "Scout", short_name: "Scout", start_url: "/", scope: "/", display: "standalone",
+    background_color: "#ffffff", theme_color: "#d2612a",
+    icons: [
+      { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { src: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  }), { headers: { "Content-Type": "application/manifest+json", "Cache-Control": "public, max-age=86400" } });
 }
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
