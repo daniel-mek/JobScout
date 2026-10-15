@@ -1,14 +1,14 @@
 /* Scout design tokens. Every color, size, and font lives here, so restyling means editing this file.
-   The look: chunky display type, thick navy outlines with a hard offset shadow, cream cards on a
-   saturated page color (one color per page), lime for the one action that matters on each card. */
-@import url("https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@500;700;900&display=swap");
+   The look: poster display type, thick navy outlines with a hard offset shadow, cream cards on a
+   saturated page color (one color per page), one warm accent for the action that matters on each card. */
+@import url("https://fonts.googleapis.com/css2?family=Bowlby+One&family=Rubik:wght@500;700&display=swap");
 
 :root {
   /* palette */
-  --ink: #140c33;          /* outlines, headlines, body text on cream */
+  --ink: #1a1333;          /* outlines, headlines, body text on cream */
   --cream: #f6f9dc;        /* cards, light text on colored pages */
-  --lime: #cdff1a;         /* the primary action */
-  --orange: #cf6a2e;       /* New page */
+  --accent: #ffc93c;       /* the primary action: warm gold, reads well on cream and on every page color */
+  --orange: #d2612a;       /* New page */
   --purple: #9b84d8;       /* Programs page */
   --teal: #3fa9b5;         /* Tracker page */
   --sand: #e7c98f;         /* Settings page */
@@ -22,19 +22,20 @@
 
   /* shape */
   --line: 3px;             /* outline thickness */
-  --shadow: 5px 5px 0 var(--ink);
-  --shadow-sm: 3px 3px 0 var(--ink);
-  --radius: 22px;
+  --shadow: 6px 6px 0 var(--ink);
+  --shadow-sm: 4px 4px 0 var(--ink);
+  --radius: 18px;
   --radius-pill: 999px;
+  --radius-tag: 8px;
   --gap: 12px;
   --pad: 18px;
 
   /* type */
-  --display: "Lilita One", "Arial Black", Impact, sans-serif;
+  --display: "Bowlby One", "Arial Black", Impact, sans-serif;
   --font: "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --text: 16px;
   --small: 13px;
-  --h1: clamp(38px, 10vw, 56px);
+  --h1: clamp(36px, 10vw, 54px);
   --big: clamp(56px, 16vw, 88px);
 }

@@ -177,16 +177,16 @@ async function newPage(env) {
       <div class="tags">
         <span class="tag">${esc(roleWord(m))}</span>
         ${m.tier <= 2 ? `<span class="tag ink">tier ${m.tier}</span>` : ""}
-        ${m.early_career === "strong" ? '<span class="tag lime">freshman friendly</span>' : ""}
+        ${m.early_career === "strong" ? '<span class="tag accent">freshman friendly</span>' : ""}
         ${m.eligibility === "ineligible" ? '<span class="tag red">not eligible</span>' : ""}
-        ${isNew ? '<span class="tag lime">new</span>' : ""}
+        ${isNew ? '<span class="tag accent">new</span>' : ""}
       </div>
       <div class="row"><h3>${esc(m.company)}</h3><span class="score">${m.score}</span></div>
       <div class="title">${esc(m.title)}</div>
       <div class="meta">${esc((m.locations || []).slice(0, 2).join(", ") || "location not listed")} · ${age(m.date_posted)}${m.eligibility_note && m.eligibility !== "unknown" ? " · " + esc(m.eligibility_note) : ""}</div>
       <details class="why"><summary>why ${m.score}?</summary><div class="meta mono">${esc(breakdown(m))}</div></details>
       <div class="actions">
-        <button class="btn lime" data-act="queue" ${queued.has(m.key) ? "disabled" : ""}>${queued.has(m.key) ? "queued for /prep" : "prep this"}</button>
+        <button class="btn accent" data-act="queue" ${queued.has(m.key) ? "disabled" : ""}>${queued.has(m.key) ? "queued for /prep" : "prep this"}</button>
         <button class="btn" data-act="pass">pass</button>
         <a class="btn ghost" href="${esc(m.url)}" target="_blank" rel="noopener">posting ↗</a>
       </div>
@@ -219,7 +219,7 @@ async function programsPage(env) {
     </article>`).join("");
   const finds = data.matches.filter((m) => (m.early_career === "strong" || m.role === "ambassador") && !passed[m.key]).map((m) => `
     <article class="card">
-      <div class="tags"><span class="tag lime">${m.role === "ambassador" ? "ambassador" : "freshman friendly"}</span>${tracker[m.key] ? `<span class="tag ink">${esc(tracker[m.key].state)}</span>` : ""}</div>
+      <div class="tags"><span class="tag accent">${m.role === "ambassador" ? "ambassador" : "freshman friendly"}</span>${tracker[m.key] ? `<span class="tag ink">${esc(tracker[m.key].state)}</span>` : ""}</div>
       <div class="row"><h3>${esc(m.company)}</h3><span class="score">${m.score}</span></div>
       <div class="title">${esc(m.title)}</div>
       <div class="meta">${esc((m.locations || []).slice(0, 2).join(", "))} · ${age(m.date_posted)}</div>
@@ -248,7 +248,7 @@ async function trackerPage(env) {
       <div class="actions wrap">
         <select data-act="state">${options(r.state)}</select>
         <input data-act="next" placeholder="next action" value="${esc(r.next || "")}">
-        <button class="btn lime" data-act="save">save</button>
+        <button class="btn accent" data-act="save">save</button>
         ${r.url ? `<a class="btn ghost" href="${esc(r.url)}" target="_blank" rel="noopener">posting ↗</a>` : ""}
       </div>
     </article>`).join("");
@@ -272,8 +272,8 @@ function page(body, opts, status = 200) {
   const { title, page: name, lead, head, nav = true } = opts;
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="${PAGE_COLORS[name] || "#cf6a2e"}">
-<title>Scout · ${esc(title)}</title><style>${tokens}${BASE_CSS}</style></head><body data-page="${esc(name)}">
-<header><a class="brand" href="/">scout</a>${nav ? '<a class="pill-link" href="/logout">log out</a>' : ""}</header>
+<link rel="icon" href="${FAVICON}"><title>Scout · ${esc(title)}</title><style>${tokens}${BASE_CSS}</style></head><body data-page="${esc(name)}">
+<header><a class="brand" href="/"><i></i>scout</a>${nav ? '<a class="pill-link" href="/logout">log out</a>' : ""}</header>
 <main>
   <h1><span class="lead">${esc(lead)}</span><span class="head">${esc(head)}</span></h1>
   ${body}
@@ -283,6 +283,8 @@ ${nav ? `<script>${CLIENT_JS}</script>` : ""}</body></html>`;
   return new Response(html, { status, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
 }
 
+const FAVICON = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#1a1333"/><circle cx="32" cy="32" r="14" fill="#ffc93c" stroke="#f6f9dc" stroke-width="4"/></svg>');
+
 const PAGE_COLORS = { new: "#cf6a2e", programs: "#9b84d8", tracker: "#3fa9b5", settings: "#e7c98f", login: "#9b84d8" };
 
 const NAV = `<nav class="dock"><a href="/">new</a><a href="/programs">programs</a><a href="/tracker">tracker</a><a href="/settings">settings</a></nav>`;
@@ -291,7 +293,7 @@ function loginForm(message) {
   return page(`<form method="post" action="/login" class="login">
     <label for="password">password</label>
     <input id="password" name="password" type="password" autocomplete="current-password" autofocus>
-    <button class="btn lime big" type="submit">let me in</button>
+    <button class="btn accent big" type="submit">let me in</button>
     ${message ? `<p class="warn">${esc(message)}</p>` : '<p class="note">it stays unlocked for 30 days.</p>'}
   </form>`, { title: "Log in", page: "login", lead: "who goes", head: "there?", nav: false }, message ? 401 : 200);
 }
@@ -303,43 +305,44 @@ body{margin:0;background:var(--page);color:var(--ink);font:500 var(--text)/1.4 v
 body[data-page="new"]{--page:var(--orange)} body[data-page="programs"]{--page:var(--purple)} body[data-page="tracker"]{--page:var(--teal)} body[data-page="settings"]{--page:var(--sand);--on-page:var(--ink)} body[data-page="login"]{--page:var(--purple)}
 main{max-width:640px;margin-inline:auto}
 header{max-width:640px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 0 6px}
-.brand{font-family:var(--display);font-size:30px;color:var(--cream);text-decoration:none;-webkit-text-stroke:1.5px var(--ink);text-shadow:3px 3px 0 var(--ink);letter-spacing:.5px}
+.brand{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-size:22px;color:var(--ink);text-decoration:none;background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:6px 16px 6px 12px;box-shadow:var(--shadow-sm);letter-spacing:.3px}
+.brand i{width:14px;height:14px;border-radius:50%;background:var(--accent);border:var(--line) solid var(--ink);display:inline-block}
 .pill-link{font-size:var(--small);font-weight:700;color:var(--ink);background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:6px 14px;text-decoration:none;box-shadow:var(--shadow-sm)}
-h1{font-family:var(--display);font-size:var(--h1);line-height:.95;text-transform:uppercase;margin:14px 0 18px;letter-spacing:.5px}
-h1 .lead{display:block;color:var(--on-page)} h1 .head{display:block;color:var(--ink);transform:rotate(-1.5deg);transform-origin:left;margin-top:2px}
-h2{font-family:var(--display);font-size:22px;text-transform:uppercase;color:var(--on-page);margin:26px 0 10px;letter-spacing:.5px}
-h3{font-family:var(--display);font-size:22px;margin:0;text-transform:uppercase;line-height:1.05;letter-spacing:.3px}
+h1{font-family:var(--display);font-size:var(--h1);line-height:.92;text-transform:uppercase;margin:14px 0 20px;letter-spacing:0}
+h1 .lead{display:block;color:var(--on-page)} h1 .head{display:inline-block;color:var(--ink);border-bottom:6px solid var(--accent);padding-bottom:2px}
+h2{font-family:var(--display);font-size:20px;text-transform:uppercase;color:var(--on-page);margin:26px 0 10px;letter-spacing:0}
+h3{font-family:var(--display);font-size:20px;margin:0;text-transform:uppercase;line-height:1.05;letter-spacing:0}
 .note{color:var(--on-page);font-weight:700;margin:0 0 14px}
 .stat{background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:var(--pad);margin-bottom:8px}
-.stat-label{font-family:var(--display);text-transform:uppercase;font-size:18px;letter-spacing:.5px}
+.stat-label{font-family:var(--display);text-transform:uppercase;font-size:18px;letter-spacing:0}
 .stat-big{font-family:var(--display);font-size:var(--big);line-height:.9;text-transform:uppercase;margin:4px 0 6px}
-.stat-sub{font-weight:700;font-size:18px} .stat-sub b{background:var(--lime);border-radius:6px;padding:0 6px;border:2px solid var(--ink)}
+.stat-sub{font-weight:700;font-size:18px} .stat-sub b{background:var(--accent);border-radius:6px;padding:0 6px;border:2px solid var(--ink)}
 .stat-foot{color:var(--muted);font-size:var(--small);font-weight:700;margin-top:10px}
 .card{background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:var(--pad);margin:0 0 16px;max-width:100%}
-.card.is-new{outline:4px solid var(--lime);outline-offset:-7px}
+.card.is-new{outline:4px solid var(--accent);outline-offset:-7px}
 .row{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--gap)}
 .title{font-weight:700;font-size:17px;margin:4px 0 6px} .meta{color:var(--muted);font-size:var(--small);font-weight:700;overflow-wrap:anywhere}
 .mono{font-family:var(--mono);font-weight:500}
-.score{font-family:var(--display);font-size:20px;background:var(--ink);color:var(--lime);border-radius:var(--radius-pill);padding:4px 12px;flex:none;line-height:1.1}
+.score{font-family:var(--display);font-size:18px;background:var(--ink);color:var(--accent);border-radius:var(--radius-pill);padding:4px 12px;flex:none;line-height:1.1}
 .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.tag{font-size:12px;font-weight:700;border:2px solid var(--ink);border-radius:var(--radius-pill);padding:3px 10px;background:var(--orange);color:var(--cream)}
-.tag.lime{background:var(--lime);color:var(--ink)} .tag.ink{background:var(--ink);color:var(--cream)} .tag.red{background:var(--red);color:var(--cream)} .tag.green{background:var(--green);color:var(--ink)}
+.tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border:2px solid var(--ink);border-radius:var(--radius-tag);padding:3px 9px;background:var(--orange);color:var(--cream)}
+.tag.accent{background:var(--accent);color:var(--ink)} .tag.ink{background:var(--ink);color:var(--cream)} .tag.red{background:var(--red);color:var(--cream)} .tag.green{background:var(--green);color:var(--ink)}
 .why{margin-top:8px} .why summary{cursor:pointer;font-size:var(--small);font-weight:700;color:var(--muted)} .why summary::-webkit-details-marker{display:none}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
 .btn{appearance:none;font:700 15px/1 var(--font);color:var(--ink);background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:11px 16px;box-shadow:var(--shadow-sm);text-decoration:none;cursor:pointer;transition:transform .08s,box-shadow .08s}
 .btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
-.btn.lime{background:var(--lime)} .btn.ghost{background:transparent;box-shadow:none} .btn.big{font-size:18px;padding:14px 22px}
+.btn.accent{background:var(--accent)} .btn.ghost{background:transparent;box-shadow:none} .btn.big{font-size:18px;padding:14px 22px}
 .btn[disabled]{background:var(--sand);color:var(--muted);box-shadow:none;cursor:default;transform:none}
 select,input{font:700 15px var(--font);padding:10px 12px;border:var(--line) solid var(--ink);border-radius:var(--radius-pill);background:#fff;color:var(--ink);max-width:100%;box-shadow:var(--shadow-sm)}
 input{flex:1;min-width:150px}
 .pipeline{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
-.step{font-size:12px;font-weight:700;background:var(--cream);border:2px solid var(--ink);border-radius:var(--radius-pill);padding:5px 10px;color:var(--muted)} .step.on{color:var(--ink);background:var(--lime)} .step b{margin-left:6px}
+.step{font-size:12px;font-weight:700;background:var(--cream);border:2px solid var(--ink);border-radius:var(--radius-pill);padding:5px 10px;color:var(--muted)} .step.on{color:var(--ink);background:var(--accent)} .step b{margin-left:6px}
 pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:var(--pad);font-size:var(--small);font-weight:500}
 .login{display:flex;flex-direction:column;gap:12px;max-width:360px;margin:10px auto 0;background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px}
 .login label{font-family:var(--display);text-transform:uppercase;font-size:18px} .login input{width:100%} .login .note{color:var(--muted);margin:0} .warn{color:var(--red);font-weight:700;margin:0}
 .dock{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--page);border-top:var(--line) solid var(--ink)}
 .dock a{flex:1;max-width:150px;text-align:center;font:700 14px var(--font);color:var(--ink);background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:11px 6px;text-decoration:none;box-shadow:var(--shadow-sm)}
-.dock a.on{background:var(--lime)}
+.dock a.on{background:var(--accent)}
 @media (min-width:700px){.dock{position:static;background:transparent;border:0;max-width:640px;margin:0 auto 20px;padding:0;justify-content:flex-start} body{padding-bottom:40px}}
 /* Wider screens: use the room. The header, headline, and stat card stay full width; cards flow into columns. */
 @media (min-width:900px){
