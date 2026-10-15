@@ -46,7 +46,7 @@ export NTFY_TOPIC=...                                  # the private topic; also
 
 - **Instant push:** a Tier 1 or Tier 2 posting scoring 60 or more, any freshman/sophomore program, any ambassador role, or a watched page that gained new text.
 - **Daily digest:** the top 10 new matches that did not push instantly, once a day after 7:00 PM New York time.
-- **Page watchers:** each page in `config/watch-pages.yaml` is fetched, stripped to text with volatile tokens (hashes, cloud region names, rotating job-carousel cards) removed, and hashed. Only new lines count as a change. A page that can't be read twice in a row, or serves no text, warns once.
+- **Page watchers:** each page in `config/watch-pages.yaml` is fetched, stripped to text with volatile tokens (hashes, cloud region names, rotating job-carousel cards) removed, and hashed. Only new lines count as a change. Scout stores a fingerprint of each line, never the page text, so the repo does not republish anyone's page. A page that can't be read twice in a row, or serves no text, warns once.
 - **Nothing twice:** `seen.json` holds every key ever pushed or digested.
 - **Failing loudly:** if a source list can't be fetched, one push says so.
 - **Schedule:** hourly at :17 except two early-morning hours. GitHub delays and skips scheduled runs when busy, so the digest is a once-a-day check inside every run rather than its own schedule.

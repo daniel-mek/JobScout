@@ -81,6 +81,24 @@ class Watching(unittest.TestCase):
             self.assertGreater(record["changed_at"], 0)
             self.assertIn("Apply by October 31", record["last_change"])
 
+    def test_page_text_is_never_stored(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.run_once({}, PAGE_V1, tmp)
+            stored = "".join(f.read_text() for f in Path(tmp).iterdir())
+            self.assertNotIn("Applications open in September", stored)
+            self.assertEqual([f.suffix for f in Path(tmp).iterdir()], [".prints"])
+
+    def test_old_saved_text_is_read_once_then_deleted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            state = {}
+            self.run_once(state, PAGE_V1, tmp)
+            prints = next(Path(tmp).glob("*.prints"))
+            prints.rename(prints.with_suffix(".txt"))  # what an older run left behind
+            prints.with_suffix(".txt").write_text(pages.html_to_text(PAGE_V1))
+            changed = self.run_once(state, PAGE_V2, tmp)
+            self.assertEqual([e["kind"] for e in changed], ["changed"])
+            self.assertEqual([f.suffix for f in Path(tmp).iterdir()], [".prints"])
+
     def test_unreadable_alerts_after_two_failures(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = {}

@@ -5,15 +5,15 @@ without ever showing up in the internship lists, so Scout watches the official p
 Each run fetches every page in config/watch-pages.yaml, strips it to plain text, and compares a hash
 of that text with the last run. When it changes, Scout alerts with the first few new sentences.
 
-State lives in data/pages.json (one record per URL) and data/pages/<slug>.txt (the last text seen,
-so the next change can be described, not just detected). Both are committed by the cron.
+State lives in data/pages.json (one record per URL) and data/pages/<slug>.prints: one short fingerprint
+per line of the last text seen, so the next run can tell which lines are new without the repo keeping
+a copy of anyone's page (some program pages carry people's names and bios).
 
 Pages are untrusted text: they are only ever hashed, diffed, and quoted, never followed or executed.
 """
 
 from __future__ import annotations
 
-import difflib
 import hashlib
 import html
 import json
@@ -100,13 +100,29 @@ def text_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
 
-def added_lines(old: str, new: str) -> list[str]:
-    """Lines present in the new text and absent from the old, ignoring short tokens."""
-    added = [line[2:] for line in difflib.ndiff(old.splitlines(), new.splitlines()) if line.startswith("+ ")]
-    return [a for a in added if len(a) >= MEANINGFUL_LINE_CHARS]
+def line_print(line: str) -> str:
+    return hashlib.sha256(line.encode("utf-8")).hexdigest()[:12]
 
 
-def summarize_change(old: str, new: str, limit: int = 4) -> str:
+def line_prints(text: str) -> set[str]:
+    """One fingerprint per line. Enough to spot new lines later; the text itself cannot be read back."""
+    return {line_print(line) for line in text.splitlines()}
+
+
+def added_lines(old: str | set[str], new: str) -> list[str]:
+    """Lines present in the new text and absent from the old, ignoring short tokens.
+
+    `old` is either the previous text or its fingerprints. A line that only moved is not new.
+    """
+    seen = line_prints(old) if isinstance(old, str) else set(old)
+    added: list[str] = []
+    for line in new.splitlines():
+        if len(line) >= MEANINGFUL_LINE_CHARS and line_print(line) not in seen and line not in added:
+            added.append(line)
+    return added
+
+
+def summarize_change(old: str | set[str], new: str, limit: int = 4) -> str:
     """The first few lines that are new on the page, so the alert says what changed."""
     added = added_lines(old, new)[:limit]
     return "\n".join(f"+ {a[:140]}" for a in added) if added else "(text changed, nothing new added; something was removed or reordered)"
@@ -158,11 +174,15 @@ def check_pages(pages: list[dict], state: dict, fetch=fetch_text, text_dir: Path
                            "summary": f"only {len(text)} characters of text reach a server; this page needs a different URL"})
 
         new_hash = text_hash(text)
-        text_file = text_dir / f"{slug(url)}.txt"
+        prints_file = text_dir / f"{slug(url)}.prints"
+        legacy_text = text_dir / f"{slug(url)}.txt"  # older runs kept the whole page; read once, then delete
         if record["hash"] is None:
             events.append({"kind": "baseline", "name": name, "url": url, "summary": "first time seen, baseline saved"})
         elif new_hash != record["hash"]:
-            old = text_file.read_text(encoding="utf-8") if text_file.exists() else ""
+            if prints_file.exists():
+                old: str | set[str] = set(prints_file.read_text(encoding="utf-8").split())
+            else:
+                old = legacy_text.read_text(encoding="utf-8") if legacy_text.exists() else ""
             # Only new sentences are worth a push. A removed or reordered line (or a leftover token
             # the noise filter missed) is recorded in the state but never alerted.
             kind = "changed" if added_lines(old, text) else "shuffled"
@@ -175,5 +195,6 @@ def check_pages(pages: list[dict], state: dict, fetch=fetch_text, text_dir: Path
                 record["last_change"] = summary
         record["hash"] = new_hash
         record["text_len"] = len(text)
-        text_file.write_text(text, encoding="utf-8")
+        prints_file.write_text("\n".join(sorted(line_prints(text))) + "\n", encoding="utf-8")
+        legacy_text.unlink(missing_ok=True)
     return events
