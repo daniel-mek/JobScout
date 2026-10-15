@@ -76,7 +76,7 @@ roles:
         "applications engineer", "platform engineer", engineer, engineering, "ai engineer", "ml engineer",
         "machine learning engineer", "ai applications", "applied ai", "developer technology"]
 
-# Where he wants to be, best first. Priority locations and US remote get the full location points,
+# Where you want to be, best first. Priority locations and US remote get the full location points,
 # anywhere else in the US gets some, outside the US gets none. Nothing is hidden for location.
 locations:
   priority: ["nj", "new jersey", newark, "jersey city", princeton, "new brunswick", hoboken, nyc,
@@ -87,14 +87,14 @@ locations:
                  "remote in uk", "remote in europe", toronto, vancouver, montreal, ottawa, dublin, bangalore,
                  bengaluru, hyderabad, tel aviv, berlin, paris, amsterdam, sydney, zurich]
 
-# Words he cares about. Each hit in the title adds a few points (see scoring.yaml).
+# Words you care about. Each hit in the title adds a few points (see scoring.yaml).
 keywords: [ai, "ai applications", ios, accessibility, "developer tools", "developer experience", cloud,
            "product", design, automation, "creative"]
 
 # Degree values that mean "graduate students only". A listing whose degrees are ONLY these is dropped.
 graduate_only_degrees: ["Master's", "PhD", "MBA"]
 
-# His expected graduation year, for the page check that reads "graduating in 2027 or 2028" off the posting.
+# Your expected graduation year, for the page check that reads "graduating in 2027 or 2028" off the posting.
 graduation_year: 2030
 
 # Listings posted more than this many days ago are dropped even if the list still says "active".

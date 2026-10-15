@@ -1,0 +1,24 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Unit tests (offline, saved fixtures)
+        run: python -m unittest discover -s tests -t . -v 2>&1 | tail -5
+      - name: Fail if any test failed
+        run: python -m unittest discover -s tests -t .
+      - name: Dashboard Worker syntax check
+        run: node --check worker/src/index.js || (cd worker && npx --yes esbuild src/index.js --bundle --format=esm --loader:.css=text --outfile=/tmp/w.js)

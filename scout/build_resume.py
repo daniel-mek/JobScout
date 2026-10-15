@@ -27,13 +27,10 @@ import re
 import sys
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-from pypdf import PdfReader
-from weasyprint import HTML
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = ROOT / "scout" / "templates"
-DASHES = re.compile("[\\u2013\\u2014]")  # en dash, em dash (by code point): never allowed in his documents
+DASHES = re.compile("[\\u2013\\u2014]")  # en dash, em dash (by code point): never allowed in the documents
 
 
 def load_variant(path: Path) -> dict:
@@ -48,12 +45,14 @@ def load_variant(path: Path) -> dict:
 
 
 def render_html(data: dict) -> str:
+    from jinja2 import Environment, FileSystemLoader, select_autoescape
     env = Environment(loader=FileSystemLoader(TEMPLATE_DIR), autoescape=select_autoescape(["html"]))
     return env.get_template("resume.html").render(**data)
 
 
 def build_pdf(html: str, out_path: Path) -> int:
     """Write the PDF and return its page count."""
+    from weasyprint import HTML
     document = HTML(string=html, base_url=str(TEMPLATE_DIR)).render()
     document.write_pdf(out_path)
     return len(document.pages)
@@ -61,6 +60,7 @@ def build_pdf(html: str, out_path: Path) -> int:
 
 def ats_check(pdf_path: Path, data: dict) -> list[str]:
     """Return a list of problems an ATS parser would hit. Empty list means clean."""
+    from pypdf import PdfReader
     text = "\n".join(page.extract_text() or "" for page in PdfReader(str(pdf_path)).pages)
     problems: list[str] = []
 

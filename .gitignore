@@ -54,3 +54,6 @@ data/passed.json
 
 # Claude Code instructions stay on this Mac, never on GitHub
 CLAUDE.md
+
+# Runtime state. In GitHub Actions this is the "data" branch checked out here.
+data/

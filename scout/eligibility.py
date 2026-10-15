@@ -1,13 +1,14 @@
 """Read a posting page and look for a graduation-year requirement.
 
 Many postings say things like "graduating between December 2027 and June 2028" or "Class of 2028".
-Jeremiah graduates in 2030, so those are out even when the list says "Bachelor's". The lists
+For someone graduating in 2030 (graduation_year in config/targets.yaml) those are out even when the
+list says "Bachelor's". The lists
 do not carry this, so for the top matches Scout fetches the page (only on plain-HTML boards:
 Greenhouse, Lever, Ashby) and reads it.
 
 Verdicts:
-  "ok"          the page names a year range that includes his graduation year, or says freshman/sophomore
-  "ineligible"  the page names graduation years and his is not among them, or asks for penultimate-year,
+  "ok"          the page names a year range that includes your graduation year, or says freshman/sophomore
+  "ineligible"  the page names graduation years and yours is not among them, or asks for penultimate-year,
                 final-year, junior, or senior students
   "unknown"     the page could not be read, or says nothing about graduation year (never hidden, just labeled)
 

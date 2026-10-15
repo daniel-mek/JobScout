@@ -4,8 +4,8 @@
 
 The Markdown file has a small header block, then the body as ordinary paragraphs:
 
-    name: Jeremiah Sleman
-    contact: (555) 123-4567 | you@example.com | linkedin.com/in/you
+    name: Jane Doe
+    contact: (555) 123-4567 | jane@example.com | linkedin.com/in/janedoe
     date: October 15, 2026
     to: Hiring Team, Acme
     closing: Sincerely
@@ -23,9 +23,6 @@ import argparse
 import re
 import sys
 from pathlib import Path
-
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-from weasyprint import HTML
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = ROOT / "scout" / "templates"
@@ -60,6 +57,9 @@ def build(md_path: Path) -> Path:
     if DASHES.search(text):
         sys.exit(f"{md_path}: contains an em or en dash. Replace it with a comma, colon, or hyphen.")
     data = parse_letter(text)
+    # The PDF libraries load here, not at import time, so parsing and the tests need only the standard library.
+    from jinja2 import Environment, FileSystemLoader, select_autoescape
+    from weasyprint import HTML
     env = Environment(loader=FileSystemLoader(TEMPLATE_DIR), autoescape=select_autoescape(["html"]))
     html = env.get_template("letter.html").render(**data)
     pdf_path = md_path.with_suffix(".pdf")

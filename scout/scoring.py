@@ -40,7 +40,7 @@ def score(listing: dict, weights: dict, now: float | None = None) -> dict:
     loc = listing.get("location_class", "unknown")
     role = listing.get("role", "none")
     if role == "none" and listing.get("early_career") == "strong":
-        role = "program"  # "Explore Program" names no role but is exactly what he wants
+        role = "program"  # "Explore Program" names no role but is exactly what a freshman wants
         listing["role"] = role
     breakdown = {
         "role": w["role"].get(role, 0),

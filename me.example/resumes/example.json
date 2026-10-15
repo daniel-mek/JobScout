@@ -1,0 +1,54 @@
+{
+  "variant": "SWE",
+  "filename": "Jane-Doe-Resume-Software-Engineering.pdf",
+  "name": "Jane Doe",
+  "contact": [
+    "(555) 123-4567",
+    "jane@example.edu",
+    "linkedin.com/in/janedoe",
+    "github.com/janedoe"
+  ],
+  "summary": null,
+  "sections": [
+    {
+      "heading": "Education",
+      "entries": [
+        {
+          "title": "State University, College of Computing",
+          "right": "City, ST",
+          "subtitle": "B.S. Computer Science",
+          "subright": "Expected May 2030",
+          "bullets": [
+            "Coursework: Intro to Programming (Python), Calculus II"
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Projects",
+      "entries": [
+        {
+          "title": "Project Name",
+          "title_note": "| Python, JavaScript",
+          "right": "2026",
+          "bullets": [
+            "What you built and the real result, one line"
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Skills",
+      "lines": [
+        {
+          "label": "Languages",
+          "text": "Python, JavaScript"
+        },
+        {
+          "label": "Tools",
+          "text": "Git, GitHub Actions"
+        }
+      ]
+    }
+  ]
+}

@@ -61,7 +61,7 @@ def run(raw_by_source: dict[str, list], targets: dict, weights: dict, *, check_p
     if allow_network:
         eligibility.save_cache(cache)
     # A posting the page itself rules out (wrong graduation year, upperclassmen only) drops to the
-    # bottom. It is kept and labeled, never hidden, but it should not outrank something he can apply to.
+    # bottom. It is kept and labeled, never hidden, but it should not outrank something you can apply to.
     kept.sort(key=lambda x: (x.get("eligibility") != "ineligible", x["score"], x.get("date_posted", 0)), reverse=True)
     counts["kept"] = len(kept)
     return kept, counts

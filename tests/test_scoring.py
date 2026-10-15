@@ -37,7 +37,7 @@ class Score(unittest.TestCase):
 
     def test_program_beats_plain_tier1_swe(self):
         # A freshman program at an unknown company with no role word in the title must outrank
-        # a plain Tier 1 SWE posting, because he is a freshman and those programs are the point.
+        # a plain Tier 1 SWE posting, because those programs are the point for a freshman.
         program = scoring.score(described(role="none", early_career="strong", tier=3, location_class="us"), W, NOW)
         plain = scoring.score(described(role="swe", tier=1, degree_class="bachelors", location_class="us"), W, NOW)
         self.assertEqual(program["role"], "program")

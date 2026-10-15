@@ -35,6 +35,13 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # State (seen list, page baselines, matches) lives on the separate "data" branch so main
+      # only holds code. It is checked out into data/ and committed back there after the run.
+      - name: Check out the data branch into data/
+        run: |
+          git fetch --depth=1 origin data
+          git worktree add -B data data origin/data
+
       - name: Pick the mode
         id: mode
         run: |
@@ -62,16 +69,17 @@ jobs:
           SCOUT_INGEST_SECRET: ${{ secrets.SCOUT_INGEST_SECRET }}
         run: python -m scout.sync push
 
-      - name: Commit data
+      - name: Commit data to the data branch
         if: always()
+        working-directory: data
         run: |
           git config user.name "scout-bot"
           git config user.email "scout-bot@users.noreply.github.com"
-          git add data/
+          git add -A
           if git diff --cached --quiet; then
             echo "nothing to commit"
           else
             git commit -m "data: ${{ steps.mode.outputs.mode }} run $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git pull --rebase --autostash origin main
-            git push origin HEAD:main
+            git pull --rebase origin data || true
+            git push origin HEAD:data
           fi

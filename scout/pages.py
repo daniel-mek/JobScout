@@ -126,7 +126,7 @@ def save_state(state: dict, path: Path = STATE_PATH) -> None:
 
 def check_pages(pages: list[dict], state: dict, fetch=fetch_text, text_dir: Path = TEXT_DIR,
                 now: float | None = None) -> list[dict]:
-    """Fetch every page, update state in place, and return the events worth telling him about.
+    """Fetch every page, update state in place, and return the events worth a push.
 
     Event kinds: "changed" (alert: new lines appeared), "shuffled" (no alert: lines removed or reordered),
     "unreadable" (alert, after two failures in a row), "thin" (alert once: the page gives a server

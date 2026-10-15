@@ -1,16 +1,15 @@
 {
-  "name": "worker",
+  "name": "scout-dashboard",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Scout dashboard: a Cloudflare Worker with Workers KV",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "license": "MIT",
+  "type": "module",
   "devDependencies": {
     "wrangler": "^4.151.0"
-  }
+  },
+  "private": true
 }
