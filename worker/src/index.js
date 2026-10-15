@@ -361,7 +361,7 @@ body[data-page="about"] main{display:block} @media (min-width:900px){body[data-p
 .card p{margin:6px 0 0} .card ul{margin:8px 0 0;padding-left:18px} .card li+li{margin-top:4px} .login a,.card a.inline{color:var(--ink);font-weight:700}
 .pill-link{font-size:var(--small);font-weight:700;color:var(--ink);background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:6px 14px;text-decoration:none;box-shadow:var(--shadow-sm)}
 h1{font-family:var(--display);font-size:var(--h1);line-height:.92;text-transform:uppercase;margin:14px 0 20px;letter-spacing:0}
-h1 .lead{display:block;color:var(--on-page)} h1 .head{display:inline-block;color:var(--ink);border-bottom:6px solid var(--accent);padding-bottom:2px}
+h1 .lead{display:block;color:var(--on-page)} h1 .head{display:inline-block;color:var(--ink);padding-bottom:16px;background:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20400%2024'%20preserveAspectRatio='none'%3E%3Cpath%20d='M3%2013%20C%2040%206,%2070%2018,%20110%2011%20S%20180%205,%20215%2013%20S%20290%2019,%20330%2010%20S%20380%208,%20397%2012'%20fill='none'%20stroke='%23ffc93c'%20stroke-width='7'%20stroke-linecap='round'/%3E%3Cpath%20d='M12%2019%20C%2060%2013,%20120%2021,%20175%2016%20S%20270%2012,%20320%2018%20S%20370%2020,%20390%2016'%20fill='none'%20stroke='%23ffc93c'%20stroke-width='5.5'%20stroke-linecap='round'/%3E%3C/svg%3E") no-repeat left bottom / 100% 22px}
 h2{font-family:var(--display);font-size:20px;text-transform:uppercase;color:var(--on-page);margin:26px 0 10px;letter-spacing:0}
 h3{font-family:var(--display);font-size:20px;margin:0;text-transform:uppercase;line-height:1.05;letter-spacing:0}
 .note{color:var(--on-page);font-weight:700;margin:0 0 14px}
