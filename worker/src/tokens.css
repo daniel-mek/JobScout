@@ -1,34 +1,40 @@
-/* Scout design tokens. Every color, size, and font the dashboard uses lives here, so a redesign
-   means editing this file and nothing else. Clean and calm on purpose; this is not Command Center. */
+/* Scout design tokens. Every color, size, and font lives here, so restyling means editing this file.
+   The look: chunky display type, thick navy outlines with a hard offset shadow, cream cards on a
+   saturated page color (one color per page), lime for the one action that matters on each card. */
+@import url("https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@500;700;900&display=swap");
+
 :root {
-  --bg: #f6f5f1;
-  --surface: #ffffff;
-  --ink: #1b1b1f;
-  --muted: #6b6f76;
-  --line: #e4e2db;
-  --accent: #2f6f5e;        /* one calm green for actions and "new" markers */
-  --accent-ink: #ffffff;
-  --warn: #a65a1e;
-  --danger: #a33a3a;
-  --radius: 12px;
+  /* palette */
+  --ink: #140c33;          /* outlines, headlines, body text on cream */
+  --cream: #f6f9dc;        /* cards, light text on colored pages */
+  --lime: #cdff1a;         /* the primary action */
+  --orange: #cf6a2e;       /* New page */
+  --purple: #9b84d8;       /* Programs page */
+  --teal: #3fa9b5;         /* Tracker page */
+  --sand: #e7c98f;         /* Settings page */
+  --green: #7cc96e;        /* done / applied */
+  --red: #e04b3a;          /* warnings */
+  --muted: #5b5673;        /* secondary text on cream */
+
+  /* page color is set per page in the HTML (data-page), these are the defaults */
+  --page: var(--orange);
+  --on-page: var(--cream);
+
+  /* shape */
+  --line: 3px;             /* outline thickness */
+  --shadow: 5px 5px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
+  --radius: 22px;
+  --radius-pill: 999px;
   --gap: 12px;
-  --pad: 16px;
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --pad: 18px;
+
+  /* type */
+  --display: "Lilita One", "Arial Black", Impact, sans-serif;
+  --font: "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --text: 16px;
   --small: 13px;
-  --title: 22px;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #141517;
-    --surface: #1d1f22;
-    --ink: #ececea;
-    --muted: #9a9ea6;
-    --line: #2b2e33;
-    --accent: #6fbfa5;
-    --accent-ink: #0f1a16;
-    --warn: #e0a060;
-    --danger: #e07070;
-  }
+  --h1: clamp(38px, 10vw, 56px);
+  --big: clamp(56px, 16vw, 88px);
 }

@@ -23,7 +23,7 @@ export default {
     const path = url.pathname;
 
     if (path === "/api/health") return json({ ok: true, time: new Date().toISOString() });
-    if (path === "/login") return request.method === "POST" ? login(request, env) : page(loginForm(""), "Scout", false);
+    if (path === "/login") return request.method === "POST" ? login(request, env) : loginForm("");
     if (path === "/logout") return redirect("/login", { "Set-Cookie": `${COOKIE}=; Path=/; Max-Age=0` });
 
     // Cron endpoints: a shared secret, no cookie.
@@ -56,7 +56,7 @@ async function login(request, env) {
   const form = await request.formData();
   const given = String(form.get("password") || "");
   if (!env.DASH_PASSWORD || !(await sameSecret(given, env.DASH_PASSWORD))) {
-    return page(loginForm("Wrong password."), "Scout", false, 401);
+    return loginForm("nope. try again.");
   }
   const expires = Date.now() + COOKIE_DAYS * 86400e3;
   const token = `${expires}.${await hmac(env.SESSION_SECRET, String(expires))}`;
@@ -169,124 +169,194 @@ async function newPage(env) {
   const rows = data.matches.filter((m) => !tracker[m.key] && !passed[m.key]);
   const fresh = rows.filter((m) => m.first_seen && m.first_seen > lastVisit);
   const rest = rows.filter((m) => !fresh.includes(m));
+  const programs = rows.filter((m) => m.early_career === "strong" || m.role === "ambassador").length;
   await put(env, "last_visit", new Date().toISOString());
 
-  const card = (m) => `
-    <article class="card" data-key="${esc(m.key)}">
-      <div class="row"><strong>${esc(m.company)}</strong><span class="score">${m.score}</span></div>
+  const card = (m, isNew) => `
+    <article class="card${isNew ? " is-new" : ""}" data-key="${esc(m.key)}">
+      <div class="tags">
+        <span class="tag">${esc(roleWord(m))}</span>
+        ${m.tier <= 2 ? `<span class="tag ink">tier ${m.tier}</span>` : ""}
+        ${m.early_career === "strong" ? '<span class="tag lime">freshman friendly</span>' : ""}
+        ${m.eligibility === "ineligible" ? '<span class="tag red">not eligible</span>' : ""}
+        ${isNew ? '<span class="tag lime">new</span>' : ""}
+      </div>
+      <div class="row"><h3>${esc(m.company)}</h3><span class="score">${m.score}</span></div>
       <div class="title">${esc(m.title)}</div>
-      <div class="meta">${esc((m.locations || []).slice(0, 2).join(", ") || "location not listed")} · ${age(m.date_posted)} · ${esc(m.eligibility || "unknown")}</div>
-      <div class="meta mono">${esc(breakdown(m))}</div>
-      ${m.early_career === "strong" ? '<div class="tag">freshman / sophomore program</div>' : ""}
+      <div class="meta">${esc((m.locations || []).slice(0, 2).join(", ") || "location not listed")} · ${age(m.date_posted)}${m.eligibility_note && m.eligibility !== "unknown" ? " · " + esc(m.eligibility_note) : ""}</div>
+      <details class="why"><summary>why ${m.score}?</summary><div class="meta mono">${esc(breakdown(m))}</div></details>
       <div class="actions">
-        <a class="btn ghost" href="${esc(m.url)}" target="_blank" rel="noopener">Open posting</a>
-        <button class="btn" data-act="queue" ${queued.has(m.key) ? "disabled" : ""}>${queued.has(m.key) ? "Queued for /prep" : "Prep this"}</button>
-        <button class="btn ghost" data-act="pass">Pass</button>
+        <button class="btn lime" data-act="queue" ${queued.has(m.key) ? "disabled" : ""}>${queued.has(m.key) ? "queued for /prep" : "prep this"}</button>
+        <button class="btn" data-act="pass">pass</button>
+        <a class="btn ghost" href="${esc(m.url)}" target="_blank" rel="noopener">posting ↗</a>
       </div>
     </article>`;
 
+  const hero = `
+    <div class="stat">
+      <div class="stat-label">you have</div>
+      <div class="stat-big">${rows.length}</div>
+      <div class="stat-sub">open matches${fresh.length ? `, <b>${fresh.length} new</b> since your last visit` : ", none new since your last visit"}</div>
+      <div class="stat-foot">${programs} freshman friendly · ${queue.length} queued for /prep · updated ${esc(when(data.generated_at))}</div>
+    </div>`;
+
   const body = `
-    <p class="muted">${rows.length} open matches · updated ${esc(when(data.generated_at))} · ${queue.length} queued for /prep</p>
-    ${fresh.length ? `<h2>New since your last visit (${fresh.length})</h2>${fresh.map(card).join("")}` : ""}
-    <h2>${fresh.length ? "Everything else" : "Top matches"}</h2>
-    ${rest.slice(0, 60).map(card).join("") || '<p class="muted">Nothing yet. The cron fills this in.</p>'}`;
-  return page(body, "New");
+    ${hero}
+    ${fresh.length ? `<h2>fresh off the lists</h2>${fresh.map((m) => card(m, true)).join("")}` : ""}
+    <h2>${fresh.length ? "the rest, best first" : "best first"}</h2>
+    ${rest.slice(0, 60).map((m) => card(m, false)).join("") || '<p class="note">nothing yet. the cron fills this in every three hours.</p>'}`;
+  return page(body, { title: "New", page: "new", lead: "let's get", head: "you hired" });
 }
 
 async function programsPage(env) {
   const [pages, data, tracker, passed] = await Promise.all([get(env, "pages", {}), get(env, "matches", { matches: [] }), get(env, "tracker", {}), get(env, "passed", {})]);
   const watched = Object.entries(pages).map(([url, p]) => `
     <article class="card">
-      <div class="row"><strong>${esc(p.name || url)}</strong><span class="meta">${p.changed_at ? "changed " + age(p.changed_at) : "no change yet"}</span></div>
-      <div class="meta">checked ${age(p.checked_at)} · ${p.text_len || 0} chars${p.failures ? ` · <span class="warn">${p.failures} failed fetch(es)</span>` : ""}</div>
-      <div class="actions"><a class="btn ghost" href="${esc(url)}" target="_blank" rel="noopener">Open page</a></div>
+      <div class="tags"><span class="tag">${p.changed_at ? "changed " + age(p.changed_at) : "quiet"}</span>${p.failures ? `<span class="tag red">${p.failures} failed fetch${p.failures > 1 ? "es" : ""}</span>` : ""}</div>
+      <h3>${esc(p.name || url)}</h3>
+      <div class="meta">checked ${age(p.checked_at)} · ${p.text_len || 0} characters of text</div>
+      <div class="actions"><a class="btn ghost" href="${esc(url)}" target="_blank" rel="noopener">open page ↗</a></div>
     </article>`).join("");
   const finds = data.matches.filter((m) => (m.early_career === "strong" || m.role === "ambassador") && !passed[m.key]).map((m) => `
     <article class="card">
-      <div class="row"><strong>${esc(m.company)}</strong><span class="score">${m.score}</span></div>
+      <div class="tags"><span class="tag lime">${m.role === "ambassador" ? "ambassador" : "freshman friendly"}</span>${tracker[m.key] ? `<span class="tag ink">${esc(tracker[m.key].state)}</span>` : ""}</div>
+      <div class="row"><h3>${esc(m.company)}</h3><span class="score">${m.score}</span></div>
       <div class="title">${esc(m.title)}</div>
-      <div class="meta">${esc((m.locations || []).slice(0, 2).join(", "))} · ${age(m.date_posted)} · ${tracker[m.key] ? esc(tracker[m.key].state) : "not tracked"}</div>
-      <div class="actions"><a class="btn ghost" href="${esc(m.url)}" target="_blank" rel="noopener">Open posting</a></div>
+      <div class="meta">${esc((m.locations || []).slice(0, 2).join(", "))} · ${age(m.date_posted)}</div>
+      <div class="actions"><a class="btn ghost" href="${esc(m.url)}" target="_blank" rel="noopener">posting ↗</a></div>
     </article>`).join("");
-  return page(`<h2>Watched program pages</h2>${watched || '<p class="muted">No pages yet.</p>'}<h2>Early-career finds in the lists</h2>${finds || '<p class="muted">None in the lists right now. The watched pages above are where these usually show up first.</p>'}`, "Programs");
+  const body = `
+    <p class="note">these pages are where freshman programs show up first. scout reads them every three hours and pings you when the words change.</p>
+    <h2>watched pages</h2>${watched || '<p class="note">no pages yet.</p>'}
+    <h2>found in the lists</h2>${finds || '<p class="note">none in the lists right now. the pages above are the early warning.</p>'}`;
+  return page(body, { title: "Programs", page: "programs", lead: "built for", head: "freshmen" });
 }
 
 async function trackerPage(env) {
   const tracker = await get(env, "tracker", {});
   const rows = Object.entries(tracker).filter(([, r]) => r.state !== "Passed").sort((a, b) => (b[1].updated || "").localeCompare(a[1].updated || ""));
+  const counts = {};
+  for (const [, r] of rows) counts[r.state] = (counts[r.state] || 0) + 1;
   const options = (cur) => STATES.filter((s) => s !== "Passed").map((s) => `<option ${s === cur ? "selected" : ""}>${s}</option>`).join("");
+  const pipeline = ["Prepped", "Applied", "OA", "Interview", "Offer"].map((s) => `<span class="step${counts[s] ? " on" : ""}">${s}<b>${counts[s] || 0}</b></span>`).join("");
   const list = rows.map(([key, r]) => `
     <article class="card" data-key="${esc(key)}">
-      <div class="row"><strong>${esc(r.company)}</strong><span class="meta">${esc(r.updated || "")}</span></div>
+      <div class="tags"><span class="tag ${r.state === "Applied" || r.state === "Offer" ? "green" : r.state === "Rejected" ? "red" : "ink"}">${esc(r.state)}</span><span class="tag">${esc(r.updated || "")}</span></div>
+      <div class="row"><h3>${esc(r.company)}</h3>${r.score != null ? `<span class="score">${r.score}</span>` : ""}</div>
       <div class="title">${esc(r.title)}</div>
-      <div class="meta">${r.applied ? "applied " + esc(r.applied) + " · " : ""}${r.next ? "next: " + esc(r.next) : ""}</div>
-      <div class="actions">
+      <div class="meta">${r.applied ? "applied " + esc(r.applied) + " · " : ""}${r.next ? "next: " + esc(r.next) : "no next action yet"}</div>
+      <div class="actions wrap">
         <select data-act="state">${options(r.state)}</select>
         <input data-act="next" placeholder="next action" value="${esc(r.next || "")}">
-        <button class="btn" data-act="save">Save</button>
-        ${r.url ? `<a class="btn ghost" href="${esc(r.url)}" target="_blank" rel="noopener">Posting</a>` : ""}
+        <button class="btn lime" data-act="save">save</button>
+        ${r.url ? `<a class="btn ghost" href="${esc(r.url)}" target="_blank" rel="noopener">posting ↗</a>` : ""}
       </div>
     </article>`).join("");
-  return page(`<p class="muted">${rows.length} tracked. Changes here reach the repo on the next cron run.</p>${list || '<p class="muted">Nothing tracked yet. Tap "Prep this" on the New page, or run /prep.</p>'}`, "Tracker");
+  const body = `
+    <div class="pipeline">${pipeline}</div>
+    <p class="note">${rows.length} tracked. changes here reach the repo on the next cron run. you still click submit yourself.</p>
+    ${list || '<p class="note">nothing tracked yet. tap "prep this" on New, or run /prep.</p>'}`;
+  return page(body, { title: "Tracker", page: "tracker", lead: "where", head: "things stand" });
 }
 
 async function settingsPage(env) {
   const cfg = await get(env, "config_text", {});
   const block = (name, text) => `<h2>${esc(name)}</h2><pre>${esc(text || "(not pushed yet)")}</pre>`;
-  return page(`<p class="muted">Read-only. Edit these files in the repo; the next cron run shows the change here.</p>${block("config/targets.yaml", cfg.targets)}${block("config/scoring.yaml", cfg.scoring)}${block("config/watch-pages.yaml", cfg.watch_pages)}`, "Settings");
+  const body = `<p class="note">read only. edit these files in the repo and the next cron run shows the change here.</p>${block("config/targets.yaml", cfg.targets)}${block("config/scoring.yaml", cfg.scoring)}${block("config/watch-pages.yaml", cfg.watch_pages)}`;
+  return page(body, { title: "Settings", page: "settings", lead: "how scout", head: "thinks" });
 }
 
 /* ---------------------------------------------------------------- html */
 
-function page(body, title, nav = true, status = 200) {
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Scout · ${esc(title)}</title><style>${tokens}${BASE_CSS}</style></head><body>
-<header><a class="brand" href="/">Scout</a>${nav ? NAV : ""}</header>
-<main>${nav ? `<h1>${esc(title)}</h1>` : ""}${body}</main>
+function page(body, opts, status = 200) {
+  const { title, page: name, lead, head, nav = true } = opts;
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="${PAGE_COLORS[name] || "#cf6a2e"}">
+<title>Scout · ${esc(title)}</title><style>${tokens}${BASE_CSS}</style></head><body data-page="${esc(name)}">
+<header><a class="brand" href="/">scout</a>${nav ? '<a class="pill-link" href="/logout">log out</a>' : ""}</header>
+<main>
+  <h1><span class="lead">${esc(lead)}</span><span class="head">${esc(head)}</span></h1>
+  ${body}
+</main>
+${nav ? NAV.replace(`href="/${name === "new" ? "" : name}"`, `href="/${name === "new" ? "" : name}" class="on"`) : ""}
 ${nav ? `<script>${CLIENT_JS}</script>` : ""}</body></html>`;
   return new Response(html, { status, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
 }
 
-const NAV = `<nav><a href="/">New</a><a href="/programs">Programs</a><a href="/tracker">Tracker</a><a href="/settings">Settings</a><a href="/logout" class="muted">Log out</a></nav>`;
+const PAGE_COLORS = { new: "#cf6a2e", programs: "#9b84d8", tracker: "#3fa9b5", settings: "#e7c98f", login: "#9b84d8" };
+
+const NAV = `<nav class="dock"><a href="/">new</a><a href="/programs">programs</a><a href="/tracker">tracker</a><a href="/settings">settings</a></nav>`;
 
 function loginForm(message) {
-  return `<form method="post" action="/login" class="login">
-    <label for="password">Password</label>
+  return page(`<form method="post" action="/login" class="login">
+    <label for="password">password</label>
     <input id="password" name="password" type="password" autocomplete="current-password" autofocus>
-    <button class="btn" type="submit">Unlock</button>
-    ${message ? `<p class="warn">${esc(message)}</p>` : ""}
-  </form>`;
+    <button class="btn lime big" type="submit">let me in</button>
+    ${message ? `<p class="warn">${esc(message)}</p>` : '<p class="note">it stays unlocked for 30 days.</p>'}
+  </form>`, { title: "Log in", page: "login", lead: "who goes", head: "there?", nav: false }, message ? 401 : 200);
 }
 
-// Base layout. Colors and sizes come from tokens.css; this only arranges things.
+// Layout only. Colors, sizes, and fonts come from tokens.css.
 const BASE_CSS = `
-*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:var(--text)/1.45 var(--font);max-width:720px;margin-inline:auto;padding:0 var(--pad) 48px;overflow-x:hidden}
-header{display:flex;align-items:center;justify-content:space-between;gap:var(--gap);padding:14px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.brand{font-weight:700;text-decoration:none;color:var(--ink);font-size:18px}
-nav{display:flex;gap:14px;flex-wrap:wrap} nav a{color:var(--accent);text-decoration:none;font-weight:600} nav a.muted{color:var(--muted);font-weight:400}
-h1{font-size:var(--title);margin:18px 0 6px} h2{font-size:var(--text);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:22px 0 8px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:var(--pad);margin:0 0 var(--gap);max-width:100%}
-.row{display:flex;justify-content:space-between;align-items:baseline;gap:var(--gap)} .title{margin:2px 0 4px} .meta{color:var(--muted);font-size:var(--small);margin-top:2px;overflow-wrap:anywhere}
-.mono{font-family:var(--mono)} .score{font-family:var(--mono);font-weight:700;color:var(--accent)} .muted{color:var(--muted)} .warn{color:var(--warn)}
-.tag{display:inline-block;margin-top:6px;padding:2px 8px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:var(--small);font-weight:600}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
-.btn{appearance:none;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:8px 14px;font:inherit;font-size:var(--small);font-weight:600;text-decoration:none;cursor:pointer}
-.btn.ghost{background:transparent;color:var(--accent)} .btn[disabled]{opacity:.55;cursor:default}
-select,input{font:inherit;font-size:var(--small);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);max-width:100%}
-input{flex:1;min-width:140px} pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:var(--pad);font-size:var(--small)}
-.login{display:flex;flex-direction:column;gap:10px;max-width:320px;margin:60px auto} .login label{font-weight:600}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:500 var(--text)/1.4 var(--font);padding:0 16px 96px;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body[data-page="new"]{--page:var(--orange)} body[data-page="programs"]{--page:var(--purple)} body[data-page="tracker"]{--page:var(--teal)} body[data-page="settings"]{--page:var(--sand);--on-page:var(--ink)} body[data-page="login"]{--page:var(--purple)}
+main{max-width:640px;margin-inline:auto}
+header{max-width:640px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 0 6px}
+.brand{font-family:var(--display);font-size:30px;color:var(--cream);text-decoration:none;-webkit-text-stroke:1.5px var(--ink);text-shadow:3px 3px 0 var(--ink);letter-spacing:.5px}
+.pill-link{font-size:var(--small);font-weight:700;color:var(--ink);background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:6px 14px;text-decoration:none;box-shadow:var(--shadow-sm)}
+h1{font-family:var(--display);font-size:var(--h1);line-height:.95;text-transform:uppercase;margin:14px 0 18px;letter-spacing:.5px}
+h1 .lead{display:block;color:var(--on-page)} h1 .head{display:block;color:var(--ink);transform:rotate(-1.5deg);transform-origin:left;margin-top:2px}
+h2{font-family:var(--display);font-size:22px;text-transform:uppercase;color:var(--on-page);margin:26px 0 10px;letter-spacing:.5px}
+h3{font-family:var(--display);font-size:22px;margin:0;text-transform:uppercase;line-height:1.05;letter-spacing:.3px}
+.note{color:var(--on-page);font-weight:700;margin:0 0 14px}
+.stat{background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:var(--pad);margin-bottom:8px}
+.stat-label{font-family:var(--display);text-transform:uppercase;font-size:18px;letter-spacing:.5px}
+.stat-big{font-family:var(--display);font-size:var(--big);line-height:.9;text-transform:uppercase;margin:4px 0 6px}
+.stat-sub{font-weight:700;font-size:18px} .stat-sub b{background:var(--lime);border-radius:6px;padding:0 6px;border:2px solid var(--ink)}
+.stat-foot{color:var(--muted);font-size:var(--small);font-weight:700;margin-top:10px}
+.card{background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:var(--pad);margin:0 0 16px;max-width:100%}
+.card.is-new{outline:4px solid var(--lime);outline-offset:-7px}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--gap)}
+.title{font-weight:700;font-size:17px;margin:4px 0 6px} .meta{color:var(--muted);font-size:var(--small);font-weight:700;overflow-wrap:anywhere}
+.mono{font-family:var(--mono);font-weight:500}
+.score{font-family:var(--display);font-size:20px;background:var(--ink);color:var(--lime);border-radius:var(--radius-pill);padding:4px 12px;flex:none;line-height:1.1}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tag{font-size:12px;font-weight:700;border:2px solid var(--ink);border-radius:var(--radius-pill);padding:3px 10px;background:var(--orange);color:var(--cream)}
+.tag.lime{background:var(--lime);color:var(--ink)} .tag.ink{background:var(--ink);color:var(--cream)} .tag.red{background:var(--red);color:var(--cream)} .tag.green{background:var(--green);color:var(--ink)}
+.why{margin-top:8px} .why summary{cursor:pointer;font-size:var(--small);font-weight:700;color:var(--muted)} .why summary::-webkit-details-marker{display:none}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.btn{appearance:none;font:700 15px/1 var(--font);color:var(--ink);background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:11px 16px;box-shadow:var(--shadow-sm);text-decoration:none;cursor:pointer;transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.btn.lime{background:var(--lime)} .btn.ghost{background:transparent;box-shadow:none} .btn.big{font-size:18px;padding:14px 22px}
+.btn[disabled]{background:var(--sand);color:var(--muted);box-shadow:none;cursor:default;transform:none}
+select,input{font:700 15px var(--font);padding:10px 12px;border:var(--line) solid var(--ink);border-radius:var(--radius-pill);background:#fff;color:var(--ink);max-width:100%;box-shadow:var(--shadow-sm)}
+input{flex:1;min-width:150px}
+.pipeline{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.step{font-size:12px;font-weight:700;background:var(--cream);border:2px solid var(--ink);border-radius:var(--radius-pill);padding:5px 10px;color:var(--muted)} .step.on{color:var(--ink);background:var(--lime)} .step b{margin-left:6px}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:var(--pad);font-size:var(--small);font-weight:500}
+.login{display:flex;flex-direction:column;gap:12px;max-width:360px;margin:10px auto 0;background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px}
+.login label{font-family:var(--display);text-transform:uppercase;font-size:18px} .login input{width:100%} .login .note{color:var(--muted);margin:0} .warn{color:var(--red);font-weight:700;margin:0}
+.dock{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--page);border-top:var(--line) solid var(--ink)}
+.dock a{flex:1;max-width:150px;text-align:center;font:700 14px var(--font);color:var(--ink);background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:11px 6px;text-decoration:none;box-shadow:var(--shadow-sm)}
+.dock a.on{background:var(--lime)}
+@media (min-width:700px){.dock{position:static;background:transparent;border:0;max-width:640px;margin:0 auto 20px;padding:0;justify-content:flex-start} body{padding-bottom:40px}}
 `;
 
 // The only JavaScript the pages need: send a tap to the API and update the card in place.
 const CLIENT_JS = `
-async function post(url, body){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(!r.ok){alert("That didn't save. Try again.");throw new Error(r.status)}return r.json()}
+async function post(url, body){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(!r.ok){alert("that didn't save. try again.");throw new Error(r.status)}return r.json()}
 document.addEventListener("click",async(e)=>{const b=e.target.closest("button[data-act]");if(!b)return;const card=b.closest("[data-key]");const key=card&&card.dataset.key;if(!key)return;
- if(b.dataset.act==="queue"){await post("/api/queue",{key});b.textContent="Queued for /prep";b.disabled=true}
- else if(b.dataset.act==="pass"){await post("/api/pass",{key});card.style.opacity=.35;b.textContent="Passed"}
- else if(b.dataset.act==="save"){const state=card.querySelector('[data-act="state"]').value;const next=card.querySelector('[data-act="next"]').value;await post("/api/tracker",{key,state,next});b.textContent="Saved";setTimeout(()=>b.textContent="Save",1500)}
+ if(b.dataset.act==="queue"){await post("/api/queue",{key});b.textContent="queued for /prep";b.disabled=true}
+ else if(b.dataset.act==="pass"){await post("/api/pass",{key});card.style.opacity=.4;b.textContent="passed";b.disabled=true}
+ else if(b.dataset.act==="save"){const state=card.querySelector('[data-act="state"]').value;const next=card.querySelector('[data-act="next"]').value;await post("/api/tracker",{key,state,next});b.textContent="saved";setTimeout(()=>b.textContent="save",1500)}
 });`;
 
 /* ---------------------------------------------------------------- small helpers */
+
+function roleWord(m) {
+  return { swe: "software", pm: "product", it: "IT", design: "design", ambassador: "ambassador", program: "program" }[m.role] || "match";
+}
 
 function breakdown(m) {
   const b = m.breakdown || {};
