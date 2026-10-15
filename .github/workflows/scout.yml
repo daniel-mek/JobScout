@@ -3,7 +3,7 @@
 # One schedule: every hour at :17, all in watch mode. GitHub runs scheduled jobs late or skips them
 # when it is busy, so the schedule is hourly and the 7:00 PM digest is not a schedule of its own:
 # every run checks whether the digest is due (after 7:00 PM New York time, not yet sent today).
-# Hours 10 and 11 UTC are skipped so nothing runs within half an hour of the 6:45 AM Morning Brief
+# Hours 10 and 11 UTC (early morning in New York) are skipped
 # (that is 6:17 and 7:17 AM in summer time, 5:17 and 6:17 AM in winter).
 on:
   schedule:

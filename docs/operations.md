@@ -31,7 +31,7 @@ Pipeline, in order: `listings.py` fetches the Simplify and vanshb03 JSON files a
 ```
  1. [100] NVIDIA  |  Software Engineer Intern
       Santa Clara, CA  |  posted 10d  |  eligible: page mentions freshman/sophomore/underclassmen
-      role swe 30 + tier 1 20 + early strong 45 + deg 5 + loc us 6 + fresh 0 + kw 0 = 100
+      role swe 30 + tier 1 20 + early strong 45 + deg 5 + loc us 6 + fresh 0 + kw 0 = 100   (106, capped at 100)
 ```
 
 ## Alerts and the schedule

@@ -10,7 +10,7 @@
   <img src="docs/phone-about.png" width="30%" alt="Scout on a phone: the what is scout page explaining find, score, alert, prep, and track">
 </p>
 
-Scout is an internship radar. Every hour it reads the public internship lists, scores each posting against what you're looking for, and pushes an alert to your phone when a strong match drops. For any posting you pick, it builds a prep kit: a one-page tailored resume, a cover letter if the posting wants one, and draft answers, all from facts you've already confirmed. The public [what is scout?](https://scout-dashboard.jeremysleman.workers.dev/about) page explains it in five steps.
+Scout is an internship radar. About every hour it reads the public internship lists, scores each posting against what you're looking for, and pushes an alert to your phone when a strong match drops. For any posting you pick, it builds a prep kit: a one-page tailored resume, a cover letter if the posting wants one, and draft answers, all from facts you've already confirmed. The public [what is scout?](https://scout-dashboard.jeremysleman.workers.dev/about) page explains it in five steps.
 
 **You always click Submit yourself.** Scout never submits an application, never logs into a job site, never creates accounts, and never solves captchas. It finds, ranks, alerts, and preps.
 

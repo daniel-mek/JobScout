@@ -37,7 +37,7 @@ class Verdicts(unittest.TestCase):
                          [2028, 2029, 2030])
         self.assertEqual(eligibility.years_mentioned("Founded in 2021. We hire great people."), [])
 
-    def test_lowes_style_list_includes_him(self):
+    def test_listed_graduation_dates_include_ours(self):
         text = "Expected graduation dates of December 2028, May 2029, December 2029, or May 2030. 3.0 cumulative GPA or higher."
         verdict, note = eligibility.verdict_from_text(text, GRAD)
         self.assertEqual(verdict, "ok")

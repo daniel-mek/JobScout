@@ -1,7 +1,7 @@
 """The application tracker, as a file: data/tracker.json.
 
-States, in order: Found, Saved, Prepped, Applied, OA, Interview, Offer, Rejected, Withdrawn.
-M5 mirrors this into Workers KV so it can be updated from the phone; until then this file is the truth.
+States, in order: Found, Saved, Prepped, Applied, OA, Interview, Offer, Rejected, Withdrawn, plus Passed.
+The dashboard keeps a copy in Workers KV so it can be updated from the phone; scout/sync.py merges the two by date.
 
     .venv/bin/python -m scout.tracker set <key> <state> [--note "..."] [--next "..."]
     .venv/bin/python -m scout.tracker list

@@ -2,7 +2,7 @@
 # Matching is case-insensitive. Short tokens (it, ui, ux, swe, sde, pm, ai, ml) match on word boundaries,
 # so "IT" never matches "Pittsburgh" and "ai" never matches "maintenance".
 
-# Companies. Tier 1 and Tier 2 get an instant push (M3); everything else goes in the daily digest.
+# Companies. Tier 1 and Tier 2 get an instant push; everything else goes in the daily digest.
 # Each entry is a list of names that count as that company. The WHOLE company name has to match one of
 # them (Inc, LLC, Corp are ignored), so "Apple Inc." is Apple but "Apple Bank" is not, and
 # "Meta Platforms" is Meta but "Meta Marketing Group" is not. Add subsidiaries by name.

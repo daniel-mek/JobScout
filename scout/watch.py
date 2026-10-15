@@ -7,7 +7,7 @@
 
 What it prints: the top matches with a one-line breakdown each, then the counts of what was
 dropped and why. What it writes: data/matches.json (every listing that passed the filters, with
-score and breakdown) and data/eligibility_cache.json. Alerting is M3 and lives elsewhere.
+score and breakdown) and data/eligibility_cache.json. Alerting lives in scout/run.py.
 """
 
 from __future__ import annotations

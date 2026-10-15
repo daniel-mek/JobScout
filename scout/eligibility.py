@@ -3,7 +3,7 @@
 Many postings say things like "graduating between December 2027 and June 2028" or "Class of 2028".
 For someone graduating in 2030 (graduation_year in config/targets.yaml) those are out even when the
 list says "Bachelor's". The lists
-do not carry this, so for the top matches Scout fetches the page (only on plain-HTML boards:
+do not carry this, so for the top matches Scout fetches the page (Workday, Google Careers,
 Greenhouse, Lever, Ashby) and reads it.
 
 Verdicts:

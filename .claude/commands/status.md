@@ -2,7 +2,7 @@
 
 `$ARGUMENTS` is `<key> <state>` plus optional words. Example: `/status google_software-engineering-intern Applied submitted through the careers site`.
 
-States: Found, Saved, Prepped, Applied, OA, Interview, Offer, Rejected, Withdrawn. The candidate is the only one who submits anything, so `Applied` is always their statement, never Scout's guess.
+States: Found, Saved, Prepped, Applied, OA, Interview, Offer, Rejected, Withdrawn, Passed. The candidate is the only one who submits anything, so `Applied` is always their statement, never Scout's guess.
 
 ## Steps
 

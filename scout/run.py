@@ -1,7 +1,7 @@
 """The entry point the cron calls. One command, three modes.
 
-    .venv/bin/python -m scout.run --mode watch            # every 3 hours: score, instant pushes, page watchers
-    .venv/bin/python -m scout.run --mode digest           # 7:00 PM ET: the daily digest (exits quietly at other hours)
+    .venv/bin/python -m scout.run --mode watch            # every hour: score, instant pushes, page watchers, and the digest once it is past 7:00 PM ET
+    .venv/bin/python -m scout.run --mode digest           # the daily digest on its own (exits quietly before 7:00 PM ET)
     .venv/bin/python -m scout.run --mode test             # one test push to the phone
     .venv/bin/python -m scout.run --mode watch --dry-run  # print what would be sent, send nothing, save nothing
 
