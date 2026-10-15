@@ -5,11 +5,12 @@
 <img src="docs/mac-new.png" alt="Scout dashboard on a Mac: the New page with 299 open matches and a grid of scored internship cards">
 
 <p align="center">
-  <img src="docs/phone-new.png" width="32%" alt="Scout on a phone: New page with the match count and the top scored posting">
-  <img src="docs/phone-programs.png" width="32%" alt="Scout on a phone: Programs page listing the watched freshman program pages">
+  <img src="docs/phone-new.png" width="30%" alt="Scout on a phone: New page with the match count and the top scored posting">
+  <img src="docs/phone-programs.png" width="30%" alt="Scout on a phone: Programs page listing the watched freshman program pages">
+  <img src="docs/phone-about.png" width="30%" alt="Scout on a phone: the what is scout page explaining find, score, alert, prep, and track">
 </p>
 
-Scout is a personal internship radar. Every few hours it reads the public internship lists, scores each posting against what I'm looking for, and pushes an alert to my phone when a strong match drops. For any posting I pick, it builds a prep kit: a one-page tailored resume, a cover letter if the posting wants one, and draft answers to the usual questions, all in my own voice and all from facts in my master resume.
+Scout is a personal internship radar. The dashboard's public [what is scout?](https://scout-dashboard.jeremysleman.workers.dev/about) page explains it in five steps. Every few hours it reads the public internship lists, scores each posting against what I'm looking for, and pushes an alert to my phone when a strong match drops. For any posting I pick, it builds a prep kit: a one-page tailored resume, a cover letter if the posting wants one, and draft answers to the usual questions, all in my own voice and all from facts in my master resume.
 
 **I always click Submit myself.** Scout never submits an application, never logs into a job site, never creates accounts, and never solves captchas. It finds, ranks, alerts, and preps. That's it.
 

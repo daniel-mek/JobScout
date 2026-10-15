@@ -24,6 +24,7 @@ export default {
 
     if (path === "/api/health") return json({ ok: true, time: new Date().toISOString() });
     if (path === "/login") return request.method === "POST" ? login(request, env) : loginForm("");
+    if (path === "/about") return aboutPage(await validCookie(request, env));
     if (path === "/logout") return redirect("/login", { "Set-Cookie": `${COOKIE}=; Path=/; Max-Age=0` });
 
     // Cron endpoints: a shared secret, no cookie.
@@ -277,6 +278,40 @@ async function settingsPage(env) {
   return page(body, { title: "Settings", page: "settings", lead: "how scout", head: "thinks" });
 }
 
+/* ---------------------------------------------------------------- about (public: no personal data) */
+
+function aboutPage(loggedIn) {
+  const body = `
+    <article class="card">
+      <h3>the short version</h3>
+      <p>Scout watches the public internship lists every three hours, scores every posting against what you're looking for, and pings your phone when a strong one shows up. When you pick one, it builds a prep kit: a tailored one page resume, a cover letter if the posting wants one, and draft answers, all from facts you've already confirmed. <b>You always click submit yourself.</b> Scout never applies for you.</p>
+    </article>
+
+    <h2>how it works</h2>
+    <ol class="steps">
+      <li class="card"><h3>find</h3><p>Every three hours a free GitHub Actions job pulls two public internship lists (Simplify and Pitt CSC, plus a community list) and reads a handful of company program pages, like Microsoft Explore and NVIDIA's university page, for changes.</p></li>
+      <li class="card"><h3>score</h3><p>Each posting gets a score out of 100 from plain rules you can read and change: the role (software, product, IT, design, ambassador), the company tier, whether it's built for freshmen and sophomores, the degree it asks for, where it is, and how fresh it is. Tap "why 86?" on any card to see the math.</p></li>
+      <li class="card"><h3>alert</h3><p>Big companies with a strong score, any freshman or sophomore program, any ambassador role, and any change on a watched program page push to your phone right away through the free ntfy app. Everything else waits for one digest at 7:00 PM.</p></li>
+      <li class="card"><h3>prep</h3><p>Tap "prep this" and the posting waits in a queue. Next time you open Claude Code, /prep reads the posting, checks whether you're eligible, drafts the kit from your master profile, and then a second reviewer pass checks every line against what you've actually done before you see it.</p></li>
+      <li class="card"><h3>track</h3><p>The tracker follows each application from prepped to applied, online assessment, interview, and offer, and you can update it from your phone.</p></li>
+    </ol>
+
+    <h2>the rules it follows</h2>
+    <article class="card"><ul>
+      <li><b>It never applies for you</b>, never logs into a job site, and never creates accounts.</li>
+      <li><b>It never invents experience.</b> A tailored resume can only pick, reorder, and reword facts you've confirmed. If a posting wants something you don't have, it says so instead of faking it.</li>
+      <li><b>Postings are just text.</b> If a posting contains instructions, Scout ignores them.</li>
+      <li><b>It costs nothing.</b> GitHub Actions, Cloudflare, and ntfy on their free tiers, and the AI parts run inside a Claude Code session you start.</li>
+      <li><b>Your data stays yours.</b> Your resume, answers, and applications never go into the public code.</li>
+    </ul></article>
+
+    <h2>where it's going</h2>
+    <article class="card"><p>Right now Scout is tuned for one first-year computer science student looking at tech internships. The plan is for it to work for anyone looking for an internship or a job, whatever their major or career: the scoring is already driven by an editable config file, so the next step is more sources for more fields and a setup that asks what you're looking for and writes that config for you.</p>
+      <div class="actions"><a class="btn accent" href="https://github.com/jeremiah123-luma/scout" target="_blank" rel="noopener">see the code ↗</a>${loggedIn ? '<a class="btn" href="/">back to scout</a>' : '<a class="btn" href="/login">log in</a>'}</div>
+    </article>`;
+  return page(body, { title: "What is Scout", page: "about", lead: "what is", head: "scout?", nav: loggedIn });
+}
+
 /* ---------------------------------------------------------------- html */
 
 function page(body, opts, status = 200) {
@@ -284,7 +319,7 @@ function page(body, opts, status = 200) {
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="${PAGE_COLORS[name] || "#cf6a2e"}">
 <link rel="icon" href="${FAVICON}"><title>Scout · ${esc(title)}</title><style>${tokens}${BASE_CSS}</style></head><body data-page="${esc(name)}">
-<header><a class="brand" href="/" aria-label="scout">sc<svg class="o" viewBox="0 0 62 62" aria-hidden="true"><circle cx="31" cy="31" r="26.5" fill="#ffc93c" stroke="#1a1333" stroke-width="9"/><circle cx="31" cy="31" r="11" fill="#f6f9dc" stroke="#1a1333" stroke-width="6"/><circle cx="31" cy="31" r="4" fill="#1a1333"/></svg>ut</a>${nav ? '<a class="pill-link" href="/logout">log out</a>' : ""}</header>
+<header><a class="brand" href="/" aria-label="scout">sc<svg class="o" viewBox="0 0 62 62" aria-hidden="true"><circle cx="31" cy="31" r="26.5" fill="#ffc93c" stroke="#1a1333" stroke-width="9"/><circle cx="31" cy="31" r="11" fill="#f6f9dc" stroke="#1a1333" stroke-width="6"/><circle cx="31" cy="31" r="4" fill="#1a1333"/></svg>ut</a><span class="head-links">${name === "about" ? (nav ? "" : '<a class="pill-link" href="/login">log in</a>') : nav ? '<a class="pill-link q" href="/about" aria-label="what is scout?"><span class="long">what is scout?</span><span class="short">?</span></a>' : ""}${nav ? '<a class="pill-link" href="/logout">log out</a>' : ""}</span></header>
 <main>
   <h1><span class="lead">${esc(lead)}</span><span class="head">${esc(head)}</span></h1>
   ${body}
@@ -296,7 +331,7 @@ ${nav ? `<script>${CLIENT_JS}</script>` : ""}</body></html>`;
 
 const FAVICON = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="28" fill="#ffc93c" stroke="#1a1333" stroke-width="7"/><circle cx="32" cy="32" r="12" fill="#f6f9dc" stroke="#1a1333" stroke-width="5"/><circle cx="32" cy="32" r="4.5" fill="#1a1333"/></svg>');
 
-const PAGE_COLORS = { new: "#cf6a2e", programs: "#9b84d8", tracker: "#3fa9b5", settings: "#e7c98f", login: "#9b84d8" };
+const PAGE_COLORS = { about: "#3fa9b5", new: "#cf6a2e", programs: "#9b84d8", tracker: "#3fa9b5", settings: "#e7c98f", login: "#9b84d8" };
 
 const NAV = `<nav class="dock"><a href="/">new</a><a href="/programs">programs</a><a href="/tracker">tracker</a><a href="/settings">settings</a></nav>`;
 
@@ -305,7 +340,7 @@ function loginForm(message) {
     <label for="password">password</label>
     <input id="password" name="password" type="password" autocomplete="current-password" autofocus>
     <button class="btn accent big" type="submit">let me in</button>
-    ${message ? `<p class="warn">${esc(message)}</p>` : '<p class="note">it stays unlocked for 30 days.</p>'}
+    ${message ? `<p class="warn">${esc(message)}</p>` : '<p class="note">it stays unlocked for 30 days. <a href="/about">what is scout?</a></p>'}
   </form>`, { title: "Log in", page: "login", lead: "who goes", head: "there?", nav: false }, message ? 401 : 200);
 }
 
@@ -313,11 +348,17 @@ function loginForm(message) {
 const BASE_CSS = `
 *{box-sizing:border-box}
 body{margin:0;background:var(--page);color:var(--ink);font:500 var(--text)/1.4 var(--font);padding:0 16px 96px;overflow-x:hidden;-webkit-font-smoothing:antialiased}
-body[data-page="new"]{--page:var(--orange)} body[data-page="programs"]{--page:var(--purple)} body[data-page="tracker"]{--page:var(--teal)} body[data-page="settings"]{--page:var(--sand);--on-page:var(--ink)} body[data-page="login"]{--page:var(--purple)}
+body[data-page="about"]{--page:var(--teal)} body[data-page="new"]{--page:var(--orange)} body[data-page="programs"]{--page:var(--purple)} body[data-page="tracker"]{--page:var(--teal)} body[data-page="settings"]{--page:var(--sand);--on-page:var(--ink)} body[data-page="login"]{--page:var(--purple)}
 main{max-width:640px;margin-inline:auto}
 header{max-width:640px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 0 6px}
 .brand{display:inline-flex;align-items:baseline;font-family:var(--logo);font-size:40px;line-height:1;color:var(--ink);text-decoration:none;letter-spacing:.5px}
 .brand .o{width:.56em;height:.56em;margin:0 .015em;flex:none}
+body[data-page="about"] main{display:block} @media (min-width:900px){body[data-page="about"] main,body[data-page="about"] header,body[data-page="about"] .dock{max-width:860px} body[data-page="about"] .steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}}
+.head-links{display:flex;gap:8px;align-items:center} .pill-link .short{display:none} @media (max-width:560px){.pill-link.q .long{display:none} .pill-link.q .short{display:inline}}
+.steps{counter-reset:step;list-style:none;padding:0;margin:0}
+.steps li{counter-increment:step;position:relative;padding-left:58px}
+.steps li::before{content:counter(step);position:absolute;left:18px;top:18px;width:30px;height:30px;border-radius:50%;background:var(--accent);border:var(--line) solid var(--ink);font-family:var(--display);font-size:15px;display:flex;align-items:center;justify-content:center}
+.card p{margin:6px 0 0} .card ul{margin:8px 0 0;padding-left:18px} .card li+li{margin-top:4px} .login a,.card a.inline{color:var(--ink);font-weight:700}
 .pill-link{font-size:var(--small);font-weight:700;color:var(--ink);background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:6px 14px;text-decoration:none;box-shadow:var(--shadow-sm)}
 h1{font-family:var(--display);font-size:var(--h1);line-height:.92;text-transform:uppercase;margin:14px 0 20px;letter-spacing:0}
 h1 .lead{display:block;color:var(--on-page)} h1 .head{display:inline-block;color:var(--ink);border-bottom:6px solid var(--accent);padding-bottom:2px}
