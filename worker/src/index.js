@@ -343,7 +343,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--cream);border:v
 .dock{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--page);border-top:var(--line) solid var(--ink)}
 .dock a{flex:1;max-width:150px;text-align:center;font:700 14px var(--font);color:var(--ink);background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:11px 6px;text-decoration:none;box-shadow:var(--shadow-sm)}
 .dock a.on{background:var(--accent)}
-@media (min-width:700px){.dock{position:static;background:transparent;border:0;max-width:640px;margin:0 auto 20px;padding:0;justify-content:flex-start} body{padding-bottom:40px}}
+/* Wider screens: the dock moves to the top, right under the logo. The body becomes a column so order can place it. */
+@media (min-width:700px){body{display:flex;flex-direction:column;padding-bottom:40px} header{order:0;width:100%} .dock{order:1;position:static;background:transparent;border:0;width:100%;max-width:640px;margin:6px auto 4px;padding:0;justify-content:flex-start} main{order:2;width:100%}}
 /* Wider screens: use the room. The header, headline, and stat card stay full width; cards flow into columns. */
 @media (min-width:900px){
   main,header,.dock{max-width:1120px}
