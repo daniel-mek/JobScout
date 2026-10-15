@@ -31,9 +31,24 @@ class Pipeline(unittest.TestCase):
             if m["role"] == "none":
                 self.assertEqual(m["early_career"], "strong", m["title"])
 
-    def test_sorted_by_score_then_date(self):
-        keys = [(m["score"], m["date_posted"]) for m in self.matches]
+    def test_sorted_eligible_first_then_score_then_date(self):
+        keys = [(m["eligibility"] != "ineligible", m["score"], m["date_posted"]) for m in self.matches]
         self.assertEqual(keys, sorted(keys, reverse=True))
+
+    def test_ineligible_sinks_below_eligible(self):
+        from scout import eligibility
+        raw = {"simplify": listings.load_json(FIXTURES / "simplify.json")}
+        original = eligibility.check
+        def fake_check(item, grad, cache, allow_network=True):
+            item["eligibility"], item["eligibility_note"] = ("ineligible", "test") if item is first[0] else ("unknown", "")
+            return item
+        first = []
+        try:
+            eligibility.check = lambda item, *a, **k: (first.append(item) if not first else None, fake_check(item, *a, **k))[1]
+            matches, _ = watch.run(raw, matching.load_targets(), scoring.load_weights(), check_pages=5, allow_network=False, now=1_800_000_000)
+        finally:
+            eligibility.check = original
+        self.assertEqual(matches[-1]["eligibility"], "ineligible")
 
     def test_every_match_explains_itself(self):
         for m in self.matches:
