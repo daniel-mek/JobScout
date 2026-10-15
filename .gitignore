@@ -1,11 +1,9 @@
 # Personal data. Never committed.
 # me/ holds the master resume, voice rules, answers bank, writing samples.
 # applications/ holds every prep kit (tailored resumes, cover letters, answers).
-# Only the empty .gitkeep files are tracked, so the folders exist on a fresh clone.
-me/*
-!me/.gitkeep
-applications/*
-!applications/.gitkeep
+# A template for me/ lives in me.example/.
+me/
+applications/
 
 # Secrets. ntfy topic, dashboard password, anything with a token in it.
 .env
