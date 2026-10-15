@@ -270,7 +270,7 @@ async function trackerPage(env) {
       <div class="meta">${r.applied ? "applied " + esc(r.applied) + " · " : ""}${r.next ? "next: " + esc(r.next) : "no next action yet"}</div>
       <div class="actions wrap">
         <select data-act="state">${options(r.state)}</select>
-        <input data-act="next" placeholder="next action" value="${esc(r.next || "")}">
+        <textarea data-act="next" rows="1" placeholder="next action">${esc(r.next || "")}</textarea>
         <button class="btn accent" data-act="save">save</button>
         ${r.url ? `<a class="btn ghost" href="${esc(r.url)}" target="_blank" rel="noopener">posting ↗</a>` : ""}
       </div>
@@ -414,7 +414,7 @@ h3{font-family:var(--display);font-size:20px;margin:0;text-transform:uppercase;l
 .btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
 .btn.accent{background:var(--accent)} .btn.ghost{background:transparent;box-shadow:none} .btn.big{font-size:18px;padding:14px 22px}
 .btn[disabled]{background:var(--sand);color:var(--muted);box-shadow:none;cursor:default;transform:none}
-select,input{font:700 15px var(--font);padding:10px 12px;border:var(--line) solid var(--ink);border-radius:var(--radius-pill);background:#fff;color:var(--ink);max-width:100%;box-shadow:var(--shadow-sm)}
+select,input,textarea{font:700 15px var(--font);padding:10px 12px;border:var(--line) solid var(--ink);border-radius:var(--radius-pill);background:#fff;color:var(--ink);max-width:100%;box-shadow:var(--shadow-sm)}
 input{flex:1;min-width:150px}
 .pipeline{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
 .step{font-size:12px;font-weight:700;background:var(--cream);border:2px solid var(--ink);border-radius:var(--radius-pill);padding:5px 10px;color:var(--muted)} .step.on{color:var(--ink);background:var(--accent)} .step b{margin-left:6px}
@@ -472,6 +472,8 @@ main > *:nth-child(2){animation-delay:.04s} main > *:nth-child(3){animation-dela
 .btn.tapped{animation:wiggle .35s ease}
 @keyframes wiggle{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
 .card.dim{transition:opacity .3s}
+/* the next-action box takes its own line and grows with the text, so nothing gets cut off */
+textarea[data-act="next"]{flex:1 1 100%;width:100%;order:-1;resize:none;overflow:hidden;line-height:1.35;border-radius:18px;padding:11px 16px;min-height:44px}
 /* the hero card: a sheen sweeps across, the number pops and counts up (CLIENT_JS), the tiles bounce in one by one */
 .stat{overflow:hidden;isolation:isolate}
 .stat::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.7) 50%,transparent 65%);background-size:300% 100%;animation:sweep 6s 1s ease-in-out infinite}
@@ -505,6 +507,8 @@ h2::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:4px;bor
 
 // The only JavaScript the pages need: send a tap to the API and update the card in place.
 const CLIENT_JS = `
+// The next-action box grows to fit its text instead of cutting it off.
+document.querySelectorAll('textarea[data-act="next"]').forEach(function(t){const fit=function(){t.style.height="auto";t.style.height=t.scrollHeight+t.offsetHeight-t.clientHeight+"px"};fit();t.addEventListener("input",fit)});
 // The hero numbers count up from zero on load (about a second, done before anyone can tap pass).
 (function(){if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;document.querySelectorAll(".stat-big,.tile b").forEach(function(el,n){const end=parseInt(el.textContent,10);if(!(end>0))return;const t0=performance.now()+150+n*120,dur=end>20?1100:600;el.textContent="0";requestAnimationFrame(function tick(t){const k=Math.min(1,Math.max(0,(t-t0)/dur));el.textContent=Math.round(end*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(tick)})})})();
 async function post(url, body){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(!r.ok){alert("that didn't save. try again.");throw new Error(r.status)}return r.json()}
