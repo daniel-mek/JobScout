@@ -200,11 +200,22 @@ async function newPage(env) {
       <div class="stat-foot">${programs} freshman friendly · ${queue.length} queued for /prep · updated ${esc(when(data.generated_at))}</div>
     </div>`;
 
+
+  const passedRows = data.matches.filter((m) => passed[m.key] && !tracker[m.key]);
+  const passedCard = (m) => `
+    <article class="card passed" data-key="${esc(m.key)}">
+      <div class="row"><h3>${esc(m.company)}</h3><span class="score">${m.score}</span></div>
+      <div class="title">${esc(m.title)}</div>
+      <div class="meta">passed ${age(passed[m.key])}</div>
+      <div class="actions"><button class="btn accent" data-act="unpass">unpass</button><a class="btn ghost" href="${esc(m.url)}" target="_blank" rel="noopener">posting ↗</a></div>
+    </article>`;
+
   const body = `
     ${hero}
     ${fresh.length ? `<h2>fresh off the lists</h2>${fresh.map((m) => card(m, true)).join("")}` : ""}
     <h2>${fresh.length ? "the rest, best first" : "best first"}</h2>
-    ${rest.slice(0, 60).map((m) => card(m, false)).join("") || '<p class="note">nothing yet. the cron fills this in every three hours.</p>'}`;
+    ${rest.slice(0, 60).map((m) => card(m, false)).join("") || '<p class="note">nothing yet. the cron fills this in every three hours.</p>'}
+    ${passedRows.length ? `<details class="passed-list"><summary><h2>passed (${passedRows.length})</h2></summary><p class="note">changed your mind? unpass puts it back in the list.</p>${passedRows.map(passedCard).join("")}</details>` : ""}`;
   return page(body, { title: "New", page: "new", lead: "let's get", head: "you hired" });
 }
 
@@ -319,6 +330,7 @@ h3{font-family:var(--display);font-size:20px;margin:0;text-transform:uppercase;l
 .stat-sub{font-weight:700;font-size:18px} .stat-sub b{background:var(--accent);border-radius:6px;padding:0 6px;border:2px solid var(--ink)}
 .stat-foot{color:var(--muted);font-size:var(--small);font-weight:700;margin-top:10px}
 .card{background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:var(--pad);margin:0 0 16px;max-width:100%}
+.card.dim > :not(.actions){opacity:.35} .passed-list > summary{list-style:none;cursor:pointer} .passed-list > summary::-webkit-details-marker{display:none} .passed-list > summary h2::after{content:" ▸"} .passed-list[open] > summary h2::after{content:" ▾"} .card.passed{opacity:.92}
 .card.is-new{outline:4px solid var(--accent);outline-offset:-7px}
 .row{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--gap)}
 .title{font-weight:700;font-size:17px;margin:4px 0 6px} .meta{color:var(--muted);font-size:var(--small);font-weight:700;overflow-wrap:anywhere}
@@ -349,7 +361,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--cream);border:v
 @media (min-width:900px){
   main,header,.dock{max-width:1120px}
   main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px;align-items:start}
-  main > h1,main > .stat,main > h2,main > .note,main > .pipeline,main > pre,main > form{grid-column:1 / -1}
+  main > h1,main > .stat,main > h2,main > .note,main > .pipeline,main > pre,main > form,main > .passed-list{grid-column:1 / -1}
   main > .card{margin-bottom:20px}
   h1{font-size:64px} .stat{display:grid;grid-template-columns:auto 1fr;column-gap:28px;align-items:end}
   .stat-label{grid-column:1} .stat-big{grid-column:1;grid-row:2} .stat-sub{grid-column:2;grid-row:2;padding-bottom:10px} .stat-foot{grid-column:1 / -1}
@@ -363,7 +375,8 @@ const CLIENT_JS = `
 async function post(url, body){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(!r.ok){alert("that didn't save. try again.");throw new Error(r.status)}return r.json()}
 document.addEventListener("click",async(e)=>{const b=e.target.closest("button[data-act]");if(!b)return;const card=b.closest("[data-key]");const key=card&&card.dataset.key;if(!key)return;
  if(b.dataset.act==="queue"){await post("/api/queue",{key});b.textContent="queued for /prep";b.disabled=true}
- else if(b.dataset.act==="pass"){await post("/api/pass",{key});card.style.opacity=.4;b.textContent="passed";b.disabled=true}
+ else if(b.dataset.act==="pass"){await post("/api/pass",{key});card.classList.add("dim");b.textContent="undo";b.dataset.act="unpass"}
+ else if(b.dataset.act==="unpass"){await post("/api/pass",{key,undo:true});if(card.classList.contains("passed")){card.remove();return}card.classList.remove("dim");b.textContent="pass";b.dataset.act="pass"}
  else if(b.dataset.act==="save"){const state=card.querySelector('[data-act="state"]').value;const next=card.querySelector('[data-act="next"]').value;await post("/api/tracker",{key,state,next});b.textContent="saved";setTimeout(()=>b.textContent="save",1500)}
 });`;
 
