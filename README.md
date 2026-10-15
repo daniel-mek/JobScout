@@ -56,4 +56,4 @@ The plan is for Scout to work for anyone looking for an internship or a job, wha
 
 How every piece runs, with commands: [docs/operations.md](docs/operations.md). Design decisions and why: [docs/decisions.md](docs/decisions.md). Code borrowed from MIT and Apache projects is listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-Built with Claude Code as a pair programmer. MIT license.
+I built it with help from Claude Code. MIT license.
