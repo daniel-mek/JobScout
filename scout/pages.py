@@ -140,11 +140,16 @@ def check_pages(pages: list[dict], state: dict, fetch=fetch_text, text_dir: Path
             events.append({"kind": "baseline", "name": name, "url": url, "summary": "first time seen, baseline saved"})
         elif new_hash != record["hash"]:
             old = text_file.read_text(encoding="utf-8") if text_file.exists() else ""
-            record["changed_at"] = int(now)
             # Only new sentences are worth a push. A removed or reordered line (or a leftover token
             # the noise filter missed) is recorded in the state but never alerted.
             kind = "changed" if added_lines(old, text) else "shuffled"
-            events.append({"kind": kind, "name": name, "url": url, "summary": summarize_change(old, text)})
+            summary = summarize_change(old, text)
+            events.append({"kind": kind, "name": name, "url": url, "summary": summary})
+            if kind == "changed":
+                # Only real changes (new sentences) count as "changed" on the dashboard,
+                # and the new lines are kept so the card can show what is different.
+                record["changed_at"] = int(now)
+                record["last_change"] = summary
         record["hash"] = new_hash
         record["text_len"] = len(text)
         text_file.write_text(text, encoding="utf-8")

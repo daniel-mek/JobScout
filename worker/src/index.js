@@ -224,9 +224,9 @@ async function programsPage(env) {
   const [pages, data, tracker, passed] = await Promise.all([get(env, "pages", {}), get(env, "matches", { matches: [] }), get(env, "tracker", {}), get(env, "passed", {})]);
   const watched = Object.entries(pages).map(([url, p]) => `
     <article class="card">
-      <div class="tags"><span class="tag">${p.changed_at ? "changed " + age(p.changed_at) : "quiet"}</span>${p.failures ? `<span class="tag red">${p.failures} failed fetch${p.failures > 1 ? "es" : ""}</span>` : ""}</div>
+      <div class="tags"><span class="tag${p.changed_at ? " accent" : ""}">${p.changed_at ? "new words " + age(p.changed_at) : "no changes yet"}</span>${p.failures ? `<span class="tag red">${p.failures} failed fetch${p.failures > 1 ? "es" : ""}</span>` : ""}</div>
       <h3>${esc(p.name || url)}</h3>
-      <div class="meta">checked ${age(p.checked_at)} · ${p.text_len || 0} characters of text</div>
+      ${p.last_change ? `<div class="change"><b>what changed:</b>${esc(p.last_change).replace(/\n/g, "<br>")}</div><div class="meta">a change means go look. it does not mean applications are open.</div>` : ""}<div class="meta">checked ${age(p.checked_at)}</div>
       <div class="actions"><a class="btn ghost" href="${esc(url)}" target="_blank" rel="noopener">open page ↗</a></div>
     </article>`).join("");
   const finds = data.matches.filter((m) => (m.early_career === "strong" || m.role === "ambassador") && !passed[m.key]).map((m) => `
@@ -358,7 +358,7 @@ body[data-page="about"] main{display:block} @media (min-width:900px){body[data-p
 .steps{counter-reset:step;list-style:none;padding:0;margin:0}
 .steps li{counter-increment:step;position:relative;padding-left:58px}
 .steps li::before{content:counter(step);position:absolute;left:18px;top:18px;width:30px;height:30px;border-radius:50%;background:var(--accent);border:var(--line) solid var(--ink);font-family:var(--display);font-size:15px;display:flex;align-items:center;justify-content:center}
-.card p{margin:6px 0 0} .card ul{margin:8px 0 0;padding-left:18px} .card li+li{margin-top:4px} .login a,.card a.inline{color:var(--ink);font-weight:700}
+.card p{margin:6px 0 0} .change{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:10px 12px;margin:8px 0 6px;font-size:var(--small);font-weight:500;overflow-wrap:anywhere} .change b{display:block;margin-bottom:4px} .card ul{margin:8px 0 0;padding-left:18px} .card li+li{margin-top:4px} .login a,.card a.inline{color:var(--ink);font-weight:700}
 .pill-link{font-size:var(--small);font-weight:700;color:var(--ink);background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:6px 14px;text-decoration:none;box-shadow:var(--shadow-sm)}
 h1{font-family:var(--display);font-size:var(--h1);line-height:.92;text-transform:uppercase;margin:14px 0 20px;letter-spacing:0}
 h1 .lead{display:block;color:var(--on-page)} h1 .head{display:inline-block;color:var(--ink);padding-bottom:16px;background:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20400%2024'%20preserveAspectRatio='none'%3E%3Cpath%20d='M3%2013%20C%2040%206,%2070%2018,%20110%2011%20S%20180%205,%20215%2013%20S%20290%2019,%20330%2010%20S%20380%208,%20397%2012'%20fill='none'%20stroke='%23ffc93c'%20stroke-width='7'%20stroke-linecap='round'/%3E%3Cpath%20d='M12%2019%20C%2060%2013,%20120%2021,%20175%2016%20S%20270%2012,%20320%2018%20S%20370%2020,%20390%2016'%20fill='none'%20stroke='%23ffc93c'%20stroke-width='5.5'%20stroke-linecap='round'/%3E%3C/svg%3E") no-repeat left bottom / 100% 22px}

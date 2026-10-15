@@ -55,6 +55,17 @@ class Watching(unittest.TestCase):
             events = self.run_once(state, PAGE_V1.replace("<p>Applications open in September.</p>", ""), tmp)
             self.assertEqual([e["kind"] for e in events], ["shuffled"])
 
+    def test_only_real_changes_mark_the_page_changed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            state = {}
+            self.run_once(state, PAGE_V1, tmp)
+            self.run_once(state, PAGE_V1.replace("<p>Applications open in September.</p>", ""), tmp)
+            record = state["https://example.com/explore"]
+            self.assertEqual(record["changed_at"], 0, "a removal is not a change worth showing")
+            self.run_once(state, PAGE_V2, tmp)
+            self.assertGreater(record["changed_at"], 0)
+            self.assertIn("Apply by October 31", record["last_change"])
+
     def test_unreadable_alerts_after_two_failures(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = {}
