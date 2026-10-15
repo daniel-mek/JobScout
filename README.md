@@ -1,6 +1,6 @@
 # Scout
 
-**Status: M4, prep kit.** The watcher runs on a GitHub Actions cron, pushes to my phone through ntfy, and `/prep` builds a reviewed application kit for any posting. See the [milestones](#milestones).
+**Status: M5, dashboard.** The watcher runs on a GitHub Actions cron, pushes to my phone through ntfy, `/prep` builds a reviewed application kit for any posting, and a password-protected dashboard on Cloudflare shows matches and the tracker on my phone. See the [milestones](#milestones).
 
 Scout is a personal internship radar. Every few hours it reads the public internship lists, scores each posting against what I'm looking for, and pushes an alert to my phone when a strong match drops. For any posting I pick, it builds a prep kit: a one-page tailored resume, a cover letter if the posting wants one, and draft answers to the usual questions, all in my own voice and all from facts in my master resume.
 
@@ -65,7 +65,7 @@ Cloudflare Workers free tier: 100,000 requests a day. ntfy: free. If any of this
 | M2: watcher | Done | `python -m scout.watch` fetches both lists, normalizes, dedupes, filters, scores, and writes `data/matches.json`. Every match prints its score breakdown. Freshman/sophomore programs and ambassador roles rank highest |
 | M3: alerts | Done | `python -m scout.run` sends instant ntfy pushes, the 7:00 PM ET digest, and page-change alerts for nine program pages (`config/watch-pages.yaml`). `.github/workflows/scout.yml` runs it every 3 hours and commits `data/` back |
 | M4: prep kit | Done | `/prep <key>` reads the posting (`scout/posting.py`: Workday, Google Careers, Greenhouse, Lever, Ashby), checks eligibility, drafts a tailored resume, cover letter, answers, and notes from the master profile, runs a reviewer agent that checks every claim, builds the PDFs, and logs the tracker. `/triage` picks the postings worth a kit. `/status` moves the tracker. 86 tests |
-| M5: dashboard + tracker | Not started | Cloudflare Worker, KV, password, mobile layout, prep queue |
+| M5: dashboard + tracker | Done | `worker/` is one Cloudflare Worker with one KV namespace: New (matches with score breakdowns, "Prep this" and "Pass"), Programs (watched pages and early-career finds), Tracker (state and next action, editable from the phone), Settings (read-only config). Password login with a signed cookie. The cron pushes each run up and pulls phone changes down (`scout/sync.py`) |
 | M6: optional | Not started | Greenhouse, Lever, Ashby boards for Tier 2 companies |
 
 ## Borrowed code
@@ -117,6 +117,23 @@ Inside Claude Code: `/triage` reads the newest matches and recommends three or f
 .venv/bin/python -m scout.posting "<url>"                 # read a posting as text (Workday included)
 .venv/bin/python scout/build_letter.py applications/<folder>/cover-letter.md
 .venv/bin/python -m scout.tracker list
+```
+
+## Dashboard
+
+```
+GitHub Actions run ──push──▶  scout-dashboard Worker + KV  ◀──taps── phone (New, Programs, Tracker, Settings)
+GitHub Actions run ◀──pull──  tracker, prep queue, passed keys  ──▶  data/tracker.json, data/queue.json, data/passed.json
+```
+
+- `worker/src/index.js` is the whole app: routing, the password login (HMAC-signed cookie, 30 days), the four pages rendered on the server, and a few JSON endpoints for the buttons. `worker/src/tokens.css` holds every color and size, so a redesign touches one file.
+- `scout/sync.py push` sends `data/matches.json` (with each match's first-seen time), `data/pages.json`, `data/tracker.json`, and the config files to `/api/ingest` with a secret header. `scout/sync.py pull` fetches `/api/export` and writes the tracker, queue, and passed keys into `data/`. The cron does pull, run, push, commit.
+- "Prep this" adds a posting to a queue that `/prep` (with no arguments) reads next time I open Claude Code. "Pass" hides it from New. Tracker edits from the phone win over older repo edits by date.
+- Worker secrets: `DASH_PASSWORD`, `SESSION_SECRET`, `INGEST_SECRET`. Repo secrets: `SCOUT_URL`, `SCOUT_INGEST_SECRET`. Locally they live in `me/dashboard.env` (gitignored).
+
+```bash
+cd worker && npm install && npx wrangler deploy        # deploy
+.venv/bin/python -m scout.sync push                   # send the latest run to the dashboard by hand
 ```
 
 ## Building the resume PDFs
