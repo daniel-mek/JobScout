@@ -273,7 +273,7 @@ function page(body, opts, status = 200) {
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="${PAGE_COLORS[name] || "#cf6a2e"}">
 <link rel="icon" href="${FAVICON}"><title>Scout · ${esc(title)}</title><style>${tokens}${BASE_CSS}</style></head><body data-page="${esc(name)}">
-<header><a class="brand" href="/"><i></i>scout</a>${nav ? '<a class="pill-link" href="/logout">log out</a>' : ""}</header>
+<header><a class="brand" href="/" aria-label="scout">sc<svg class="o" viewBox="0 0 62 62" aria-hidden="true"><circle cx="31" cy="31" r="26.5" fill="#ffc93c" stroke="#1a1333" stroke-width="9"/><circle cx="31" cy="31" r="11" fill="#f6f9dc" stroke="#1a1333" stroke-width="6"/><circle cx="31" cy="31" r="4" fill="#1a1333"/></svg>ut</a>${nav ? '<a class="pill-link" href="/logout">log out</a>' : ""}</header>
 <main>
   <h1><span class="lead">${esc(lead)}</span><span class="head">${esc(head)}</span></h1>
   ${body}
@@ -283,7 +283,7 @@ ${nav ? `<script>${CLIENT_JS}</script>` : ""}</body></html>`;
   return new Response(html, { status, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
 }
 
-const FAVICON = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#1a1333"/><circle cx="32" cy="32" r="14" fill="#ffc93c" stroke="#f6f9dc" stroke-width="4"/></svg>');
+const FAVICON = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="28" fill="#ffc93c" stroke="#1a1333" stroke-width="7"/><circle cx="32" cy="32" r="12" fill="#f6f9dc" stroke="#1a1333" stroke-width="5"/><circle cx="32" cy="32" r="4.5" fill="#1a1333"/></svg>');
 
 const PAGE_COLORS = { new: "#cf6a2e", programs: "#9b84d8", tracker: "#3fa9b5", settings: "#e7c98f", login: "#9b84d8" };
 
@@ -305,8 +305,8 @@ body{margin:0;background:var(--page);color:var(--ink);font:500 var(--text)/1.4 v
 body[data-page="new"]{--page:var(--orange)} body[data-page="programs"]{--page:var(--purple)} body[data-page="tracker"]{--page:var(--teal)} body[data-page="settings"]{--page:var(--sand);--on-page:var(--ink)} body[data-page="login"]{--page:var(--purple)}
 main{max-width:640px;margin-inline:auto}
 header{max-width:640px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 0 6px}
-.brand{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-size:22px;color:var(--ink);text-decoration:none;background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:6px 16px 6px 12px;box-shadow:var(--shadow-sm);letter-spacing:.3px}
-.brand i{width:14px;height:14px;border-radius:50%;background:var(--accent);border:var(--line) solid var(--ink);display:inline-block}
+.brand{display:inline-flex;align-items:baseline;font-family:var(--logo);font-size:40px;line-height:1;color:var(--ink);text-decoration:none;letter-spacing:.5px}
+.brand .o{width:.56em;height:.56em;margin:0 .015em;flex:none}
 .pill-link{font-size:var(--small);font-weight:700;color:var(--ink);background:var(--cream);border:var(--line) solid var(--ink);border-radius:var(--radius-pill);padding:6px 14px;text-decoration:none;box-shadow:var(--shadow-sm)}
 h1{font-family:var(--display);font-size:var(--h1);line-height:.92;text-transform:uppercase;margin:14px 0 20px;letter-spacing:0}
 h1 .lead{display:block;color:var(--on-page)} h1 .head{display:inline-block;color:var(--ink);border-bottom:6px solid var(--accent);padding-bottom:2px}
