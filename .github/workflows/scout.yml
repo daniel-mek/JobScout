@@ -49,10 +49,23 @@ jobs:
             echo "mode=watch" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Pull phone changes from the dashboard
+        env:
+          SCOUT_URL: ${{ secrets.SCOUT_URL }}
+          SCOUT_INGEST_SECRET: ${{ secrets.SCOUT_INGEST_SECRET }}
+        run: python -m scout.sync pull
+
       - name: Run Scout
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: python -m scout.run --mode "${{ steps.mode.outputs.mode }}" ${{ steps.mode.outputs.mode == 'digest' && '--force' || '' }}
+
+      - name: Push this run to the dashboard
+        if: always()
+        env:
+          SCOUT_URL: ${{ secrets.SCOUT_URL }}
+          SCOUT_INGEST_SECRET: ${{ secrets.SCOUT_INGEST_SECRET }}
+        run: python -m scout.sync push
 
       - name: Commit data
         if: always()

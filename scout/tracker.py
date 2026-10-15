@@ -22,7 +22,8 @@ ROOT = Path(__file__).resolve().parent.parent
 TRACKER_PATH = ROOT / "data" / "tracker.json"
 MATCHES_PATH = ROOT / "data" / "matches.json"
 
-STATES = ["Found", "Saved", "Prepped", "Applied", "OA", "Interview", "Offer", "Rejected", "Withdrawn"]
+STATES = ["Found", "Saved", "Prepped", "Applied", "OA", "Interview", "Offer", "Rejected", "Withdrawn", "Passed"]
+# "Passed" is the dashboard's "not interested" tap; it hides the posting from the New page.
 
 
 def load(path: Path = TRACKER_PATH) -> dict:

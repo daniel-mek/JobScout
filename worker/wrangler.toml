@@ -1,0 +1,19 @@
+# Scout dashboard: one Cloudflare Worker on the free tier, with one KV namespace.
+#
+# Secrets (set with `npx wrangler secret put <NAME>` from this folder, never written here):
+#   DASH_PASSWORD   what Jeremiah types to unlock the dashboard
+#   SESSION_SECRET  signs the login cookie (openssl rand -base64 48)
+#   INGEST_SECRET   the GitHub Actions cron sends this in an x-scout-secret header when it pushes data
+name = "scout-dashboard"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[[kv_namespaces]]
+binding = "SCOUT"
+id = "ce5c08ee20004673a4cdb38fb5ea844c"
+
+# Lets `import tokens from "./tokens.css"` work: the file comes in as a plain string.
+[[rules]]
+type = "Text"
+globs = ["**/*.css"]
+fallthrough = true

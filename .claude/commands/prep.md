@@ -10,6 +10,7 @@
 - Token rule: read each file once and keep it in context; pass drafts to the reviewer inline.
 
 ## Step 0: Find the posting
+0. If `$ARGUMENTS` is empty, check the phone queue first: run `.venv/bin/python -m scout.sync pull` (quietly skips if the dashboard is not configured), then read `data/queue.json`. If it has entries, list them (company, title, when queued) and ask which one to prep; if it is empty, ask for a key or URL. After a queued kit is built, remove it from the queue: `curl` is not needed, just run `.venv/bin/python -m scout.sync pull` again at the end and note that the tracker state `Prepped` hides it from the New page.
 1. If `$ARGUMENTS` is a key, pull the match (do not read the whole file into the conversation):
    ```bash
    .venv/bin/python -c "import json,sys; d=json.load(open('data/matches.json')); m=[x for x in d['matches'] if x['key']==sys.argv[1]]; print(json.dumps(m[0], indent=1) if m else 'not in matches.json')" <key>

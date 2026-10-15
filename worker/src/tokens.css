@@ -1,0 +1,34 @@
+/* Scout design tokens. Every color, size, and font the dashboard uses lives here, so a redesign
+   means editing this file and nothing else. Clean and calm on purpose; this is not Command Center. */
+:root {
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --ink: #1b1b1f;
+  --muted: #6b6f76;
+  --line: #e4e2db;
+  --accent: #2f6f5e;        /* one calm green for actions and "new" markers */
+  --accent-ink: #ffffff;
+  --warn: #a65a1e;
+  --danger: #a33a3a;
+  --radius: 12px;
+  --gap: 12px;
+  --pad: 16px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --text: 16px;
+  --small: 13px;
+  --title: 22px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141517;
+    --surface: #1d1f22;
+    --ink: #ececea;
+    --muted: #9a9ea6;
+    --line: #2b2e33;
+    --accent: #6fbfa5;
+    --accent-ink: #0f1a16;
+    --warn: #e0a060;
+    --danger: #e07070;
+  }
+}
