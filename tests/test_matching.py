@@ -203,6 +203,12 @@ class ReviewFixes(unittest.TestCase):
         self.assertTrue(matching.outside_us_only(["Toronto, ON"], T))
         self.assertTrue(matching.outside_us_only(["Waterloo, ON, Canada"], T))
 
+    def test_electronics_design_is_not_ux(self):
+        self.assertEqual(matching.classify_role("Electronics Design Engineering Intern - Low Voltage", T), "none")
+        self.assertEqual(matching.classify_role("Electronic Design Engineer Intern - Energy Engineering", T), "none")
+        self.assertEqual(matching.classify_role("UI/UX Design Intern", T), "design")
+        self.assertEqual(matching.classify_role("Consumer Electronics Software Engineer Intern", T), "swe")
+
     def test_missing_role_words(self):
         self.assertEqual(matching.classify_role("Application Development Intern", T), "swe")
         self.assertEqual(matching.classify_role("Computer Science Intern", T), "swe")

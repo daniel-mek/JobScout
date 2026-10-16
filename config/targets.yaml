@@ -58,6 +58,7 @@ roles:
                "student developer champion", "student champion", "developer student", "campus evangelist",
                "student evangelist", "campus program", "ambassador"]
   exclude: [mechanical, electrical, civil, chemical, aerospace, hardware, firmware, fpga, asic, silicon, "chip design", "electronics engineer",
+            electronics, "electronic design", "physical design", "low voltage",
             "analog", "rf ", photonics, manufactur, "test engineer", quant, quantitative, trading, trader,
             actuarial, accounting, "data scientist", "data science", "research scientist", "applied scientist",
             "machine learning scientist", phd, "ph.d", biostat, nursing, legal, "sales intern", "marketing intern",
