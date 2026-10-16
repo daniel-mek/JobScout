@@ -37,3 +37,4 @@ The calls that shaped Scout, and why. Newest at the bottom.
 | 2026-10-16 | The Worker runs an hourly heartbeat that starts a GitHub run when none arrived in 50 minutes and warns after 4 hours. | GitHub ran 4 of 22 scheduled runs on October 15. |
 | 2026-10-16 | Reposts under a reused title alert when the URL is new and the post date is after the last alert. | Big tech reuses "Software Engineer Intern" for every team and season. |
 | 2026-10-16 | `sync push --tracker-only` for /prep and /status. | A full push from the Mac would replace the dashboard's matches with an old copy. |
+| 2026-10-16 | Scout also reads the Greenhouse, Ashby, and Lever boards of Tier 1 and 2 companies that use them (Figma, Pinterest, Airbnb, Duolingo, Notion, Spotify), intern and co-op titles only; when a list and a board carry the same posting, the list's row wins. | Figma's Product Design Intern never appeared on either list, which are built around software engineering. |

@@ -165,10 +165,12 @@ def location_class(locations: list[str], targets: dict) -> str:
         loc = _clean(raw)
         if any(_word_match(loc, w) for w in cfg.get("priority", [])):
             return "priority"
+        if _looks_canada(loc):
+            continue  # checked first: "Toronto, ON, CA" ends in a US state code
         if _looks_us(loc):
             best = "us"
             continue
-        if _looks_canada(loc) or any(_word_match(loc, w) for w in cfg.get("non_us_words", [])):
+        if any(_word_match(loc, w) for w in cfg.get("non_us_words", [])):
             continue  # a non-US location can never raise the class
         if any(_word_match(loc, w) for w in cfg.get("remote_words", [])):
             return "priority"  # bare "Remote" with no other country named
@@ -182,7 +184,9 @@ def outside_us_only(locations: list[str], targets: dict) -> bool:
         return False
     for raw in locations:
         loc = _clean(raw)
-        if _looks_us(loc) or not (_looks_canada(loc) or any(_word_match(loc, w) for w in cfg.get("non_us_words", []))):
+        if _looks_canada(loc):
+            continue
+        if _looks_us(loc) or not any(_word_match(loc, w) for w in cfg.get("non_us_words", [])):
             return False
     return True
 
@@ -191,9 +195,10 @@ CA_PROVINCES = {"on", "bc", "qc", "ab", "ns", "mb", "sk", "nb", "nl", "pe"}
 
 
 def _looks_canada(loc: str) -> bool:
-    """'Toronto, ON' or 'Waterloo, ON, Canada': a province code as the last or second-to-last part."""
+    """'Toronto, ON', 'Waterloo, ON, Canada', or 'Toronto, ON, CA' (Pinterest's board, where CA is Canada,
+    not California): a province code as the last part, or right before the country."""
     parts = [p.strip() for p in loc.split(",")]
-    return parts[-1] in CA_PROVINCES or (len(parts) > 1 and parts[-1] == "canada" and parts[-2] in CA_PROVINCES)
+    return parts[-1] in CA_PROVINCES or (len(parts) > 1 and parts[-1] in ("canada", "ca") and parts[-2] in CA_PROVINCES)
 
 
 def _looks_us(loc: str) -> bool:

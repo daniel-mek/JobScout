@@ -202,6 +202,8 @@ class ReviewFixes(unittest.TestCase):
             self.assertFalse(matching.outside_us_only([place], T), place)
         self.assertTrue(matching.outside_us_only(["Toronto, ON"], T))
         self.assertTrue(matching.outside_us_only(["Waterloo, ON, Canada"], T))
+        self.assertTrue(matching.outside_us_only(["Toronto, ON, CA"], T))
+        self.assertEqual(matching.location_class(["Sunnyvale, CA"], T), "us")
 
     def test_electronics_design_is_not_ux(self):
         self.assertEqual(matching.classify_role("Electronics Design Engineering Intern - Low Voltage", T), "none")

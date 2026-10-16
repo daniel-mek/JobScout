@@ -31,6 +31,15 @@ tier2:
   ibm: [ibm]
   oracle: [oracle]
 
+# Company job boards read directly (scout/boards.py), for internships the public lists never carry:
+# the lists are built around software engineering, so design roles like Figma's Product Design Intern
+# only show up here. Board name: company name as the lists write it. Only intern and co-op titles are kept.
+# Checked 2026-10-16; the other Tier 1 and 2 companies use Workday or their own sites, which the lists cover.
+boards:
+  greenhouse: {figma: Figma, pinterest: Pinterest, airbnb: Airbnb, duolingo: Duolingo}
+  ashby: {notion: Notion}
+  lever: {spotify: Spotify}
+
 # Named programs for freshmen and sophomores. A title or company+title hit here is the strongest signal Scout has.
 # Keys are the company (matched like the tiers above), values are words that appear in the title.
 programs:

@@ -57,6 +57,9 @@ def normalize_url(url: str) -> str:
     query = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True)
              if not k.lower().startswith(_TRACKING_PARAMS)]
     path = parts.path.rstrip("/")
+    if parts.netloc.lower() == "jobs.ashbyhq.com" and path.endswith("/application"):
+        path = path[: -len("/application")]  # the apply form and the posting are one job
+        query = [(k, v) for k, v in query if k.lower() != "embed"]
     return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), path, urlencode(query), ""))
 
 
@@ -70,7 +73,9 @@ def dedupe(listings: list[dict]) -> list[dict]:
     by_key: dict[str, dict] = {}
     survivors: list[dict] = []
 
-    for item in sorted(listings, key=lambda x: x.get("date_updated") or 0, reverse=True):
+    # The lists' row wins over a company board's copy of the same posting, so its title and key stay the
+    # ones already in seen.json (a board title like "Software Engineer Intern (Summer 2027)" would re-alert).
+    for item in sorted(listings, key=lambda x: (x.get("source") != "boards", x.get("date_updated") or 0), reverse=True):
         url = normalize_url(item.get("url", ""))
         key = make_key(item.get("company", ""), item.get("title", ""))
         item["key"] = key

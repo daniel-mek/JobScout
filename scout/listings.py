@@ -1,8 +1,10 @@
 """Fetch the public internship lists and normalize every row into one shape.
 
-Sources (both free, both public JSON files on GitHub, no login):
+Sources (all free, all public JSON, no login):
   simplify  SimplifyJobs/Summer2027-Internships  (~13 MB, ~17K rows, the main list)
   vanshb03  vanshb03/Summer2027-Internships      (~275 KB, MIT, a separate community list)
+  boards    target companies' own Greenhouse, Ashby, and Lever boards (scout/boards.py, targets.yaml boards:),
+            for internships the lists never carry, like design roles
 
 Every row becomes a plain dict with the same keys, so nothing downstream cares which list it came from:
 
@@ -30,6 +32,10 @@ from __future__ import annotations
 import json
 import urllib.request
 from pathlib import Path
+
+import yaml
+
+from scout import boards
 
 SOURCES = {
     "simplify": "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json",
@@ -101,7 +107,8 @@ def normalize_vanshb03(row: dict) -> dict:
     }
 
 
-NORMALIZERS = {"simplify": normalize_simplify, "vanshb03": normalize_vanshb03}
+NORMALIZERS = {"simplify": normalize_simplify, "vanshb03": normalize_vanshb03, "boards": lambda row: row}
+TARGETS_PATH = Path(__file__).resolve().parent.parent / "config" / "targets.yaml"
 
 
 def normalize_all(raw_by_source: dict[str, list]) -> list[dict]:
@@ -116,7 +123,7 @@ def normalize_all(raw_by_source: dict[str, list]) -> list[dict]:
     return out
 
 
-def fetch_all(sources: dict[str, str] | None = None) -> tuple[dict[str, list], list[str]]:
+def fetch_all(sources: dict[str, str] | None = None, with_boards: bool = True) -> tuple[dict[str, list], list[str]]:
     """Fetch every source. Returns (raw rows by source, list of error messages).
 
     One broken source must not hide the other, so errors are collected, not raised.
@@ -130,4 +137,9 @@ def fetch_all(sources: dict[str, str] | None = None) -> tuple[dict[str, list], l
             raw[name] = fetch_json(url)
         except SourceError as exc:
             errors.append(f"{name}: {exc}")
+    if with_boards:
+        config = (yaml.safe_load(TARGETS_PATH.read_text(encoding="utf-8")) or {}).get("boards") or {}
+        rows, board_errors = boards.fetch_boards(config)
+        raw["boards"] = rows
+        errors.extend(board_errors)
     return raw, errors

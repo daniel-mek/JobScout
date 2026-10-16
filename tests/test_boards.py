@@ -1,0 +1,72 @@
+"""Company job boards, with every board answer faked. No network."""
+
+import unittest
+from datetime import datetime, timezone
+
+from scout import boards, dedupe
+
+NOW = datetime(2026, 10, 16, tzinfo=timezone.utc)
+
+
+class Boards(unittest.TestCase):
+    def test_greenhouse_keeps_interns_and_uses_the_lists_url(self):
+        answer = {"jobs": [
+            {"id": 6180005004, "title": "Product Design Intern (2027)", "absolute_url": "https://boards.greenhouse.io/figma/jobs/6180005004?gh_jid=6180005004",
+             "location": {"name": "San Francisco, CA • New York, NY"}, "first_published": "2026-10-01T12:00:00-04:00"},
+            {"id": 1, "title": "Staff Product Designer", "absolute_url": "https://boards.greenhouse.io/figma/jobs/1", "location": {"name": "SF"}},
+        ]}
+        rows = boards.greenhouse("figma", "Figma", NOW, fetch=lambda url: answer)
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row["url"], "https://boards.greenhouse.io/figma/jobs/6180005004")
+        self.assertEqual(row["locations"], ["San Francisco, CA", "New York, NY"])
+        self.assertEqual(row["terms"], ["2027"])
+        self.assertEqual(row["source"], "boards")
+
+    def test_company_hosted_greenhouse_keeps_its_own_link(self):
+        answer = {"jobs": [{"id": 8214788, "title": "Solutions Engineer Intern 2027 (USA)",
+                            "absolute_url": "https://www.pinterestcareers.com/jobs/?gh_jid=8214788", "location": {"name": "Remote, US"}}]}
+        self.assertEqual(boards.greenhouse("pinterest", "Pinterest", NOW, fetch=lambda url: answer)[0]["url"],
+                         "https://www.pinterestcareers.com/jobs/?gh_jid=8214788")
+
+    def test_terms_when_the_title_has_no_year(self):
+        self.assertEqual(boards.terms_for("Data Analyst, Intern", NOW), ["Summer 2027 (year not stated)"])
+        self.assertEqual(boards.terms_for("Software Engineer Intern (Winter 2027)", NOW), ["Winter 2027"])
+
+    def test_ashby_and_lever(self):
+        ash = {"jobs": [{"id": "abc", "title": "Software Engineer Intern (Summer 2027)", "location": "San Francisco, California",
+                         "isListed": True, "publishedAt": "2026-09-01T00:00:00Z"},
+                        {"id": "def", "title": "Head of Early Career Recruiting", "location": "SF"}]}
+        self.assertEqual([r["url"] for r in boards.ashby("notion", "Notion", NOW, fetch=lambda url: ash)],
+                         ["https://jobs.ashbyhq.com/notion/abc"])
+        lev = [{"id": "x1", "text": "Design Intern", "hostedUrl": "https://jobs.lever.co/spotify/x1",
+                "categories": {"allLocations": ["New York, NY"]}, "createdAt": 1790000000000}]
+        row = boards.lever("spotify", "Spotify", NOW, fetch=lambda url: lev)[0]
+        self.assertEqual((row["locations"], row["date_posted"]), (["New York, NY"], 1790000000))
+
+    def test_one_broken_board_is_reported_not_fatal(self):
+        original = boards.READERS["greenhouse"]
+        boards.READERS["greenhouse"] = lambda board, company, now=None: (_ for _ in ()).throw(OSError("404"))
+        try:
+            rows, errors = boards.fetch_boards({"greenhouse": {"gone": "Gone"}, "ashby": {}})
+        finally:
+            boards.READERS["greenhouse"] = original
+        self.assertEqual(rows, [])
+        self.assertIn("greenhouse gone", errors[0])
+
+    def test_the_lists_row_wins_a_merge(self):
+        listed = {"source": "simplify", "company": "Figma", "title": "Software Engineer Intern", "date_updated": 1,
+                  "url": "https://boards.greenhouse.io/figma/jobs/6143238004"}
+        board = {"source": "boards", "company": "Figma", "title": "Software Engineer Intern (Summer 2027)", "date_updated": 99,
+                 "url": "https://boards.greenhouse.io/figma/jobs/6143238004"}
+        kept = dedupe.dedupe([board, listed])
+        self.assertEqual([k["title"] for k in kept], ["Software Engineer Intern"])
+        self.assertEqual(sorted(kept[0]["sources"]), ["boards", "simplify"])
+
+    def test_ashby_apply_links_match_the_posting(self):
+        self.assertEqual(dedupe.normalize_url("https://jobs.ashbyhq.com/notion/abc/application?embed=true"),
+                         dedupe.normalize_url("https://jobs.ashbyhq.com/notion/abc"))
+
+
+if __name__ == "__main__":
+    unittest.main()
