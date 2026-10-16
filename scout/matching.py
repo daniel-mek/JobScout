@@ -233,8 +233,9 @@ def describe(listing: dict, targets: dict) -> dict:
     listing["graduate_title"] = graduate_title(listing["title"])
     # The lists mark some postings "U.S. Citizenship is Required" (often defense work). Whether that rules
     # him out depends on us_citizen in targets.yaml: false drops them, null keeps them with a label.
-    listing["citizens_only"] = listing.get("sponsorship") == "U.S. Citizenship is Required"
-    listing["citizenship_blocked"] = listing["citizens_only"] and targets.get("us_citizen") is False
+    required = listing.get("sponsorship") == "U.S. Citizenship is Required"
+    listing["citizens_only"] = required and targets.get("us_citizen") is None   # the label, while unconfirmed
+    listing["citizenship_blocked"] = required and targets.get("us_citizen") is False
     listing["degree_class"] = degree_class(listing.get("degrees", []), targets)
     listing["keyword_hits"] = keyword_hits(listing["title"], targets)
     return listing

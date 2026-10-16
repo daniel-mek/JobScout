@@ -212,6 +212,9 @@ class ReviewFixes(unittest.TestCase):
         self.assertTrue(matching.passes_filters(unknown)[0])
         no = matching.describe(dict(row), dict(T, us_citizen=False))
         self.assertEqual(matching.passes_filters(no), (False, "US citizens only"))
+        yes = matching.describe(dict(row), dict(T, us_citizen=True))
+        self.assertFalse(yes["citizens_only"])
+        self.assertTrue(matching.passes_filters(yes)[0])
 
     def test_us_places_written_without_abbreviations(self):
         for place in ("Mountain View, California", "Georgia", "Washington, D.C.", "New Berlin, WI", "South SF", "San Jose"):
