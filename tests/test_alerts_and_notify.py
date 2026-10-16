@@ -45,12 +45,18 @@ class Selection(unittest.TestCase):
 
 class Messages(unittest.TestCase):
     def test_match_push_has_no_personal_data_and_a_link(self):
-        push = notify.match_push(match("a", tier=1, score=75, early_career="strong"), NOW)
+        push = notify.match_push(match("a", tier=1, score=75, early_career="strong", eligibility="ok",
+                                       eligibility_note="page names graduation 2030"), NOW)
         self.assertEqual(push["click"], "https://x.com/a")
         self.assertIn("Acme", push["title"])
         self.assertIn("Score 75", push["message"])
         self.assertIn("freshman/sophomore program", push["message"])
         self.assertEqual(push["priority"], 5)
+
+    def test_unread_eligibility_pushes_quietly(self):
+        push = notify.match_push(match("a", tier=1, score=90, early_career="strong"), NOW)
+        self.assertEqual(push["priority"], 3)
+        self.assertIn("check the graduation year", push["message"])
 
     def test_digest_push(self):
         push = notify.digest_push([match("a", score=61), match("b", score=55)], NOW)

@@ -69,5 +69,60 @@ class Verdicts(unittest.TestCase):
         self.assertEqual(item["eligibility"], "unknown")
 
 
+class RealPostings(unittest.TestCase):
+    """Lines from real postings Scout alerted on in October 2026 that he could not apply to (and two he could)."""
+
+    def verdict(self, text):
+        return eligibility.verdict_from_text(text, GRAD, this_year=2026)[0]
+
+    def test_netflix_window(self):
+        self.assertEqual(self.verdict("Expected graduation date between December 2027 and Spring/Summer 2028."), "ineligible")
+
+    def test_notion_ceiling(self):
+        self.assertEqual(self.verdict("Must graduate before Summer 2028."), "ineligible")
+
+    def test_pinterest_year_on_the_next_line(self):
+        self.assertEqual(self.verdict("On track to graduate by\nJune 2029"), "ineligible")
+
+    def test_point72_degree_expected(self):
+        self.assertEqual(self.verdict("Bachelor's degree expected between Fall 2027 and Spring 2028."), "ineligible")
+
+    def test_nvidia_ignite_first_years(self):
+        self.assertEqual(self.verdict("Open to first-year (class of 2030) or second year students."), "ok")
+
+    def test_lowes_list_of_dates(self):
+        self.assertEqual(self.verdict("Expected graduation of December 2028, May 2029, December 2029, or May 2030."), "ok")
+
+
+class Windows(unittest.TestCase):
+    def verdict(self, text):
+        return eligibility.verdict_from_text(text, GRAD, this_year=2026)
+
+    def test_or_later_is_a_floor(self):
+        verdict, note = self.verdict("Students graduating in 2028 or later.")
+        self.assertEqual(verdict, "ok")
+        self.assertIn("or later", note)
+
+    def test_stated_years_beat_a_sophomore_mention(self):
+        self.assertEqual(self.verdict("Must be a sophomore or junior graduating in Spring 2029.")[0], "ineligible")
+
+    def test_first_year_word_does_not_rescue_an_old_window(self):
+        text = "We hire first-year analysts. Candidates graduating between December 2026 and June 2027."
+        self.assertEqual(self.verdict(text)[0], "ineligible")
+
+    def test_past_years_are_not_requirements(self):
+        text = "Founded in 2021, our graduate program is open to rising juniors."
+        verdict, note = self.verdict(text)
+        self.assertEqual(verdict, "ineligible")
+        self.assertIn("rising junior", note)
+
+    def test_old_cache_entries_are_reread(self):
+        url = "https://boards.greenhouse.io/acme/jobs/1"
+        cache = {url: {"verdict": "ok", "note": "old rules", "checked_at": 4_000_000_000}}
+        item = {"url": url}
+        eligibility.check(item, GRAD, cache, allow_network=False)
+        self.assertEqual(item["eligibility"], "unknown")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -7,9 +7,10 @@ do not carry this, so for the top matches Scout fetches the page (Workday, Googl
 Greenhouse, Lever, Ashby) and reads it.
 
 Verdicts:
-  "ok"          the page names a year range that includes your graduation year, or says freshman/sophomore
-  "ineligible"  the page names graduation years and yours is not among them, or asks for penultimate-year,
-                final-year, junior, or senior students
+  "ok"          the page names a graduation window that includes yours, or names no year and says
+                freshman/sophomore
+  "ineligible"  the page names graduation windows and yours is in none of them, or names no year and asks
+                for penultimate-year, final-year, junior, or senior students
   "unknown"     the page could not be read, or says nothing about graduation year (never hidden, just labeled)
 
 Reading the page is scout/posting.py's job (Workday, Google Careers, Greenhouse, Lever, Ashby).
@@ -23,6 +24,7 @@ from __future__ import annotations
 import json
 import re
 import time
+from datetime import datetime
 from pathlib import Path
 
 from scout import posting
@@ -30,12 +32,18 @@ from scout import posting
 ROOT = Path(__file__).resolve().parent.parent
 CACHE_PATH = ROOT / "data" / "eligibility_cache.json"
 CACHE_DAYS = 14
+CACHE_VERSION = 2  # bump when the verdict rules change, so old verdicts are re-read
 
 _TAGS = re.compile(r"<script.*?</script>|<style.*?</style>|<[^>]+>", re.S | re.I)
 _YEAR = re.compile(r"\b(20[2-3][0-9])\b")
-# A graduation requirement is a sentence with "graduat..." or "class of" in it. Every year in that
-# sentence counts, so "December 2028, May 2029, December 2029, or May 2030" yields all four.
-_GRAD_SENTENCE = re.compile(r"[^.\n]{0,80}\b(?:graduat\w*|class of)\b[^.\n]{0,160}", re.I)
+# A graduation requirement is a sentence with "graduat...", "class of", or "degree expected" in it.
+# Every year in that sentence counts, so "December 2028, May 2029, December 2029, or May 2030" yields all four.
+# The text is flattened to one line first: Pinterest puts "graduate by" and "June 2029" on separate lines.
+_GRAD_SENTENCE = re.compile(
+    r"[^.]{0,80}\b(?:graduat\w*|class of|degree expected|expected (?:degree|completion)|degree completion)\b[^.]{0,160}", re.I)
+# "2028 or later" is a floor, not a single year. "graduate before Summer 2028" / "by June 2029" is a ceiling.
+_OPEN_AFTER = re.compile(r"\b20[2-3][0-9]\s*(?:or|and)\s*(?:later|after|beyond)\b|\b20[2-3][0-9]\s*onwards?\b", re.I)
+_CEILING = re.compile(r"\b(?:before|by|no later than|prior to)\s+(?:[a-z/]+\s+){0,2}20[2-3][0-9]\b", re.I)
 _UNDERCLASS = re.compile(r"\b(freshman|freshmen|sophomore|first[- ]year|second[- ]year|underclass\w*)\b", re.I)
 # Phrases that mean "not a freshman": Google writes "penultimate academic year", others say "rising junior".
 _UPPERCLASS = re.compile(
@@ -53,29 +61,67 @@ def fetch_text(url: str) -> str | None:
     return post["text"] if post else None
 
 
+def _flat(text: str) -> str:
+    return re.sub(r"\s+", " ", text)
+
+
 def years_mentioned(text: str) -> list[int]:
     """Every graduation year the page names, e.g. 'graduating between Dec 2027 and June 2028' -> [2027, 2028]."""
     years: set[int] = set()
-    for sentence in _GRAD_SENTENCE.finditer(text):
+    for sentence in _GRAD_SENTENCE.finditer(_flat(text)):
         for year in _YEAR.findall(sentence.group(0)):
             years.add(int(year))
     return sorted(years)
 
 
-def verdict_from_text(text: str, graduation_year: int) -> tuple[str, str]:
-    """('ok' | 'ineligible' | 'unknown', short reason)."""
-    years = years_mentioned(text)
+def grad_ranges(text: str, this_year: int | None = None) -> list[tuple[int, int]]:
+    """One (low, high) graduation window per requirement sentence.
+
+    Years before this year are ignored ("founded in 2021, our graduate program"), "or later" opens the top,
+    and "before"/"by" opens the bottom.
+    """
+    this_year = this_year or datetime.now().year
+    ranges = []
+    for match in _GRAD_SENTENCE.finditer(_flat(text)):
+        sentence = match.group(0)
+        years = [int(y) for y in _YEAR.findall(sentence) if int(y) >= this_year]
+        if not years:
+            continue
+        low, high = min(years), max(years)
+        if _OPEN_AFTER.search(sentence):
+            high = 9999
+        if _CEILING.search(sentence):
+            low = 0
+        ranges.append((low, high))
+    return ranges
+
+
+def _describe(low: int, high: int) -> str:
+    if high == 9999:
+        return f"{low} or later"
+    if low == 0:
+        return f"by {high}"
+    return f"{low}" + (f" to {high}" if high != low else "")
+
+
+def verdict_from_text(text: str, graduation_year: int, this_year: int | None = None) -> tuple[str, str]:
+    """('ok' | 'ineligible' | 'unknown', short reason).
+
+    Stated graduation years decide first. A page can say "sophomore" and still ask for 2029 graduates,
+    so freshman words only count when no year is stated.
+    """
+    ranges = grad_ranges(text, this_year)
+    if ranges:
+        fits = [r for r in ranges if r[0] <= graduation_year <= r[1]]
+        if fits:
+            return "ok", "page names graduation " + _describe(*fits[0])
+        return "ineligible", "page requires graduation " + _describe(*ranges[0])
     if _UNDERCLASS.search(text):
         return "ok", "page mentions freshman/sophomore/underclassmen"
     upper = _UPPERCLASS.search(text)
-    if upper and not years:
+    if upper:
         return "ineligible", f"page asks for {upper.group(1).lower()} students"
-    if not years:
-        return "unknown", "page says nothing about graduation year"
-    low, high = min(years), max(years)
-    if low <= graduation_year <= high:
-        return "ok", f"page names graduation {low}" + (f" to {high}" if high != low else "")
-    return "ineligible", f"page requires graduation {low}" + (f" to {high}" if high != low else "")
+    return "unknown", "page says nothing about graduation year"
 
 
 def load_cache(path: Path = CACHE_PATH) -> dict:
@@ -94,7 +140,7 @@ def check(listing: dict, graduation_year: int, cache: dict, allow_network: bool 
     """Attach 'eligibility' and 'eligibility_note' to a listing. Uses the cache first, then the network."""
     url = listing.get("url", "")
     cached = cache.get(url)
-    if cached and time.time() - cached.get("checked_at", 0) < CACHE_DAYS * 24 * 3600:
+    if cached and cached.get("v") == CACHE_VERSION and time.time() - cached.get("checked_at", 0) < CACHE_DAYS * 24 * 3600:
         listing["eligibility"], listing["eligibility_note"] = cached["verdict"], cached["note"]
         return listing
     if not allow_network or not is_readable_board(url):
@@ -105,6 +151,6 @@ def check(listing: dict, graduation_year: int, cache: dict, allow_network: bool 
         verdict, note = "unknown", "page could not be read"
     else:
         verdict, note = verdict_from_text(text, graduation_year)
-    cache[url] = {"verdict": verdict, "note": note, "checked_at": int(time.time())}
+    cache[url] = {"verdict": verdict, "note": note, "checked_at": int(time.time()), "v": CACHE_VERSION}
     listing["eligibility"], listing["eligibility_note"] = verdict, note
     return listing

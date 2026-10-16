@@ -79,13 +79,20 @@ def match_push(m: dict, now: float) -> dict:
     lines = [
         _location(m),
         f"Score {m['score']} ({', '.join(why) or 'match'}), {_age(m, now)}",
-        f"Eligibility: {elig}" + (f", {m['eligibility_note']}" if elig != "unknown" and m.get("eligibility_note") else ""),
+        f"Eligibility: {elig}, {m['eligibility_note']}" if elig != "unknown" and m.get("eligibility_note")
+        else "Eligibility: unknown, check the graduation year before you apply",
     ]
+    # Only a page that names his graduation year (or says freshman) gets the loud push.
+    # An unread page still alerts, quietly, because "unknown" is never hidden.
+    if elig != "ok":
+        priority = 3
+    else:
+        priority = 5 if m.get("early_career") == "strong" else 4
     return {
         "title": f"{m['company']}: {m['title']}"[:120],
         "message": "\n".join(lines),
         "click": m.get("url"),
-        "priority": 5 if m.get("early_career") == "strong" else 4,
+        "priority": priority,
         "tags": ["star2"] if m.get("early_career") == "strong" else ["briefcase"],
     }
 

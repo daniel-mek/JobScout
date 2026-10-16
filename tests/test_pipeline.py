@@ -20,6 +20,11 @@ class Pipeline(unittest.TestCase):
         self.assertGreater(len(self.matches), 0)
         self.assertEqual(self.counts["kept"], len(self.matches))
 
+    def test_every_row_that_could_push_gets_its_page_checked(self):
+        for m in self.matches[5:]:
+            if watch.could_push(m):
+                self.assertNotEqual(m["eligibility_note"], "not checked (below top rows)", m["title"])
+
     def test_no_graduate_only_or_inactive_or_wrong_year(self):
         for m in self.matches:
             self.assertNotEqual(m["degree_class"], "graduate_only", m["title"])

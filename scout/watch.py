@@ -53,11 +53,14 @@ def run(raw_by_source: dict[str, list], targets: dict, weights: dict, *, check_p
         scoring.score(item, weights, now)
     kept.sort(key=lambda x: (x["score"], x.get("date_posted", 0)), reverse=True)
 
+    # Read the posting page for the top rows, plus every row that could push on its own (Tier 1 or 2,
+    # a freshman program, an ambassador program) wherever it ranks, so no alert goes out unchecked.
     cache = eligibility.load_cache()
-    for item in kept[:check_pages]:
-        eligibility.check(item, int(targets.get("graduation_year", 2030)), cache, allow_network)
-    for item in kept[check_pages:]:
-        item["eligibility"], item["eligibility_note"] = "unknown", "not checked (below top rows)"
+    for i, item in enumerate(kept):
+        if i < check_pages or could_push(item):
+            eligibility.check(item, int(targets.get("graduation_year", 2030)), cache, allow_network)
+        else:
+            item["eligibility"], item["eligibility_note"] = "unknown", "not checked (below top rows)"
     if allow_network:
         eligibility.save_cache(cache)
     # A posting the page itself rules out (wrong graduation year, upperclassmen only) drops to the
@@ -65,6 +68,11 @@ def run(raw_by_source: dict[str, list], targets: dict, weights: dict, *, check_p
     kept.sort(key=lambda x: (x.get("eligibility") != "ineligible", x["score"], x.get("date_posted", 0)), reverse=True)
     counts["kept"] = len(kept)
     return kept, counts
+
+
+def could_push(item: dict) -> bool:
+    """Rows that alert without waiting for the digest (see alerts.is_instant)."""
+    return item.get("tier", 3) <= 2 or item.get("early_career") == "strong" or item.get("role") == "ambassador"
 
 
 def age_text(date_posted: int, now: float) -> str:
