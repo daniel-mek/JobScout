@@ -141,15 +141,18 @@ def save_state(state: dict, path: Path = STATE_PATH) -> None:
 
 
 def check_pages(pages: list[dict], state: dict, fetch=fetch_text, text_dir: Path = TEXT_DIR,
-                now: float | None = None) -> list[dict]:
+                now: float | None = None, save: bool = True) -> list[dict]:
     """Fetch every page, update state in place, and return the events worth a push.
+
+    save=False (a dry run) writes no fingerprint files, so the next real run still sees the change.
 
     Event kinds: "changed" (alert: new lines appeared), "shuffled" (no alert: lines removed or reordered),
     "unreadable" (alert, after two failures in a row), "thin" (alert once: the page gives a server
     no text, so a better URL is needed), "baseline" (first time seen, no alert).
     """
     now = now if now is not None else time.time()
-    text_dir.mkdir(parents=True, exist_ok=True)
+    if save:
+        text_dir.mkdir(parents=True, exist_ok=True)
     events: list[dict] = []
 
     for page in pages:
@@ -195,6 +198,7 @@ def check_pages(pages: list[dict], state: dict, fetch=fetch_text, text_dir: Path
                 record["last_change"] = summary
         record["hash"] = new_hash
         record["text_len"] = len(text)
-        prints_file.write_text("\n".join(sorted(line_prints(text))) + "\n", encoding="utf-8")
-        legacy_text.unlink(missing_ok=True)
+        if save:
+            prints_file.write_text("\n".join(sorted(line_prints(text))) + "\n", encoding="utf-8")
+            legacy_text.unlink(missing_ok=True)
     return events

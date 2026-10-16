@@ -3,6 +3,7 @@
     .venv/bin/python -m scout.run --mode watch            # every hour: score, instant pushes, page watchers, and the digest once it is past 7:00 PM ET
     .venv/bin/python -m scout.run --mode digest           # the daily digest on its own (exits quietly before 7:00 PM ET)
     .venv/bin/python -m scout.run --mode test             # one test push to the phone
+    .venv/bin/python -m scout.run --mode catchup          # once: one push of the big tech postings the first run seeded
     .venv/bin/python -m scout.run --mode watch --dry-run  # print what would be sent, send nothing, save nothing
 
 NTFY_TOPIC must be set in the environment (a GitHub Actions secret in the cron, exported by hand locally).
@@ -56,7 +57,8 @@ def score_everything(sender: Sender, now: float, allow_network: bool = True):
     if not raw:
         return [], weights
     check_row_count(sender, sum(len(rows) for rows in raw.values()))
-    matches, counts = watch.run(raw, targets, weights, check_pages=40, allow_network=allow_network, now=now)
+    matches, counts = watch.run(raw, targets, weights, check_pages=40, allow_network=allow_network, now=now,
+                                save=not sender.dry_run)
     if not sender.dry_run:
         watch.write_matches(matches, counts)
     print(f"scored {len(matches)} matches " + ", ".join(f"{k}={v}" for k, v in sorted(counts.items())))
@@ -95,7 +97,7 @@ def mode_watch(sender: Sender, now: float, seed: bool = False) -> None:
 
     page_list = pages.load_pages()
     state = pages.load_state()
-    events = pages.check_pages(page_list, state, now=now)
+    events = pages.check_pages(page_list, state, now=now, save=not sender.dry_run)
     for ev in events:
         print(f"page {ev['kind']}: {ev['name']}: {ev['summary'].splitlines()[0] if ev['summary'] else ''}")
         if ev["kind"] in ("changed", "unreadable", "thin"):
@@ -146,9 +148,23 @@ def mode_digest(sender: Sender, now: float, force: bool = False) -> None:
     send_digest(sender, matches, weights, now)
 
 
+def mode_catchup(sender: Sender, now: float) -> None:
+    """One push for what the first run's --seed swallowed: Tier 1 or 2 postings and freshman programs that are
+    still on the lists and not ruled out by their page. Each one listed is marked via "catchup", so a second
+    run only sends what did not fit the first time, and once everything has gone out it sends "nothing"."""
+    matches, _ = score_everything(sender, now)
+    seen = alerts.load_seen()
+    chosen = alerts.select_catchup(matches, seen)
+    push, listed = notify.catchup_push(chosen, now)
+    print(f"catch-up: {len(chosen)} qualify, {len(listed)} in this push")
+    if sender.send(push) and not sender.dry_run:
+        alerts.mark_seen(seen, listed, "catchup", now)
+        alerts.save_seen(seen)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Run Scout once.")
-    ap.add_argument("--mode", choices=["watch", "digest", "test"], required=True)
+    ap.add_argument("--mode", choices=["watch", "digest", "test", "catchup"], required=True)
     ap.add_argument("--dry-run", action="store_true", help="print pushes, send nothing, save nothing")
     ap.add_argument("--force", action="store_true", help="digest: send even outside 7:00 PM ET")
     ap.add_argument("--seed", action="store_true", help="watch: mark everything current as seen, push nothing (first run)")
@@ -164,6 +180,8 @@ def main() -> int:
         sender.send(notify.test_push())
     elif args.mode == "watch":
         mode_watch(sender, now, seed=args.seed)
+    elif args.mode == "catchup":
+        mode_catchup(sender, now)
     else:
         mode_digest(sender, now, args.force)
 

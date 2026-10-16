@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "watch, digest, or test"
+        description: "watch, digest, test, or catchup (once: the big tech postings the first run seeded)"
         default: "watch"
 
 permissions:

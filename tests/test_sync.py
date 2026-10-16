@@ -23,6 +23,23 @@ class Push(unittest.TestCase):
             self.assertEqual(payload["tracker"]["a"]["state"], "Prepped")
             self.assertEqual(payload["config_text"]["targets"], "tier1: {}\n")
             self.assertEqual(payload["config_text"]["scoring"], "")
+            self.assertEqual(payload["total_matches"], 1, "falls back to the rows sent when the file has no total")
+
+    def test_payload_carries_the_real_total(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d, c = Path(tmp) / "data", Path(tmp) / "config"
+            d.mkdir(); c.mkdir()
+            (d / "matches.json").write_text(json.dumps({"total_matches": 1197,
+                                                        "matches": [{"key": f"k{i}", "company": "Acme"} for i in range(300)]}))
+            payload = sync.build_push_payload(d, c)
+            self.assertEqual(payload["total_matches"], 1197)
+            self.assertEqual(len(payload["matches"]), 300)
+
+    def test_the_dashboard_counts_from_the_total(self):
+        worker = (Path(__file__).parent.parent / "worker" / "src" / "index.js").read_text()
+        self.assertIn("total_matches: Number.isInteger(body.total_matches)", worker, "ingest keeps the total")
+        self.assertIn('id="open-count">${openCount}', worker, "the big number is the real count")
+        self.assertIn("ranked from the top ${data.matches.length} by score", worker)
 
 
 class Pull(unittest.TestCase):

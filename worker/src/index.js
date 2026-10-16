@@ -145,7 +145,10 @@ async function ingest(request, env) {
   const body = await request.json().catch(() => null);
   if (!body || !Array.isArray(body.matches)) return json({ error: "expected { matches: [...] }" }, 400);
   await Promise.all([
-    put(env, "matches", { generated_at: body.generated_at || new Date().toISOString(), counts: body.counts || {}, matches: body.matches }),
+    put(env, "matches", {
+      generated_at: body.generated_at || new Date().toISOString(), counts: body.counts || {}, matches: body.matches,
+      total_matches: Number.isInteger(body.total_matches) ? body.total_matches : body.matches.length,
+    }),
     put(env, "pages", body.pages || {}),
     put(env, "config_text", body.config_text || {}),
   ]);
@@ -216,6 +219,10 @@ async function newPage(env) {
   const fresh = rows.filter((m) => m.first_seen && m.first_seen > lastVisit);
   const rest = rows.filter((m) => !fresh.includes(m));
   const programs = rows.filter((m) => m.early_career === "strong" || m.role === "ambassador").length;
+  // The cron uploads only the top matches (scout/watch.py write_matches), so the count comes from its total:
+  // everything that passed the filters, minus the uploaded ones you have tracked or passed.
+  const total = Math.max(data.total_matches || 0, data.matches.length);
+  const openCount = total - (data.matches.length - rows.length);
   await put(env, "last_visit", new Date().toISOString());
 
   const card = (m, isNew) => `
@@ -243,8 +250,9 @@ async function newPage(env) {
     <div class="stat">
       <div class="stat-main">
         <div class="stat-label">you have</div>
-        <div class="stat-big" id="open-count">${rows.length}</div>
+        <div class="stat-big" id="open-count">${openCount}</div>
         <div class="stat-sub">open matches</div>
+        ${total > data.matches.length ? `<div class="stat-note">the list below is ranked from the top ${data.matches.length} by score</div>` : ""}
       </div>
       <div class="stat-tiles">
         <div class="tile${fresh.length ? " hot" : ""}"><b>${fresh.length}</b><span>new since your last visit</span></div>
@@ -435,6 +443,7 @@ h3{font-family:var(--display);font-size:20px;margin:0;text-transform:uppercase;l
 .stat-big{font-family:var(--display);font-size:var(--big);line-height:.9;text-transform:uppercase;margin:4px 0 6px}
 .stat{display:grid;gap:16px;position:relative}
 .stat-sub{font-weight:700;font-size:18px}
+.stat-note{color:var(--muted);font-size:13px;font-weight:700;margin-top:4px}
 .stat-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .tile{background:#fff;border:2px solid var(--ink);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .tile b{font-family:var(--display);font-size:34px;line-height:1} .tile span{font-size:var(--small);font-weight:700;color:var(--muted);line-height:1.2}

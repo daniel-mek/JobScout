@@ -28,8 +28,12 @@ MATCHES_PATH = ROOT / "data" / "matches.json"
 
 
 def run(raw_by_source: dict[str, list], targets: dict, weights: dict, *, check_pages: int = 40,
-        allow_network: bool = True, now: float | None = None) -> tuple[list[dict], Counter]:
-    """The pipeline, with no I/O except the optional page checks. Returns (scored matches, drop counts)."""
+        allow_network: bool = True, now: float | None = None, save: bool = True) -> tuple[list[dict], Counter]:
+    """The pipeline, with no I/O except the optional page checks. Returns (scored matches, drop counts).
+
+    save=False (a dry run) still reads posting pages but keeps the eligibility cache in memory, so a dry run
+    can never record a verdict that hides a later change to the page.
+    """
     now = now if now is not None else time.time()
     counts: Counter = Counter()
 
@@ -61,7 +65,7 @@ def run(raw_by_source: dict[str, list], targets: dict, weights: dict, *, check_p
             eligibility.check(item, int(targets.get("graduation_year", 2030)), cache, allow_network)
         else:
             item["eligibility"], item["eligibility_note"] = "unknown", "not checked (below top rows)"
-    if allow_network:
+    if allow_network and save:
         eligibility.save_cache(cache)
     # A posting the page itself rules out (wrong graduation year, upperclassmen only, taken down) drops to the
     # bottom. It is kept and labeled, never hidden, but it should not outrank something you can apply to.

@@ -42,13 +42,16 @@ def score(listing: dict, weights: dict, now: float | None = None) -> dict:
     if role == "none" and listing.get("early_career") == "strong":
         role = "program"  # "Explore Program" names no role but is exactly what a freshman wants
         listing["role"] = role
+    fresh = freshness_class(listing.get("date_posted", 0), now)
+    if fresh == "over_90d" and listing.get("tier", 3) in w.get("no_stale_penalty_tiers", []):
+        fresh = "older"
     breakdown = {
         "role": w["role"].get(role, 0),
         "tier": w["tier"].get(listing.get("tier", 3), 0),
         "early_career": w["early_career"].get(listing.get("early_career", "none"), 0),
         "degrees": w["degrees"]["bachelors_listed"] if listing.get("degree_class") == "bachelors" else w["degrees"]["unknown"],
         "location": w["location"].get("priority" if loc == "priority" else "us" if loc == "us" else "other", 0),
-        "freshness": w["freshness"].get(freshness_class(listing.get("date_posted", 0), now), 0),
+        "freshness": w["freshness"].get(fresh, 0),
         "keywords": min(w["keywords"]["max"], w["keywords"]["per_hit"] * len(listing.get("keyword_hits", []))),
     }
     listing["breakdown"] = breakdown

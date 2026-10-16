@@ -26,3 +26,8 @@ The calls that shaped Scout, and why. Newest at the bottom.
 | 2026-10-15 | A posting that rules you out sinks to the bottom, labeled, never hidden. | An upperclassmen-only posting was ranking third. |
 | 2026-10-15 | State lives on a separate `data` branch; `main` holds only code. | Hourly bot commits were burying the real history. |
 | 2026-10-15 | Home-screen icons as PNGs plus a web app manifest; gradients and motion that switch off for reduced-motion users. | iOS ignores SVG icons. |
+| 2026-10-16 | A one-time `catchup` mode pushes the big tech postings and freshman programs the first `--seed` marked as seen. | The seed swallowed 1,197 matches, so open Tier 1 postings never alerted. |
+| 2026-10-16 | The New page counts open matches from `total_matches`, not from the 300 rows the cron uploads. | It said "299 open matches" while far more had passed the filters. |
+| 2026-10-16 | A blank degrees field scores the same as Bachelor's listed. | Graduate-only rows are already dropped, and Microsoft SWE rows sat at 56 to 59, just under the instant threshold, only because the field was empty. |
+| 2026-10-16 | Tier 1 and 2 postings never take the over-90-days penalty. | Big companies keep one evergreen posting open all season; Apple's undergrad SWE intern posting sat at rank 160. The page check catches the ones that closed. |
+| 2026-10-16 | `--dry-run` writes nothing at all, including the eligibility cache and page fingerprints. | A dry run that saved them could hide a page change from the next real run. |

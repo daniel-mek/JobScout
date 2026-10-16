@@ -41,7 +41,7 @@ Cloudflare Worker: password-protected dashboard (New, Programs, Tracker, Setting
 - **Cloudflare Worker + KV** dashboard: `worker/src/index.js`, server-rendered pages, HMAC-signed login cookie, every color and size in `worker/src/tokens.css`.
 - **HTML + WeasyPrint** for one-page, ATS-checked resume and letter PDFs.
 - **Claude Code** for `/triage`, `/prep`, `/interview`, and `/status` (`.claude/commands/`).
-- **Tests:** about 100 unit tests on saved fixtures, no network. `python -m unittest discover -s tests -t .`
+- **Tests:** about 150 unit tests on saved fixtures, no network. `python -m unittest discover -s tests -t .`
 
 ## Where this is going
 

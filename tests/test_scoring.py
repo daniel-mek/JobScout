@@ -43,6 +43,29 @@ class Score(unittest.TestCase):
         self.assertEqual(program["role"], "program")
         self.assertGreater(program["score"], plain["score"])
 
+    def test_unknown_degrees_cost_nothing(self):
+        # Graduate-only rows are dropped before scoring, so a blank degrees field is just missing data.
+        blank = scoring.score(described(degree_class="unknown"), W, NOW)
+        listed = scoring.score(described(degree_class="bachelors"), W, NOW)
+        self.assertEqual(blank["breakdown"]["degrees"], listed["breakdown"]["degrees"])
+        self.assertEqual(blank["score"], listed["score"])
+
+    def test_microsoft_rows_with_blank_degrees_reach_the_instant_threshold(self):
+        # The October 16 review: Microsoft SWE intern rows scored 56 to 59 only because degrees was empty.
+        ms = scoring.score(described(role="swe", tier=1, degree_class="unknown", location_class="us",
+                                     date_posted=NOW - 30 * 86400), W, NOW)
+        self.assertGreaterEqual(ms["score"], W["instant_min_score"])
+
+    def test_no_stale_penalty_for_tier_1_and_2(self):
+        old = NOW - 120 * 86400
+        for tier in (1, 2):
+            item = scoring.score(described(tier=tier, date_posted=old), W, NOW)
+            self.assertEqual(item["breakdown"]["freshness"], 0, f"tier {tier}")
+        tier3 = scoring.score(described(tier=3, date_posted=old), W, NOW)
+        self.assertEqual(tier3["breakdown"]["freshness"], -10)
+        # fresh postings still get their bonus at every tier
+        self.assertEqual(scoring.score(described(tier=1, date_posted=NOW - 3600), W, NOW)["breakdown"]["freshness"], 10)
+
     def test_freshness(self):
         self.assertEqual(scoring.freshness_class(NOW - 3600, NOW), "under_24h")
         self.assertEqual(scoring.freshness_class(NOW - 3 * 86400, NOW), "under_7d")

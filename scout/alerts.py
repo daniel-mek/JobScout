@@ -67,6 +67,23 @@ def select_digest(matches: list[dict], seen: dict, weights: dict) -> list[dict]:
     return pool[:size]
 
 
+def is_catchup(m: dict, seen: dict) -> bool:
+    """Seeded on the first run (so it never alerted), worth an alert today, and not ruled out by its page.
+
+    "Worth an alert" is Tier 1 or 2, or a freshman/sophomore program. A row only counts while it is still
+    in the current matches, so anything that dropped off the lists since the seed is left alone.
+    """
+    if (seen.get(m["key"]) or {}).get("via") != "seeded":
+        return False
+    if m.get("eligibility") in RULED_OUT:
+        return False
+    return m.get("tier", 3) <= 2 or m.get("early_career") == "strong"
+
+
+def select_catchup(matches: list[dict], seen: dict) -> list[dict]:
+    return [m for m in matches if is_catchup(m, seen)]
+
+
 def mark_seen(seen: dict, items: list[dict], channel: str, now: float | None = None) -> None:
     stamp = datetime.fromtimestamp(now if now is not None else time.time(), timezone.utc).isoformat(timespec="seconds")
     for m in items:

@@ -23,17 +23,18 @@ tier:
 # Eligibility signals. "strong" is a freshman/sophomore word or a named program (Explore, STEP, Ignite, Student
 # Ambassador). For a freshman these are the most valuable finds Scout can make: the points are set so that
 # any exploratory program, even at a Tier 3 company with no role word in the title, outranks a plain Tier 1 SWE
-# posting (20 + 45 + 6 = 71 beats 30 + 20 + 5 + 6 = 61).
+# posting (20 + 45 + 5 + 6 = 76 beats 30 + 20 + 5 + 6 = 61).
 # "weak" is a bare "early career(s)" in the title, which is usually just a job level at banks.
 early_career:
   strong: 45
   weak: 5
 
-# Degrees field. Listings that say Bachelor's (or Associate's) are a safer bet than ones that say nothing.
-# Graduate-only listings never reach scoring; they are dropped in the filter step.
+# Degrees field. Graduate-only listings never reach scoring; they are dropped in the filter step, so an empty
+# degrees field is not a warning sign. The lists often leave it blank (every Microsoft row, for one), and
+# those rows were landing just under the instant threshold, so unknown earns the same as Bachelor's listed.
 degrees:
   bachelors_listed: 5
-  unknown: 0
+  unknown: 5
 
 # Location. Priority = NJ, NYC, or remote in the US. US = anywhere else in the country. Other = outside the US.
 location:
@@ -49,6 +50,10 @@ freshness:
   under_7d: 5
   older: 0
   over_90d: -10
+
+# Tiers that never take the over_90d penalty. Big companies keep one evergreen posting open all season
+# (Apple's "Software Engineer Intern, Undergrad"), and the posting page check catches the ones that closed.
+no_stale_penalty_tiers: [1, 2]
 
 # Saved keywords from targets.yaml. A few points per hit in the title, capped so keywords never outrank role.
 keywords:

@@ -26,7 +26,7 @@ data/                runtime state; in GitHub Actions it is the "data" branch   
 .venv/bin/python -m unittest discover -s tests -t .       # the tests
 ```
 
-Pipeline, in order: `listings.py` fetches the Simplify and vanshb03 JSON files and normalizes every row; `matching.py` decides company tier, role, location, freshman-friendliness, and degree from `config/targets.yaml`; hard drops are inactive rows, non-2027 terms, graduate-only degrees, non-target roles, and postings older than 240 days; `dedupe.py` collapses the same posting across both lists; `scoring.py` applies `config/scoring.yaml` and keeps the breakdown; `eligibility.py` reads the top 40 posting pages for graduation-year and class-year requirements (cached 14 days), and anything the posting rules out sinks to the bottom, still labeled. Nothing is hidden for location; it only changes the score.
+Pipeline, in order: `listings.py` fetches the Simplify and vanshb03 JSON files and normalizes every row; `matching.py` decides company tier, role, location, freshman-friendliness, and degree from `config/targets.yaml`; hard drops are inactive rows, non-2027 terms, graduate-only degrees, non-target roles, and postings older than 240 days; `dedupe.py` collapses the same posting across both lists; `scoring.py` applies `config/scoring.yaml` and keeps the breakdown (a blank degrees field scores the same as Bachelor's listed, and Tier 1 and 2 postings never take the over-90-days penalty); `eligibility.py` reads the top 40 posting pages for graduation-year and class-year requirements (cached 14 days), and anything the posting rules out sinks to the bottom, still labeled. Nothing is hidden for location; it only changes the score.
 
 ```
  1. [100] NVIDIA  |  Software Engineer Intern
@@ -42,12 +42,17 @@ export NTFY_TOPIC=...                                  # the private topic; also
 .venv/bin/python -m scout.run --mode watch --dry-run   # what a run would push, without sending
 .venv/bin/python -m scout.run --mode watch --seed      # first run only: mark today's matches as seen
 .venv/bin/python -m scout.run --mode digest --force    # send the digest now
+.venv/bin/python -m scout.run --mode catchup           # once, after a seed: one push of what the seed swallowed
 ```
+
+`--dry-run` saves nothing: no seen list, no matches.json, no eligibility cache, no page fingerprints. It still reads the lists and posting pages so the printout is real.
+
+**Catch-up.** The first run's `--seed` marks every match as seen, so Tier 1 and 2 postings that were already open never alerted. `--mode catchup` (also the workflow's `mode` input: Actions, scout, Run workflow, mode `catchup`) sends one push listing the seeded postings that are still on the lists, Tier 1 or 2 or a freshman program, and not ruled out or closed by their page, best first. Each one listed is marked via `catchup` in `seen.json`. If they don't all fit in one ntfy message, the push says how many are left and the next catch-up run sends those; once nothing is left it says so.
 
 - **Instant push:** a Tier 1 or Tier 2 posting scoring 60 or more, any freshman/sophomore program, any ambassador role, or a watched page that gained new text.
 - **Daily digest:** the top 10 new matches that did not push instantly, once a day after 7:00 PM New York time.
 - **Page watchers:** each page in `config/watch-pages.yaml` is fetched, stripped to text with volatile tokens (hashes, cloud region names, rotating job-carousel cards) removed, and hashed. Only new lines count as a change. Scout stores a fingerprint of each line, never the page text, so the repo does not republish anyone's page. A page that can't be read twice in a row, or serves no text, warns once.
-- **Nothing twice:** `seen.json` holds every key ever pushed or digested.
+- **Nothing twice:** `seen.json` holds every key ever pushed or digested, with how (`instant`, `digest`, `seeded`, `catchup`).
 - **Failing loudly:** if a source list can't be fetched, one push says so.
 - **Schedule:** hourly at :17 except two early-morning hours. GitHub delays and skips scheduled runs when busy, so the digest is a once-a-day check inside every run rather than its own schedule.
 - **State:** the workflow checks out the `data` branch into `data/`, runs, and commits back to `data`, so `main` stays code only.
@@ -73,7 +78,7 @@ GitHub Actions run <--pull--  tracker, prep queue, passed keys
 ```
 
 - `worker/src/index.js` is the whole app: routing, the password login (HMAC-signed cookie, 30 days), server-rendered pages, and small JSON endpoints for the buttons. `worker/src/tokens.css` holds every color and size.
-- `scout/sync.py push` sends matches (with first-seen times), page state, the tracker, and the config text to `/api/ingest` with a secret header. `scout/sync.py pull` fetches `/api/export` and writes the tracker, queue, and passed keys into `data/` (never committed).
+- `scout/sync.py push` sends matches (with first-seen times), page state, the tracker, and the config text to `/api/ingest` with a secret header. `matches.json` keeps only the top 300 by score, so it also sends `total_matches`; the New page counts open matches from that total and says the list is ranked from the top 300. `scout/sync.py pull` fetches `/api/export` and writes the tracker, queue, and passed keys into `data/` (never committed).
 - "Prep this" queues a posting for `/prep`; "Pass" hides it (with undo). Tracker edits from the phone win over older ones by date.
 - Worker secrets: `DASH_PASSWORD`, `SESSION_SECRET`, `INGEST_SECRET`. Repo secrets: `NTFY_TOPIC`, `SCOUT_URL`, `SCOUT_INGEST_SECRET`.
 

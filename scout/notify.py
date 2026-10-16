@@ -111,6 +111,36 @@ def digest_push(matches: list[dict], now: float) -> dict:
             "priority": 3, "tags": ["newspaper"]}
 
 
+CATCHUP_MESSAGE_CHARS = 3600  # under Ntfy.send's 3,800 cut, with room for the closing line
+
+
+def catchup_push(matches: list[dict], now: float) -> tuple[dict, list[dict]]:
+    """The one-time catch-up: postings the first run marked as seen without ever alerting.
+
+    Returns (push, listed). Only as many rows as fit in one message are listed; the caller marks just
+    those, so a second catch-up run picks up where this one stopped and nothing is sent twice.
+    """
+    if not matches:
+        return ({"title": "Scout catch-up: nothing to catch up on",
+                 "message": "Every seeded posting has alerted, closed, or dropped off the lists.",
+                 "priority": 2, "tags": ["zzz"]}, [])
+    blocks: list[str] = []
+    used = 0
+    for m in matches:
+        tag = "program, " if m.get("early_career") == "strong" else f"Tier {m.get('tier')}, " if m.get("tier", 3) <= 2 else ""
+        block = f"{m['score']} {m['company']}: {m['title']} ({tag}{_location(m)}, {_age(m, now)})\n{m['url']}"
+        if blocks and used + len(block) + 2 > CATCHUP_MESSAGE_CHARS:
+            break
+        blocks.append(block)
+        used += len(block) + 2
+    listed = matches[:len(blocks)]
+    left = len(matches) - len(listed)
+    if left:
+        blocks.append(f"{left} more qualify. Run catch-up again for the next batch.")
+    return ({"title": f"Scout catch-up: {len(listed)} open postings you never got an alert for",
+             "message": "\n\n".join(blocks), "priority": 3, "tags": ["inbox_tray"]}, listed)
+
+
 def page_push(event: dict) -> dict:
     kind = event["kind"]
     if kind == "changed":
