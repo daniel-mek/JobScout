@@ -2,6 +2,10 @@
 
     .venv/bin/python -m scout.sync push     # matches, page state, config text, tracker  -> Worker KV
     .venv/bin/python -m scout.sync pull     # tracker, prep queue, passed keys  <- Worker KV, into data/
+    .venv/bin/python -m scout.sync push --tracker-only   # just data/tracker.json -> Worker KV (after /prep or /status)
+
+--tracker-only exists because the Mac's data/matches.json is an old copy: a full push from the Mac would
+replace the dashboard's matches with it. The tracker merges per posting, newer "updated" wins.
 
 Needs two settings, from the environment or from me/dashboard.env (gitignored, KEY=value lines):
     SCOUT_URL            https://scout-dashboard.<account>.workers.dev
@@ -91,6 +95,7 @@ def apply_pull(state: dict, data_dir: Path = DATA) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("command", choices=["push", "pull"])
+    ap.add_argument("--tracker-only", action="store_true", help="push: send only data/tracker.json")
     args = ap.parse_args()
     cfg = settings()
     if not cfg:
@@ -98,7 +103,10 @@ def main() -> int:
         return 0
     url, secret = cfg
     try:
-        if args.command == "push":
+        if args.command == "push" and args.tracker_only:
+            result = _call(f"{url}/api/ingest-tracker", secret, "POST", {"tracker": _load(DATA / "tracker.json", {})})
+            print(f"pushed tracker ({result.get('tracker', 0)} rows on the dashboard)")
+        elif args.command == "push":
             result = _call(f"{url}/api/ingest", secret, "POST", build_push_payload())
             print(f"pushed {result.get('matches', 0)} matches to the dashboard")
         else:

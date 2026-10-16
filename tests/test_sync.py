@@ -64,5 +64,17 @@ class Settings(unittest.TestCase):
                     os.environ[k] = v
 
 
+class TrackerOnly(unittest.TestCase):
+    def test_sends_only_the_tracker_to_its_own_route(self):
+        from unittest import mock
+        calls = []
+        with mock.patch.object(sync, "settings", return_value=("https://dash.example", "s")), \
+             mock.patch.object(sync, "_load", return_value={"k": {"state": "Prepped", "updated": "2026-10-16"}}), \
+             mock.patch.object(sync, "_call", side_effect=lambda url, secret, method="GET", body=None: calls.append((url, body)) or {"tracker": 1}), \
+             mock.patch("sys.argv", ["scout.sync", "push", "--tracker-only"]):
+            self.assertEqual(sync.main(), 0)
+        self.assertEqual(calls, [("https://dash.example/api/ingest-tracker", {"tracker": {"k": {"state": "Prepped", "updated": "2026-10-16"}}})])
+
+
 if __name__ == "__main__":
     unittest.main()

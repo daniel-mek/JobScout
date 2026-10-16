@@ -7,7 +7,7 @@
  *
  * Pages (all behind the password):   /  New   /programs   /tracker   /settings
  * JSON (cookie):                     POST /api/tracker  POST /api/queue  POST /api/pass
- * JSON (secret header):              POST /api/ingest   GET /api/export
+ * JSON (secret header):              POST /api/ingest   POST /api/ingest-tracker   GET /api/export
  * Open:                              GET /login  POST /login  GET /logout  GET /api/health
  *
  * Cron (wrangler.toml [triggers]): GitHub skips most of its scheduled runs (4 of 22 on October 15, 2026),
@@ -36,8 +36,9 @@ export default {
     if (path === "/logout") return redirect("/login", { "Set-Cookie": `${COOKIE}=; Path=/; Max-Age=0` });
 
     // Cron endpoints: a shared secret, no cookie.
-    if (path === "/api/ingest" || path === "/api/export") {
+    if (path === "/api/ingest" || path === "/api/ingest-tracker" || path === "/api/export") {
       if (!env.INGEST_SECRET || !(await sameSecret(request.headers.get("x-scout-secret") || "", env.INGEST_SECRET))) return json({ error: "unauthorized" }, 401);
+      if (path === "/api/ingest-tracker") return ingestTracker(request, env);
       return path === "/api/ingest" ? ingest(request, env) : exportState(env);
     }
 
@@ -155,14 +156,29 @@ async function ingest(request, env) {
   ]);
   // The repo is the long-term record for the tracker; the cron pushes its copy up so edits made
   // through /status on the Mac also show here. Phone edits are newer when their "updated" is later.
-  if (body.tracker) {
-    const mine = await get(env, "tracker", {});
-    for (const [key, row] of Object.entries(body.tracker)) {
-      if (!mine[key] || (row.updated || "") >= (mine[key].updated || "")) mine[key] = row;
-    }
-    await put(env, "tracker", mine);
-  }
+  if (body.tracker) await mergeTracker(env, body.tracker);
   return json({ ok: true, matches: body.matches.length });
+}
+
+// The tracker alone, from /prep and /status on the Mac (scout.sync push --tracker-only), so a kit shows up
+// as Prepped right away without touching the matches the cron uploaded.
+async function ingestTracker(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body.tracker !== "object" || body.tracker === null || Array.isArray(body.tracker)) {
+    return json({ error: "expected { tracker: {...} }" }, 400);
+  }
+  const merged = await mergeTracker(env, body.tracker);
+  return json({ ok: true, tracker: Object.keys(merged).length });
+}
+
+// Newer wins per posting: a phone edit and a Mac edit each keep the row with the later "updated".
+async function mergeTracker(env, incoming) {
+  const mine = await get(env, "tracker", {});
+  for (const [key, row] of Object.entries(incoming)) {
+    if (row && typeof row === "object" && (!mine[key] || (row.updated || "") >= (mine[key].updated || ""))) mine[key] = row;
+  }
+  await put(env, "tracker", mine);
+  return mine;
 }
 
 async function exportState(env) {
