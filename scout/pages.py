@@ -140,7 +140,7 @@ def save_state(state: dict, path: Path = STATE_PATH) -> None:
     Path(path).write_text(json.dumps(state, indent=1, sort_keys=True), encoding="utf-8")
 
 
-def check_pages(pages: list[dict], state: dict, fetch=fetch_text, text_dir: Path = TEXT_DIR,
+def check_pages(pages: list[dict], state: dict, fetch=None, text_dir: Path = TEXT_DIR,
                 now: float | None = None, save: bool = True) -> list[dict]:
     """Fetch every page, update state in place, and return the events worth a push.
 
@@ -150,6 +150,7 @@ def check_pages(pages: list[dict], state: dict, fetch=fetch_text, text_dir: Path
     "unreadable" (alert, after two failures in a row), "thin" (alert once: the page gives a server
     no text, so a better URL is needed), "baseline" (first time seen, no alert).
     """
+    fetch = fetch or fetch_text  # looked up at call time, so a test can replace pages.fetch_text
     now = now if now is not None else time.time()
     if save:
         text_dir.mkdir(parents=True, exist_ok=True)
