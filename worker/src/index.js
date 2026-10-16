@@ -263,44 +263,106 @@ async function reviewList(env) {
       <div class="meta">kit saved ${esc(when(k.updated))}</div>
     </a>`).join("");
   const body = `<p class="note">every kit /prep built. read it, fix anything you wouldn't say and save, open the application, then mark it submitted. you still click submit on their site. saved edits go back into the kit the next time the Mac pulls from Scout.</p>
-    ${cards || '<p class="note">no kits yet. run /prep on the Mac; it uploads each kit here.</p>'}`;
+    ${cards ? `<div class="kitgrid">${cards}</div>` : '<p class="note">no kits yet. run /prep on the Mac; it uploads each kit here.</p>'}`;
   return page(body, { title: "Review", page: "review", lead: "read it,", head: "send it" });
+}
+
+// The length a question asks for, read from its wording: "(about 120 words)", "max 150 words", "(3-4 sentences)",
+// "500 characters". The page shows it next to the live count and flags the answer when it runs over.
+function answerLimit(q) {
+  let m;
+  if ((m = q.match(/(\d+)\s*(?:-|to)\s*(\d+)\s*sentences?/i))) return { kind: "sentences", max: +m[2], soft: false, label: `${m[1]}-${m[2]} sentences` };
+  if ((m = q.match(/(\d+)\s*sentences?/i))) return { kind: "sentences", max: +m[1], soft: false, label: `${m[1]} sentences` };
+  if ((m = q.match(/(\d[\d,]*)\s*(?:-|to)\s*(\d[\d,]*)\s*words?/i))) return { kind: "words", max: +m[2].replace(/,/g, ""), soft: false, label: `${m[1]}-${m[2]} words` };
+  if ((m = q.match(/(\d[\d,]*)\s*char/i))) return { kind: "chars", max: +m[1].replace(/,/g, ""), soft: false, label: `${m[1]} characters` };
+  if ((m = q.match(/(about|around|roughly|~)?\s*(\d[\d,]*)\s*words?/i))) {
+    const n = +m[2].replace(/,/g, "");
+    return { kind: "words", max: n, soft: !!m[1], label: m[1] ? `about ${n} words` : `${n} words` };
+  }
+  return null;
+}
+
+// Counts the same way the page script does, so the number doesn't jump when you start typing.
+function countBy(kind, t) {
+  t = t.trim();
+  if (!t) return 0;
+  if (kind === "chars") return t.length;
+  if (kind === "sentences") return t.split(/[.!?]+(?:\s+|$)/).filter((x) => x.trim()).length;
+  return t.split(/\s+/).length;
+}
+
+// A section like "Standard fields" is a bullet list of "label: value" lines. Those read better as the
+// form fields they'll be typed into, with the ones still waiting on you marked, than as a wall of text.
+const isFieldList = (t) => { const lines = t.split("\n").filter((l) => l.trim()); return lines.length > 1 && lines.every((l) => /^\s*[-*] /.test(l)); };
+const NEEDS_YOU = /\[(confirm|required|your detail)/i;
+function fieldRows(t) {
+  return t.split("\n").filter((l) => l.trim()).map((l) => {
+    const line = l.replace(/^\s*[-*] /, "");
+    const at = line.indexOf(":");
+    const [label, value] = at > 0 && at < 60 ? [line.slice(0, at).trim(), line.slice(at + 1).trim()] : ["", line.trim()];
+    const need = NEEDS_YOU.test(value);
+    return `<div class="field${need ? " need" : ""}"><dt>${esc(label)}</dt><dd><span class="v">${esc(value)}</span>${need ? '<span class="chip">needs you</span>' : ""}</dd></div>`;
+  }).join("");
 }
 
 async function reviewKit(env, slug) {
   const [kit, tracker] = await Promise.all([get(env, `kit:${slug}`, null), get(env, "tracker", {})]);
   if (!kit) return page('<p class="note">that kit isn\'t here. <a class="inline" href="/review">back to review</a></p>', { title: "Review", page: "review", lead: "kit", head: "not found" }, 404);
   const st = tracker[kit.key]?.state || "Prepped";
-  const words = (t) => (t.trim() ? t.trim().split(/\s+/).length : 0);
-  const answers = kit.answers.map((a, i) => `
-    <article class="card answer" data-i="${i}">
+
+  // The bar under each answer: live count against the asked-for length, saved or unsaved, and save.
+  const bar = (text, q, edited, act) => {
+    const lim = answerLimit(q || "");
+    const kind = lim ? lim.kind : "words";
+    const n = countBy(kind, text);
+    const over = lim && n > (lim.soft ? lim.max * 1.15 : lim.max);
+    const unit = kind === "chars" ? "characters" : kind;
+    return `<div class="ans-bar">
+        <span class="count${over ? " over" : ""}" data-kind="${kind}"${lim ? ` data-max="${lim.max}" data-soft="${lim.soft ? 1 : 0}"` : ""}><b>${n}</b> ${unit}${lim ? ` <span class="lim">· asks for ${esc(lim.label)}</span>` : ""}</span>
+        <span class="status" data-state="saved">${edited ? "saved, edited here" : "saved"}</span>
+        <button class="btn accent" data-act="${act}">save</button>
+      </div>`;
+  };
+  const answers = kit.answers.map((a, i) => isFieldList(a.a) ? `
+    <article class="answer fields" data-i="${i}">
+      <div class="q-row"><h3 class="q">${esc(a.q)}</h3><button class="btn ghost small" data-act="edit-fields">edit</button></div>
+      <dl class="fieldlist">${fieldRows(a.a)}</dl>
+      <textarea class="ans" data-act="answer" rows="3" hidden>${esc(a.a)}</textarea>
+      ${bar(a.a, "", a.edited, "save-answer")}
+    </article>` : `
+    <article class="answer" data-i="${i}">
       <h3 class="q">${esc(a.q)}</h3>
-      <textarea class="ans" data-act="answer" rows="3">${esc(a.a)}</textarea>
-      <div class="actions">
-        <button class="btn accent" data-act="save-answer">save</button>
-        <span class="meta wc">${words(a.a)} words${a.edited ? " · edited on your phone" : ""}</span>
-      </div>
+      <textarea class="ans" data-act="answer" rows="3" spellcheck="true">${esc(a.a)}</textarea>
+      ${bar(a.a, a.q, a.edited, "save-answer")}
     </article>`).join("");
+
+  // Phone: one column, header, notes, then the writing. Desktop (900px+): the header and notes stay put
+  // on the left while the answers scroll on the right as one readable sheet.
   const body = `
-    <article class="card kit-head" data-key="${esc(kit.key)}" data-slug="${esc(kit.slug)}">
-      <div class="tags"><span class="tag ${st === "Applied" ? "green" : "ink"}">${esc(st)}</span></div>
-      <div class="row"><h3>${esc(kit.company)}</h3></div>
-      <div class="title">${esc(kit.title)}</div>
-      <div class="actions">
-        <a class="btn accent" href="${esc(safeUrl(kit.url))}" target="_blank" rel="noopener">open the application ↗</a>
-        ${kit.resume_pdf ? `<a class="btn" href="/review/${esc(kit.slug)}/resume.pdf" target="_blank">resume.pdf</a>` : ""}
-        ${kit.letter_pdf ? `<a class="btn" href="/review/${esc(kit.slug)}/letter.pdf" target="_blank">cover letter.pdf</a>` : ""}
-        ${st === "Applied" ? "" : '<button class="btn" data-act="submitted">I submitted it</button>'}
+    <div class="kit">
+      <aside class="kit-side">
+        <article class="card kit-head" data-key="${esc(kit.key)}" data-slug="${esc(kit.slug)}">
+          <div class="tags"><span class="tag ${st === "Applied" ? "green" : "ink"}">${esc(st)}</span></div>
+          <div class="row"><h3>${esc(kit.company)}</h3></div>
+          <div class="title">${esc(kit.title)}</div>
+          <div class="actions">
+            <a class="btn accent" href="${esc(safeUrl(kit.url))}" target="_blank" rel="noopener">open the application ↗</a>
+            ${kit.resume_pdf ? `<a class="btn" href="/review/${esc(kit.slug)}/resume.pdf" target="_blank">resume.pdf</a>` : ""}
+            ${kit.letter_pdf ? `<a class="btn" href="/review/${esc(kit.slug)}/letter.pdf" target="_blank">cover letter.pdf</a>` : ""}
+            ${st === "Applied" ? "" : '<button class="btn" data-act="submitted">I submitted it</button>'}
+          </div>
+        </article>
+        <details class="card notes" open><summary><h3>read this first</h3></summary><div class="md">${mdToHtml(kit.notes || "")}</div></details>
+      </aside>
+      <div class="kit-main">
+        <h2>the answers</h2>
+        ${answers ? `<section class="sheet">${answers}</section>` : '<p class="note">this kit has no written answers.</p>'}
+        ${kit.letter ? `<h2>cover letter</h2><section class="sheet"><article class="answer letter"><textarea class="ans" data-act="letter" rows="8" spellcheck="true">${esc(kit.letter)}</textarea>${bar(kit.letter, "", kit.letter_edited, "save-letter")}</article></section>` : ""}
       </div>
-    </article>
-    <details class="card notes" open><summary><h3>read this first</h3></summary><div class="md">${mdToHtml(kit.notes || "")}</div></details>
-    <h2>the answers</h2>
-    ${answers || '<p class="note">this kit has no written answers.</p>'}
-    ${kit.letter ? `<h2>cover letter</h2><article class="card answer letter"><textarea class="ans" data-act="letter" rows="8">${esc(kit.letter)}</textarea><div class="actions"><button class="btn accent" data-act="save-letter">save</button><span class="meta wc">${words(kit.letter)} words${kit.letter_edited ? " · edited on your phone" : ""}</span></div></article>` : ""}`;
+    </div>`;
   return page(body, { title: kit.company || "Review", page: "review", lead: "read it,", head: "send it" });
 }
 
-// Just enough Markdown for kit notes: headings, bullets, numbered lists, tables, bold, links. Escaped first.
 function mdToHtml(md) {
   const inline = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/(https?:\/\/[^\s<)]+)/g, (u) => `<a class="inline" href="${safeUrl(u)}" target="_blank" rel="noopener">${u}</a>`);
@@ -310,7 +372,7 @@ function mdToHtml(md) {
     if (list) { out.push(`</${list}>`); list = null; }
     if (table.length) {
       const rows = table.filter((r) => !/^\|?\s*:?-{2,}/.test(r)).map((r) => r.replace(/^\||\|$/g, "").split("|").map((c) => `<td>${inline(c.trim())}</td>`).join(""));
-      out.push(`<table>${rows.map((r) => `<tr>${r}</tr>`).join("")}</table>`); table = [];
+      out.push(`<div class="tablewrap"><table>${rows.map((r) => `<tr>${r}</tr>`).join("")}</table></div>`); table = [];
     }
   };
   for (const raw of md.split("\n")) {
@@ -684,13 +746,44 @@ main > *:nth-child(2){animation-delay:.04s} main > *:nth-child(3){animation-dela
 .btn.tapped{animation:wiggle .35s ease}
 @keyframes wiggle{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
 .card.dim{transition:opacity .3s}
-/* Review: kit cards link whole; answers are full-width boxes that grow with the text */
-a.kitcard{display:block;color:var(--ink);text-decoration:none} .answer .q{font-size:18px;margin:0 0 10px;font-family:var(--font);font-weight:800;text-transform:none}
-textarea.ans{width:100%;resize:none;overflow:hidden;line-height:1.45;border-radius:14px;padding:12px 14px;font-weight:500;min-height:90px}
+/* Review. The kit page is a writing tool: each answer is read, edited until it sounds right, saved, then
+   copied into the application by hand. So the answers sit on one quiet sheet with a reading measure,
+   not in chunky cards, and the boxes grow with the text. */
+a.kitcard{display:block;color:var(--ink);text-decoration:none}
 .notes summary{cursor:pointer;list-style:none} .notes summary::-webkit-details-marker{display:none} .notes summary h3{margin:0}
 .md{font-size:var(--small);font-weight:500;overflow-wrap:anywhere} .md h4{margin:14px 0 6px;font-size:15px} .md p{margin:6px 0} .md ul,.md ol{margin:6px 0;padding-left:20px}
-.md table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px} .md td{border:2px solid var(--ink);padding:6px 8px;vertical-align:top} .md tr:first-child td{font-weight:800;background:var(--sand)}
-.wc{margin-left:auto} .btn.saved{background:var(--green)}
+/* notes tables: words wrap whole, links may break anywhere, and a table still too wide scrolls inside its card */
+.md .tablewrap{overflow-x:auto;margin:8px 0} .md table{border-collapse:collapse;width:100%;font-size:13px} .md td{border:2px solid var(--ink);padding:6px 8px;vertical-align:top;overflow-wrap:normal;min-width:4.5em} .md td a{overflow-wrap:anywhere} .md tr:first-child td{font-weight:800;background:var(--sand)}
+.btn.saved{background:var(--green)} .btn.small{font-size:13px;padding:7px 12px}
+.sheet{background:var(--paper);border:var(--line) solid var(--ink);border-radius:var(--radius);box-shadow:var(--shadow);padding:6px var(--sheet-pad);margin:0 0 16px}
+.sheet .answer{padding:var(--sheet-pad) 0} .sheet .answer + .answer{border-top:2px dashed var(--rule)}
+.answer .q{font:700 19px/1.3 var(--font);text-transform:none;margin:0 0 12px;max-width:var(--measure)}
+.q-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px} .q-row .q{margin-bottom:12px}
+textarea.ans{display:block;width:100%;resize:none;overflow:hidden;font:400 var(--read)/1.65 var(--serif);color:var(--ink);background:var(--paper-in);border:1.5px solid var(--rule);border-radius:10px;box-shadow:none;padding:14px 16px;min-height:90px;transition:border-color .15s,box-shadow .15s}
+textarea.ans:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px var(--accent)}
+textarea.ans[hidden]{display:none}
+.ans-bar{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-top:10px;font-size:var(--small);font-weight:700;color:var(--muted)}
+.ans-bar .count b{color:var(--ink);font-variant-numeric:tabular-nums} .ans-bar .count.over,.ans-bar .count.over b{color:var(--red)} .ans-bar .lim{font-weight:500}
+.ans-bar .status{display:inline-flex;align-items:center;gap:6px} .ans-bar .status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--green);border:1.5px solid var(--ink)}
+.ans-bar .status[data-state="dirty"]{color:var(--ink)} .ans-bar .status[data-state="dirty"]::before{background:var(--accent)}
+.ans-bar .btn{margin-left:auto;padding:9px 18px}
+/* "label: value" sections read as the form fields they'll be typed into */
+.fieldlist{margin:0;display:grid;gap:0;max-width:var(--measure)} .field{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:4px 16px;padding:10px 0;border-top:1px solid var(--rule)} .field:first-child{border-top:0}
+.field dt{font-size:var(--small);font-weight:700;color:var(--muted);padding-top:2px} .field dd{margin:0;font:400 16px/1.45 var(--serif);overflow-wrap:anywhere}
+.field.need dd .v{color:var(--muted)} .chip{display:inline-block;margin-left:8px;font:700 11px/1 var(--font);text-transform:uppercase;letter-spacing:.5px;background:var(--accent);border:2px solid var(--ink);border-radius:var(--radius-tag);padding:3px 7px;vertical-align:2px;white-space:nowrap}
+.fields:not(.editing) .ans-bar .btn{display:none} .fields:not(.editing) .ans-bar .count{display:none} .fields.editing .fieldlist{display:none}
+@media (max-width:560px){.field{grid-template-columns:1fr;padding:9px 0} .field dt{padding-top:0} textarea.ans{padding:12px}}
+/* Desktop: kit header and notes stay pinned on the left; the sheet scrolls on the right. */
+@media (min-width:900px){
+  body[data-page="review"] main > .kit{grid-column:1 / -1;display:grid;grid-template-columns:300px minmax(0,var(--sheet-max));justify-content:start;column-gap:32px;align-items:start}
+  .kit-side{position:sticky;top:calc(16px + env(safe-area-inset-top));max-height:calc(100vh - 32px - env(safe-area-inset-top));display:flex;flex-direction:column;gap:20px;padding-bottom:6px}
+  .kit-side > .card{margin:0;flex:none} .kit-side > .notes{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+  .kit-main > h2:first-child{margin-top:0}
+  body[data-page="review"] main > .kitgrid{grid-column:1 / -1;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+  .kitgrid > .kitcard{margin:0;display:flex;flex-direction:column} .kitgrid > .kitcard .meta{margin-top:auto;padding-top:8px}
+}
+@media (min-width:1200px){body[data-page="review"] main > .kit{grid-template-columns:360px minmax(0,var(--sheet-max))}}
+@media (hover:hover){.kitgrid > .card:hover{transform:translate(-2px,-3px);box-shadow:9px 9px 0 var(--ink)}}
 .row h3{min-width:0;overflow-wrap:anywhere} .tile b{font-size:clamp(26px,8vw,34px)}
 /* the next-action box takes its own line and grows with the text, so nothing gets cut off */
 textarea[data-act="next"]{flex:1 1 100%;width:100%;order:-1;resize:none;overflow:hidden;line-height:1.35;border-radius:18px;padding:11px 16px;min-height:44px}
@@ -755,17 +848,32 @@ document.addEventListener("click",async(e)=>{const b=e.target.closest("button[da
  }finally{b.disabled=b.dataset.act==="queue"&&b.textContent.startsWith("queued")}
 });
 // Review page: save an answer or the letter (it goes back into the kit on the Mac's next pull), mark submitted.
-document.addEventListener("click",async(e)=>{const b=e.target.closest("button[data-act]");if(!b||b.disabled)return;const act=b.dataset.act;if(act!=="save-answer"&&act!=="save-letter"&&act!=="submitted")return;
+function setStatus(card,state,text){const s=card.querySelector(".status");if(s){s.dataset.state=state;s.textContent=text}}
+// Same counting as countBy() on the server: words, sentences, or characters, checked against what the question asks for.
+function recount(card){const c=card.querySelector(".count"),t=card.querySelector("textarea.ans");if(!c||!t)return;const v=t.value.trim(),k=c.dataset.kind;
+ const n=!v?0:k==="chars"?v.length:k==="sentences"?v.split(/[.!?]+(?:\\s+|$)/).filter(x=>x.trim()).length:v.split(/\\s+/).length;
+ c.querySelector("b").textContent=n;const max=+c.dataset.max;c.classList.toggle("over",max>0&&n>(c.dataset.soft==="1"?max*1.15:max))}
+// Rebuilds the label and value list after the raw text of a fields section was edited. Mirrors fieldRows() on the server.
+function rebuildFields(card){const dl=card.querySelector(".fieldlist"),t=card.querySelector("textarea.ans");if(!dl||!t)return;dl.textContent="";
+ t.value.split("\\n").filter(l=>l.trim()).forEach(l=>{const line=l.replace(/^\\s*[-*] /,""),at=line.indexOf(":");const lab=at>0&&at<60?line.slice(0,at).trim():"",val=at>0&&at<60?line.slice(at+1).trim():line.trim();
+  const need=/\\[(confirm|required|your detail)/i.test(val);const row=document.createElement("div");row.className="field"+(need?" need":"");const dt=document.createElement("dt");dt.textContent=lab;const dd=document.createElement("dd");const v=document.createElement("span");v.className="v";v.textContent=val;dd.append(v);
+  if(need){const c=document.createElement("span");c.className="chip";c.textContent="needs you";dd.append(c)}row.append(dt,dd);dl.append(row)})}
+document.addEventListener("click",async(e)=>{const b=e.target.closest("button[data-act]");if(!b||b.disabled)return;const act=b.dataset.act;
+ if(act==="edit-fields"){const card=b.closest(".answer"),t=card.querySelector("textarea.ans"),on=!card.classList.contains("editing");card.classList.toggle("editing",on);t.hidden=!on;b.textContent=on?"done":"edit";
+  if(on){t.style.height="auto";t.style.height=t.scrollHeight+t.offsetHeight-t.clientHeight+"px";t.focus()}else rebuildFields(card);return}
+ if(act!=="save-answer"&&act!=="save-letter"&&act!=="submitted")return;
  const head=document.querySelector(".kit-head");if(!head)return;b.disabled=true;
  try{
   if(act==="submitted"){await post("/api/tracker",{key:head.dataset.key,state:"Applied"});b.textContent="marked applied ✓";const t=head.querySelector(".tag");if(t){t.textContent="Applied";t.className="tag green"}return}
   const card=b.closest(".answer"),text=card.querySelector("textarea").value;
   await post("/api/kit-answer",{slug:head.dataset.slug,i:act==="save-letter"?"letter":parseInt(card.dataset.i,10),text});
-  const wc=card.querySelector(".wc");if(wc)wc.textContent=(text.trim()?text.trim().split(/\s+/).length:0)+" words · edited on your phone";
+  setStatus(card,"saved","saved just now");if(card.classList.contains("fields"))rebuildFields(card);
   b.textContent="saved ✓";b.classList.add("saved");setTimeout(()=>{b.textContent="save";b.classList.remove("saved")},1600);
  }finally{b.disabled=act==="submitted"&&b.textContent.startsWith("marked")}
 });
-document.addEventListener("input",(e)=>{const t=e.target.closest("textarea.ans");if(!t)return;const b=t.closest(".answer").querySelector('button[data-act^="save"]');if(b){b.textContent="save";b.classList.remove("saved")}});`;
+document.addEventListener("input",(e)=>{const t=e.target.closest("textarea.ans");if(!t)return;const card=t.closest(".answer");recount(card);setStatus(card,"dirty","unsaved changes");const b=card.querySelector('button[data-act^="save"]');if(b){b.textContent="save";b.classList.remove("saved")}});
+// Warn before leaving with an edit that was never saved.
+addEventListener("beforeunload",(e)=>{if(document.querySelector('.status[data-state="dirty"]')){e.preventDefault();e.returnValue=""}});`;
 
 /* ---------------------------------------------------------------- small helpers */
 

@@ -15,6 +15,9 @@
   --green: #7cc96e;        /* done / applied */
   --red: #e04b3a;          /* warnings */
   --muted: #5b5673;        /* secondary text on cream */
+  --paper: #fbfcee;        /* Review: the writing sheet, a lighter cream so long text is easy to read */
+  --paper-in: #ffffff;     /* Review: the text box itself */
+  --rule: #c9c6b4;         /* Review: thin dividers and text box borders on the sheet */
 
   /* page color is set per page in the HTML (data-page), these are the defaults */
   --page: var(--orange);
@@ -39,4 +42,12 @@
   --small: 13px;
   --h1: clamp(36px, 10vw, 54px);
   --big: clamp(56px, 16vw, 88px);
+  --serif: Charter, "Iowan Old Style", Georgia, "Times New Roman", serif;  /* Review: answers read like a document */
+  --read: 17px;            /* Review: answer text size */
+  --measure: 70ch;         /* Review: comfortable line length for headings and fields */
+  --sheet-pad: 14px;       /* Review: inside padding of the writing sheet on a phone */
+  --sheet-max: 680px;      /* Review: widest the writing sheet gets on desktop, about 70 characters a line */
+}
+@media (min-width: 900px) {
+  :root { --sheet-pad: 30px; --read: 18px; }
 }
