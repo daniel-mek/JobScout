@@ -46,5 +46,34 @@ class DigestDue(unittest.TestCase):
         self.assertTrue(run.digest_due(ts(2026, 12, 1, 19, 17), self.path))
 
 
+class RowCount(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.path = Path(self.tmp.name) / "health.json"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def sender(self):
+        sender = run.Sender(topic="t", dry_run=False)
+        sender.pushes = []
+        sender.send = lambda push: sender.pushes.append(push) or True
+        return sender
+
+    def test_half_the_rows_gone_warns(self):
+        self.path.write_text(json.dumps({"rows": 17000}))
+        sender = self.sender()
+        run.check_row_count(sender, 6000, self.path)
+        self.assertEqual(len(sender.pushes), 1)
+        self.assertIn("6000", sender.pushes[0]["message"])
+        self.assertEqual(json.loads(self.path.read_text())["rows"], 6000)
+
+    def test_normal_change_and_first_run_stay_quiet(self):
+        sender = self.sender()
+        run.check_row_count(sender, 17000, self.path)
+        run.check_row_count(sender, 16500, self.path)
+        self.assertEqual(sender.pushes, [])
+
+
 if __name__ == "__main__":
     unittest.main()

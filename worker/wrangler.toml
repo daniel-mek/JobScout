@@ -4,6 +4,9 @@
 #   DASH_PASSWORD   what Jeremiah types to unlock the dashboard
 #   SESSION_SECRET  signs the login cookie (openssl rand -base64 48)
 #   INGEST_SECRET   the GitHub Actions cron sends this in an x-scout-secret header when it pushes data
+#   GH_DISPATCH_TOKEN  optional: a fine-grained GitHub token for this repo only, Actions read and write.
+#                      Lets the hourly check below start a run when GitHub skipped its own.
+#   NTFY_TOPIC         optional: the same topic the cron pushes to, for the "no run in 4 hours" alert
 name = "scout-dashboard"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
@@ -17,3 +20,11 @@ id = "ce5c08ee20004673a4cdb38fb5ea844c"
 type = "Text"
 globs = ["**/*.css"]
 fallthrough = true
+
+[vars]
+GH_REPO = "jeremiah123-luma/scout"
+
+# Every hour at :47, skipping 10 and 11 UTC like the GitHub schedule (the Morning Brief's hours).
+# See heartbeat() in src/index.js.
+[triggers]
+crons = ["47 0-9,12-23 * * *"]

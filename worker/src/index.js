@@ -9,6 +9,10 @@
  * JSON (cookie):                     POST /api/tracker  POST /api/queue  POST /api/pass
  * JSON (secret header):              POST /api/ingest   GET /api/export
  * Open:                              GET /login  POST /login  GET /logout  GET /api/health
+ *
+ * Cron (wrangler.toml [triggers]): GitHub skips most of its scheduled runs (4 of 22 on October 15, 2026),
+ * so this Worker checks every hour at :47. If no run has reached the dashboard in 50 minutes, it starts one
+ * (GH_DISPATCH_TOKEN). If none has in 4 hours, it sends one phone alert per outage (NTFY_TOPIC).
  */
 
 import tokens from "./tokens.css";
@@ -33,7 +37,7 @@ export default {
 
     // Cron endpoints: a shared secret, no cookie.
     if (path === "/api/ingest" || path === "/api/export") {
-      if (!env.INGEST_SECRET || request.headers.get("x-scout-secret") !== env.INGEST_SECRET) return json({ error: "unauthorized" }, 401);
+      if (!env.INGEST_SECRET || !(await sameSecret(request.headers.get("x-scout-secret") || "", env.INGEST_SECRET))) return json({ error: "unauthorized" }, 401);
       return path === "/api/ingest" ? ingest(request, env) : exportState(env);
     }
 
@@ -53,7 +57,44 @@ export default {
     if (path === "/settings") return settingsPage(env);
     return new Response("not found", { status: 404 });
   },
+
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(heartbeat(env, Date.now()));
+  },
 };
+
+/* ---------------------------------------------------------------- cron: keep Scout running */
+
+const START_AFTER_MIN = 50;   // GitHub's own :17 run reaches the dashboard by about :20, so :47 sees it
+const WARN_AFTER_MIN = 240;   // the 6 AM gap (Morning Brief hours) is about 3 hours; 4 means something broke
+
+async function heartbeat(env, now) {
+  const data = await get(env, "matches", {});
+  const last = Date.parse(data.generated_at || "") || 0;
+  const ageMin = (now - last) / 60000;
+  if (env.GH_DISPATCH_TOKEN && env.GH_REPO && ageMin > START_AFTER_MIN) {
+    const r = await fetch(`https://api.github.com/repos/${env.GH_REPO}/actions/workflows/scout.yml/dispatches`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.GH_DISPATCH_TOKEN}`, Accept: "application/vnd.github+json",
+                 "User-Agent": "scout-dashboard-cron", "Content-Type": "application/json" },
+      body: JSON.stringify({ ref: "main", inputs: { mode: "watch" } }),
+    });
+    console.log(`scout run ${r.status === 204 ? "started" : "not started: " + r.status}, last run ${Math.round(ageMin)} min ago`);
+  }
+  if (env.NTFY_TOPIC && ageMin > WARN_AFTER_MIN) {
+    const health = await get(env, "health", {});
+    if (health.warned_for === (data.generated_at || "never")) return;  // one alert per outage
+    const since = last ? when(data.generated_at) : "it was set up";
+    await fetch("https://ntfy.sh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic: env.NTFY_TOPIC, title: `Scout: no run since ${since}`, priority: 4, tags: ["warning"],
+        message: "No Scout run has reached the dashboard in over 4 hours, so no alerts are going out. Check the Actions tab on GitHub.",
+        click: env.GH_REPO ? `https://github.com/${env.GH_REPO}/actions` : undefined }),
+    });
+    await put(env, "health", { warned_for: data.generated_at || "never", warned_at: new Date(now).toISOString() });
+  }
+}
 
 /* ---------------------------------------------------------------- auth */
 

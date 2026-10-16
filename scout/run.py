@@ -23,6 +23,7 @@ from scout import alerts, listings, matching, notify, pages, scoring, watch
 ROOT = Path(__file__).resolve().parent.parent
 DIGEST_HOUR_ET = 19  # 7:00 PM: the digest goes out on the first run at or after this hour, once a day
 DIGEST_STATE = ROOT / "data" / "digest.json"
+HEALTH_STATE = ROOT / "data" / "health.json"
 
 
 class Sender:
@@ -54,11 +55,27 @@ def score_everything(sender: Sender, now: float, allow_network: bool = True):
         sender.send(notify.failure_push("source fetch", err))
     if not raw:
         return [], weights
+    check_row_count(sender, sum(len(rows) for rows in raw.values()))
     matches, counts = watch.run(raw, targets, weights, check_pages=40, allow_network=allow_network, now=now)
     if not sender.dry_run:
         watch.write_matches(matches, counts)
     print(f"scored {len(matches)} matches " + ", ".join(f"{k}={v}" for k, v in sorted(counts.items())))
     return matches, weights
+
+
+def check_row_count(sender: Sender, rows: int, path: Path = HEALTH_STATE) -> None:
+    """A list that suddenly shrinks by half usually means its format changed, not that jobs vanished.
+    The fetch still "works", so without this Scout would quietly alert on almost nothing."""
+    try:
+        last = json.loads(path.read_text(encoding="utf-8")).get("rows", 0)
+    except (OSError, ValueError):
+        last = 0
+    if last and rows < last / 2:
+        sender.send(notify.failure_push("source size check", f"The lists returned {rows} rows; the last run had {last}. "
+                                        "A source may have changed shape."))
+    if not sender.dry_run:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"rows": rows}), encoding="utf-8")
 
 
 def mode_watch(sender: Sender, now: float, seed: bool = False) -> None:

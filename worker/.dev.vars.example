@@ -2,3 +2,6 @@
 DASH_PASSWORD=local-test-password
 SESSION_SECRET=any-long-random-string
 INGEST_SECRET=local-ingest-secret
+# Optional, for the hourly heartbeat cron. Leave them out locally.
+# GH_DISPATCH_TOKEN=
+# NTFY_TOPIC=
