@@ -68,6 +68,7 @@ def build_push_payload(data_dir: Path = DATA, config_dir: Path = ROOT / "config"
         "generated_at": matches.get("generated_at", ""),
         "counts": matches.get("counts", {}),
         "total_matches": matches.get("total_matches", len(matches["matches"])),  # matches.json holds only the top 300
+        "open_total": matches.get("open_total", matches.get("total_matches", len(matches["matches"]))),
         "matches": matches["matches"],
         "pages": _load(data_dir / "pages.json", {}),
         "tracker": _load(data_dir / "tracker.json", {}),

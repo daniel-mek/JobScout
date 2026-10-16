@@ -1,4 +1,4 @@
-"""The entry point the cron calls. One command, three modes.
+"""The entry point the cron calls. One command, four modes.
 
     .venv/bin/python -m scout.run --mode watch            # every hour: score, instant pushes, page watchers, and the digest once it is past 7:00 PM ET
     .venv/bin/python -m scout.run --mode digest           # the daily digest on its own (exits quietly before 7:00 PM ET)
@@ -148,10 +148,21 @@ def mode_digest(sender: Sender, now: float, force: bool = False) -> None:
     send_digest(sender, matches, weights, now)
 
 
+def on_data_branch() -> bool:
+    """True in the cron, where data/ is a git worktree of the data branch."""
+    return (ROOT / "data" / ".git").exists()
+
+
 def mode_catchup(sender: Sender, now: float) -> None:
     """One push for what the first run's --seed swallowed: Tier 1 or 2 postings and freshman programs that are
     still on the lists and not ruled out by their page. Each one listed is marked via "catchup", so a second
     run only sends what did not fit the first time, and once everything has gone out it sends "nothing"."""
+    # Only the cron's checkout of the data branch holds the real seen list. On the Mac, data/ is an old
+    # gitignored copy, so a real send from here would repeat later when the workflow runs catch-up.
+    if not sender.dry_run and not on_data_branch():
+        print("catch-up sends only from the workflow (Actions > scout > Run workflow, mode catchup); "
+              "data/ here is not the data branch. Add --dry-run to preview.")
+        return
     matches, _ = score_everything(sender, now)
     seen = alerts.load_seen()
     chosen = alerts.select_catchup(matches, seen)

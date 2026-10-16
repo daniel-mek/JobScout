@@ -107,6 +107,7 @@ def write_matches(matches: list[dict], counts: Counter, path: Path = MATCHES_PAT
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "counts": dict(counts),
         "total_matches": len(matches),
+        "open_total": sum(1 for m in matches if m.get("eligibility") not in ("ineligible", "closed")),
         "matches": matches[:limit],
     }
     path.write_text(json.dumps(payload, indent=1, ensure_ascii=False), encoding="utf-8")

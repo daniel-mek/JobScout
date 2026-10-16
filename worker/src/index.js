@@ -148,6 +148,7 @@ async function ingest(request, env) {
     put(env, "matches", {
       generated_at: body.generated_at || new Date().toISOString(), counts: body.counts || {}, matches: body.matches,
       total_matches: Number.isInteger(body.total_matches) ? body.total_matches : body.matches.length,
+      open_total: Number.isInteger(body.open_total) ? body.open_total : null,
     }),
     put(env, "pages", body.pages || {}),
     put(env, "config_text", body.config_text || {}),
@@ -220,8 +221,9 @@ async function newPage(env) {
   const rest = rows.filter((m) => !fresh.includes(m));
   const programs = rows.filter((m) => m.early_career === "strong" || m.role === "ambassador").length;
   // The cron uploads only the top matches (scout/watch.py write_matches), so the count comes from its total:
-  // everything that passed the filters, minus the uploaded ones you have tracked or passed.
-  const total = Math.max(data.total_matches || 0, data.matches.length);
+  // everything that passed the filters and that its own page does not rule out (open_total), minus the
+  // uploaded ones you have tracked or passed.
+  const total = Math.max(Number.isInteger(data.open_total) ? data.open_total : data.total_matches || 0, data.matches.length);
   const openCount = total - (data.matches.length - rows.length);
   await put(env, "last_visit", new Date().toISOString());
 

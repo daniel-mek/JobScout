@@ -43,6 +43,7 @@ class Catchup(unittest.TestCase):
         saved = []
         sender = FakeSender(dry_run)
         with mock.patch.object(run, "score_everything", return_value=(matches, W)), \
+             mock.patch.object(run, "on_data_branch", return_value=True), \
              mock.patch.object(alerts, "load_seen", return_value=seen), \
              mock.patch.object(alerts, "save_seen", side_effect=lambda s: saved.append(dict(s))):
             run.mode_catchup(sender, NOW)
@@ -70,6 +71,20 @@ class Catchup(unittest.TestCase):
         after = saved[-1]
         self.assertEqual({k for k, v in after.items() if v["via"] == "catchup"}, {"ms", "prog", "t2"})
         self.assertEqual(after["dropped"]["via"], "seeded")
+
+    def test_a_real_send_off_the_data_branch_refuses(self):
+        sender = FakeSender()
+        with mock.patch.object(run, "on_data_branch", return_value=False), \
+             mock.patch.object(run, "score_everything") as scored:
+            run.mode_catchup(sender, NOW)
+        self.assertEqual(sender.pushes, [])
+        scored.assert_not_called()
+
+    def test_size_cap_counts_bytes(self):
+        rows = [match(f"k{i}", company="Zürich Zürich Zürich", tier=1) for i in range(60)]
+        push, listed = notify.catchup_push(rows, NOW)
+        self.assertLessEqual(len(push["message"].encode("utf-8")), 3800)
+        self.assertLess(len(listed), 60)
 
     def test_never_repeats(self):
         matches = [match("ms"), match("prog", tier=3, early_career="strong")]
@@ -177,6 +192,19 @@ class EligibilityCacheInDryRun(unittest.TestCase):
             self.assertTrue(any(m["eligibility"] == "ok" for m in matches), "pages were still read")
             watch.run(raw, matching.load_targets(), W, check_pages=3, allow_network=True, now=NOW)
             save.assert_called_once()
+
+
+class OpenTotal(unittest.TestCase):
+    def test_ruled_out_postings_are_not_open(self):
+        import json, tempfile
+        from collections import Counter
+        from scout import watch
+        rows = [match("a"), match("b", eligibility="ineligible"), match("c", eligibility="closed"), match("d", eligibility="ok")]
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "matches.json"
+            watch.write_matches(rows, Counter(), out, limit=1)
+            data = json.loads(out.read_text())
+        self.assertEqual((data["total_matches"], data["open_total"], len(data["matches"])), (4, 2, 1))
 
 
 if __name__ == "__main__":

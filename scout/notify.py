@@ -111,7 +111,7 @@ def digest_push(matches: list[dict], now: float) -> dict:
             "priority": 3, "tags": ["newspaper"]}
 
 
-CATCHUP_MESSAGE_CHARS = 3600  # under Ntfy.send's 3,800 cut, with room for the closing line
+CATCHUP_MESSAGE_BYTES = 3600  # ntfy's limit is 4,096 bytes; under Ntfy.send's 3,800 cut, with room for the closing line
 
 
 def catchup_push(matches: list[dict], now: float) -> tuple[dict, list[dict]]:
@@ -129,10 +129,11 @@ def catchup_push(matches: list[dict], now: float) -> tuple[dict, list[dict]]:
     for m in matches:
         tag = "program, " if m.get("early_career") == "strong" else f"Tier {m.get('tier')}, " if m.get("tier", 3) <= 2 else ""
         block = f"{m['score']} {m['company']}: {m['title']} ({tag}{_location(m)}, {_age(m, now)})\n{m['url']}"
-        if blocks and used + len(block) + 2 > CATCHUP_MESSAGE_CHARS:
+        size = len(block.encode("utf-8")) + 2   # bytes, not characters: "Zürich" is 7 bytes
+        if blocks and used + size > CATCHUP_MESSAGE_BYTES:
             break
         blocks.append(block)
-        used += len(block) + 2
+        used += size
     listed = matches[:len(blocks)]
     left = len(matches) - len(listed)
     if left:

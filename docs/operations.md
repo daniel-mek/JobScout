@@ -42,7 +42,8 @@ export NTFY_TOPIC=...                                  # the private topic; also
 .venv/bin/python -m scout.run --mode watch --dry-run   # what a run would push, without sending
 .venv/bin/python -m scout.run --mode watch --seed      # first run only: mark today's matches as seen
 .venv/bin/python -m scout.run --mode digest --force    # send the digest now
-.venv/bin/python -m scout.run --mode catchup           # once, after a seed: one push of what the seed swallowed
+.venv/bin/python -m scout.run --mode catchup --dry-run # preview the catch-up push; the real send runs only from
+                                                       # the workflow (mode catchup), where data/ is the data branch
 ```
 
 `--dry-run` saves nothing: no seen list, no matches.json, no eligibility cache, no page fingerprints. It still reads the lists and posting pages so the printout is real.
