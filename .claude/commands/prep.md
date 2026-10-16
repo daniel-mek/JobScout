@@ -90,5 +90,6 @@ Both must print `[OK]`. `build_resume.py` also writes an `.html` file next to th
 .venv/bin/python -m scout.sync pull                       # the dashboard's tracker first, so phone edits are not lost
 .venv/bin/python -m scout.tracker set <key> Prepped --note "kit built" --next "submit by <deadline or 'soon'>"
 .venv/bin/python -m scout.sync push --tracker-only        # the dashboard shows Prepped now, not after the next cron run
+.venv/bin/python -m scout.sync push --kits                # the kit appears on the dashboard's Review page
 ```
-`Prepped` is what hides the posting from the New page and marks a queued one as done. Then tell them, in a few lines: the folder, the files, the deadline, the apply link, and the gaps they should know about before they submit. Finish with: "When you've submitted, say `/status <key> Applied`."
+`Prepped` is what hides the posting from the New page and marks a queued one as done. Then tell them, in a few lines: the kit is on the Review page (they read, edit, and save there; `scout.sync pull` brings their edits back into the folder), the deadline, the apply link, and the gaps they should know about before they submit. Finish with: "When you've submitted, say `/status <key> Applied`."

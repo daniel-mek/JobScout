@@ -5,9 +5,11 @@
  * Where the data goes: tracker changes, "Prep this" taps, and "Pass" taps are stored in KV and pulled
  * back into data/ by the next cron run (scout/sync.py pull), so the repo stays the long-term record.
  *
- * Pages (all behind the password):   /  New   /programs   /tracker   /settings
- * JSON (cookie):                     POST /api/tracker  POST /api/queue  POST /api/pass
- * JSON (secret header):              POST /api/ingest   POST /api/ingest-tracker   GET /api/export
+ * Pages (all behind the password):   /  New   /programs   /review   /tracker   /settings
+ * Review: prep kits uploaded from the Mac (scout.sync push --kits), to read, edit, copy, download, and mark
+ * submitted. Kits hold the candidate's phone, email, and answers, so they live only here in KV, never in git.
+ * JSON (cookie):                     POST /api/tracker  POST /api/queue  POST /api/pass  POST /api/kit-answer
+ * JSON (secret header):              POST /api/ingest   POST /api/ingest-tracker   POST /api/ingest-kits   GET /api/export
  * Open:                              GET /login  POST /login  GET /logout  GET /api/health
  *
  * Cron (wrangler.toml [triggers]): GitHub skips most of its scheduled runs (4 of 22 on October 15, 2026),
@@ -36,9 +38,10 @@ export default {
     if (path === "/logout") return redirect("/login", { "Set-Cookie": `${COOKIE}=; Path=/; Max-Age=0` });
 
     // Cron endpoints: a shared secret, no cookie.
-    if (path === "/api/ingest" || path === "/api/ingest-tracker" || path === "/api/export") {
+    if (path === "/api/ingest" || path === "/api/ingest-tracker" || path === "/api/ingest-kits" || path === "/api/export") {
       if (!env.INGEST_SECRET || !(await sameSecret(request.headers.get("x-scout-secret") || "", env.INGEST_SECRET))) return json({ error: "unauthorized" }, 401);
       if (path === "/api/ingest-tracker") return ingestTracker(request, env);
+      if (path === "/api/ingest-kits") return ingestKits(request, env);
       return path === "/api/ingest" ? ingest(request, env) : exportState(env);
     }
 
@@ -50,12 +53,18 @@ export default {
       if (path === "/api/tracker") return setTracker(request, env);
       if (path === "/api/queue") return setQueue(request, env);
       if (path === "/api/pass") return setPassed(request, env);
+      if (path === "/api/kit-answer") return setKitAnswer(request, env);
       return json({ error: "not found" }, 404);
     }
     if (path === "/") return newPage(env);
     if (path === "/programs") return programsPage(env);
     if (path === "/tracker") return trackerPage(env);
     if (path === "/settings") return settingsPage(env);
+    if (path === "/review") return reviewList(env);
+    const kitFile = path.match(/^\/review\/([a-z0-9-]+)\/(resume|letter)\.pdf$/);
+    if (kitFile) return kitPdf(env, kitFile[1], kitFile[2]);
+    const kitPage = path.match(/^\/review\/([a-z0-9-]+)$/);
+    if (kitPage) return reviewKit(env, kitPage[1]);
     return new Response("not found", { status: 404 });
   },
 
@@ -186,8 +195,137 @@ async function mergeTracker(env, incoming) {
 }
 
 async function exportState(env) {
-  const [tracker, queue, passed] = await Promise.all([get(env, "tracker", {}), get(env, "queue", []), get(env, "passed", {})]);
-  return json({ tracker, queue, passed });
+  const [tracker, queue, passed, index] = await Promise.all([get(env, "tracker", {}), get(env, "queue", []), get(env, "passed", {}), get(env, "kits", [])]);
+  // Answers edited on the phone go back to the Mac (scout.sync pull writes them into answers.md).
+  const kit_edits = {};
+  for (const k of index) {
+    const kit = await get(env, `kit:${k.slug}`, null);
+    const edited = (kit?.answers || []).filter((a) => a.edited);
+    if (edited.length || kit?.letter_edited) kit_edits[k.slug] = { answers: edited, ...(kit.letter_edited ? { letter: kit.letter } : {}) };
+  }
+  return json({ tracker, queue, passed, kit_edits });
+}
+
+/* ---------------------------------------------------------------- prep kits (Review) */
+
+// The Mac's applications/ folder is the source of truth for which kits exist. An answer edited on the phone
+// after the Mac's copy was last saved is kept, so an upload never undoes a phone edit.
+async function ingestKits(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body || !Array.isArray(body.kits)) return json({ error: "expected { kits: [...] }" }, 400);
+  const old = await get(env, "kits", []);
+  const index = [];
+  for (const kit of body.kits) {
+    if (!kit || !/^[a-z0-9-]+$/.test(kit.slug || "")) continue;
+    const prev = await get(env, `kit:${kit.slug}`, null);
+    const kept = new Map((prev?.answers || []).filter((a) => a.edited && (a.edited_at || "") > (kit.updated || "")).map((a) => [a.q, a]));
+    kit.answers = (kit.answers || []).map((a) => kept.get(a.q) || a);
+    if (prev?.letter_edited && (prev.letter_edited_at || "") > (kit.updated || "")) Object.assign(kit, { letter: prev.letter, letter_edited: true, letter_edited_at: prev.letter_edited_at });
+    await put(env, `kit:${kit.slug}`, kit);
+    index.push({ slug: kit.slug, key: kit.key || "", company: kit.company || "", title: kit.title || "", updated: kit.updated || "" });
+  }
+  for (const k of old) if (!index.some((n) => n.slug === k.slug)) await env.SCOUT.delete(`kit:${k.slug}`);
+  await put(env, "kits", index);
+  return json({ ok: true, kits: index.length });
+}
+
+// i is the answer's index, or "letter" for the cover letter.
+async function setKitAnswer(request, env) {
+  const { slug, i, text } = await request.json().catch(() => ({}));
+  if (!/^[a-z0-9-]+$/.test(slug || "") || !(Number.isInteger(i) || i === "letter") || typeof text !== "string") return json({ error: "need slug, i, text" }, 400);
+  const kit = await get(env, `kit:${slug}`, null);
+  if (!kit || (i !== "letter" && !kit.answers[i]) || (i === "letter" && !kit.letter)) return json({ error: "no such answer" }, 404);
+  const now = new Date().toISOString();
+  if (i === "letter") Object.assign(kit, { letter: text.slice(0, 20000), letter_edited: true, letter_edited_at: now });
+  else kit.answers[i] = { ...kit.answers[i], a: text.slice(0, 20000), edited: true, edited_at: now };
+  await put(env, `kit:${slug}`, kit);
+  return json({ ok: true });
+}
+
+async function kitPdf(env, slug, which) {
+  const kit = await get(env, `kit:${slug}`, null);
+  const b64 = kit && (which === "resume" ? kit.resume_pdf : kit.letter_pdf);
+  if (!b64) return new Response("not found", { status: 404 });
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const name = which === "resume" ? kit.resume_name || "resume.pdf" : `${slug}-cover-letter.pdf`;
+  return new Response(bytes, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="${name.replace(/[^\w.-]/g, "")}"`, "Cache-Control": "no-store" } });
+}
+
+async function reviewList(env) {
+  const [index, tracker] = await Promise.all([get(env, "kits", []), get(env, "tracker", {})]);
+  const state = (k) => tracker[k.key]?.state || "Prepped";
+  const order = (k) => (state(k) === "Applied" ? 1 : 0);
+  const cards = [...index].sort((a, b) => order(a) - order(b)).map((k) => `
+    <a class="card kitcard" href="/review/${esc(k.slug)}">
+      <div class="tags"><span class="tag ${state(k) === "Applied" ? "green" : "ink"}">${esc(state(k))}</span></div>
+      <h3>${esc(k.company || k.slug)}</h3>
+      <div class="title">${esc(k.title)}</div>
+      <div class="meta">kit saved ${esc(when(k.updated))}</div>
+    </a>`).join("");
+  const body = `<p class="note">every kit /prep built. read it, fix anything you wouldn't say and save, open the application, then mark it submitted. you still click submit on their site. saved edits go back into the kit the next time the Mac pulls from Scout.</p>
+    ${cards || '<p class="note">no kits yet. run /prep on the Mac; it uploads each kit here.</p>'}`;
+  return page(body, { title: "Review", page: "review", lead: "read it,", head: "send it" });
+}
+
+async function reviewKit(env, slug) {
+  const [kit, tracker] = await Promise.all([get(env, `kit:${slug}`, null), get(env, "tracker", {})]);
+  if (!kit) return page('<p class="note">that kit isn\'t here. <a class="inline" href="/review">back to review</a></p>', { title: "Review", page: "review", lead: "kit", head: "not found" }, 404);
+  const st = tracker[kit.key]?.state || "Prepped";
+  const words = (t) => (t.trim() ? t.trim().split(/\s+/).length : 0);
+  const answers = kit.answers.map((a, i) => `
+    <article class="card answer" data-i="${i}">
+      <h3 class="q">${esc(a.q)}</h3>
+      <textarea class="ans" data-act="answer" rows="3">${esc(a.a)}</textarea>
+      <div class="actions">
+        <button class="btn accent" data-act="save-answer">save</button>
+        <span class="meta wc">${words(a.a)} words${a.edited ? " · edited on your phone" : ""}</span>
+      </div>
+    </article>`).join("");
+  const body = `
+    <article class="card kit-head" data-key="${esc(kit.key)}" data-slug="${esc(kit.slug)}">
+      <div class="tags"><span class="tag ${st === "Applied" ? "green" : "ink"}">${esc(st)}</span></div>
+      <div class="row"><h3>${esc(kit.company)}</h3></div>
+      <div class="title">${esc(kit.title)}</div>
+      <div class="actions">
+        <a class="btn accent" href="${esc(safeUrl(kit.url))}" target="_blank" rel="noopener">open the application ↗</a>
+        ${kit.resume_pdf ? `<a class="btn" href="/review/${esc(kit.slug)}/resume.pdf" target="_blank">resume.pdf</a>` : ""}
+        ${kit.letter_pdf ? `<a class="btn" href="/review/${esc(kit.slug)}/letter.pdf" target="_blank">cover letter.pdf</a>` : ""}
+        ${st === "Applied" ? "" : '<button class="btn" data-act="submitted">I submitted it</button>'}
+      </div>
+    </article>
+    <details class="card notes" open><summary><h3>read this first</h3></summary><div class="md">${mdToHtml(kit.notes || "")}</div></details>
+    <h2>the answers</h2>
+    ${answers || '<p class="note">this kit has no written answers.</p>'}
+    ${kit.letter ? `<h2>cover letter</h2><article class="card answer letter"><textarea class="ans" data-act="letter" rows="8">${esc(kit.letter)}</textarea><div class="actions"><button class="btn accent" data-act="save-letter">save</button><span class="meta wc">${words(kit.letter)} words${kit.letter_edited ? " · edited on your phone" : ""}</span></div></article>` : ""}`;
+  return page(body, { title: kit.company || "Review", page: "review", lead: "read it,", head: "send it" });
+}
+
+// Just enough Markdown for kit notes: headings, bullets, numbered lists, tables, bold, links. Escaped first.
+function mdToHtml(md) {
+  const inline = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/(https?:\/\/[^\s<)]+)/g, (u) => `<a class="inline" href="${safeUrl(u)}" target="_blank" rel="noopener">${u}</a>`);
+  const out = [];
+  let list = null, table = [];
+  const flush = () => {
+    if (list) { out.push(`</${list}>`); list = null; }
+    if (table.length) {
+      const rows = table.filter((r) => !/^\|?\s*:?-{2,}/.test(r)).map((r) => r.replace(/^\||\|$/g, "").split("|").map((c) => `<td>${inline(c.trim())}</td>`).join(""));
+      out.push(`<table>${rows.map((r) => `<tr>${r}</tr>`).join("")}</table>`); table = [];
+    }
+  };
+  for (const raw of md.split("\n")) {
+    const line = raw.trimEnd();
+    if (/^\|/.test(line)) { if (list) { out.push(`</${list}>`); list = null; } table.push(line); continue; }
+    if (table.length) flush();
+    let m;
+    if ((m = line.match(/^(#{1,3}) (.+)/))) { flush(); out.push(`<h4>${inline(m[2])}</h4>`); }
+    else if ((m = line.match(/^\s*[-*] (.+)/))) { if (list !== "ul") { flush(); out.push("<ul>"); list = "ul"; } out.push(`<li>${inline(m[1])}</li>`); }
+    else if ((m = line.match(/^\s*\d+\. (.+)/))) { if (list !== "ol") { flush(); out.push("<ol>"); list = "ol"; } out.push(`<li>${inline(m[1])}</li>`); }
+    else if (!line.trim()) flush();
+    else { flush(); out.push(`<p>${inline(line)}</p>`); }
+  }
+  flush();
+  return out.join("");
 }
 
 /* ---------------------------------------------------------------- phone actions */
@@ -419,9 +557,10 @@ const CYCLE_JS = `(function(){var h=document.querySelector("h1 .head");if(!h)ret
 function show(){h.classList.remove("draw","u-zig","u-highlight","u-circle","u-loops");void h.offsetWidth;h.classList.add(s[i],"draw")}
 show();if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;setInterval(function(){i=(i+1)%s.length;show()},4500)})();`;
 
-const PAGE_COLORS = { about: "#3fa9b5", new: "#cf6a2e", programs: "#9b84d8", tracker: "#3fa9b5", settings: "#e7c98f", login: "#9b84d8" };
+const PAGE_COLORS = { about: "#3fa9b5", new: "#cf6a2e", programs: "#9b84d8", review: "#cf6a2e", tracker: "#3fa9b5", settings: "#e7c98f", login: "#9b84d8" };
 
-const NAV = `<nav class="dock"><a href="/">new</a><a href="/programs">programs</a><a href="/tracker">tracker</a><a href="/settings">settings</a></nav>`;
+// Settings stays at /settings (linked from the about page) but leaves the dock to make room for Review.
+const NAV = `<nav class="dock"><a href="/">new</a><a href="/programs">programs</a><a href="/review">review</a><a href="/tracker">tracker</a></nav>`;
 
 function loginForm(message) {
   return page(`<form method="post" action="/login" class="login">
@@ -436,7 +575,7 @@ function loginForm(message) {
 const BASE_CSS = `
 *{box-sizing:border-box}
 body{margin:0;background:var(--page);color:var(--ink);font:500 var(--text)/1.4 var(--font);padding:0 16px 96px;overflow-x:hidden;-webkit-font-smoothing:antialiased}
-body[data-page="about"]{--page:var(--teal)} body[data-page="new"]{--page:var(--orange)} body[data-page="programs"]{--page:var(--purple)} body[data-page="tracker"]{--page:var(--teal)} body[data-page="settings"]{--page:var(--sand);--on-page:var(--ink)} body[data-page="login"]{--page:var(--purple)}
+body[data-page="about"]{--page:var(--teal)} body[data-page="new"]{--page:var(--orange)} body[data-page="programs"]{--page:var(--purple)} body[data-page="tracker"]{--page:var(--teal)} body[data-page="review"]{--page:var(--green)} body[data-page="settings"]{--page:var(--sand);--on-page:var(--ink)} body[data-page="login"]{--page:var(--purple)}
 main{max-width:640px;margin-inline:auto}
 header{max-width:640px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 0 6px}
 .brand{display:inline-flex;align-items:baseline;font-family:var(--logo);font-size:40px;line-height:1;color:var(--ink);text-decoration:none;letter-spacing:.5px}
@@ -545,6 +684,13 @@ main > *:nth-child(2){animation-delay:.04s} main > *:nth-child(3){animation-dela
 .btn.tapped{animation:wiggle .35s ease}
 @keyframes wiggle{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
 .card.dim{transition:opacity .3s}
+/* Review: kit cards link whole; answers are full-width boxes that grow with the text */
+a.kitcard{display:block;color:var(--ink);text-decoration:none} .answer .q{font-size:18px;margin:0 0 10px;font-family:var(--font);font-weight:800;text-transform:none}
+textarea.ans{width:100%;resize:none;overflow:hidden;line-height:1.45;border-radius:14px;padding:12px 14px;font-weight:500;min-height:90px}
+.notes summary{cursor:pointer;list-style:none} .notes summary::-webkit-details-marker{display:none} .notes summary h3{margin:0}
+.md{font-size:var(--small);font-weight:500;overflow-wrap:anywhere} .md h4{margin:14px 0 6px;font-size:15px} .md p{margin:6px 0} .md ul,.md ol{margin:6px 0;padding-left:20px}
+.md table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px} .md td{border:2px solid var(--ink);padding:6px 8px;vertical-align:top} .md tr:first-child td{font-weight:800;background:var(--sand)}
+.wc{margin-left:auto} .btn.saved{background:var(--green)}
 .row h3{min-width:0;overflow-wrap:anywhere} .tile b{font-size:clamp(26px,8vw,34px)}
 /* the next-action box takes its own line and grows with the text, so nothing gets cut off */
 textarea[data-act="next"]{flex:1 1 100%;width:100%;order:-1;resize:none;overflow:hidden;line-height:1.35;border-radius:18px;padding:11px 16px;min-height:44px}
@@ -582,7 +728,7 @@ h2::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:4px;bor
 // The only JavaScript the pages need: send a tap to the API and update the card in place.
 const CLIENT_JS = `
 // The next-action box grows to fit its text instead of cutting it off.
-document.querySelectorAll('textarea[data-act="next"]').forEach(function(t){const fit=function(){t.style.height="auto";t.style.height=t.scrollHeight+t.offsetHeight-t.clientHeight+"px"};fit();t.addEventListener("input",fit);addEventListener("resize",fit);if(document.fonts)document.fonts.ready.then(fit)});
+document.querySelectorAll('textarea[data-act="next"],textarea.ans').forEach(function(t){const fit=function(){t.style.height="auto";t.style.height=t.scrollHeight+t.offsetHeight-t.clientHeight+"px"};fit();t.addEventListener("input",fit);addEventListener("resize",fit);if(document.fonts)document.fonts.ready.then(fit)});
 // The hero numbers count up from zero on load. bump() moves the target too, so a pass mid-count still lands right.
 (function(){if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;document.querySelectorAll(".stat-big,.tile b").forEach(function(el,n){const end=parseInt(el.textContent,10);if(!(end>0))return;el.dataset.end=end;const t0=performance.now()+150+n*120,dur=end>20?1100:600;el.textContent="0";requestAnimationFrame(function tick(t){const k=Math.min(1,Math.max(0,(t-t0)/dur)),goal=+el.dataset.end;el.textContent=Math.round(goal*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(tick);else delete el.dataset.end})})})();
 async function post(url, body){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(!r.ok){alert("that didn't save. try again.");throw new Error(r.status)}return r.json()}
@@ -607,7 +753,19 @@ document.addEventListener("click",async(e)=>{const b=e.target.closest("button[da
   syncPassed()}
  else if(b.dataset.act==="save"){const state=card.querySelector('[data-act="state"]').value;const next=card.querySelector('[data-act="next"]').value;await post("/api/tracker",{key,state,next});b.textContent="saved";setTimeout(()=>location.reload(),400)}
  }finally{b.disabled=b.dataset.act==="queue"&&b.textContent.startsWith("queued")}
-});`;
+});
+// Review page: save an answer or the letter (it goes back into the kit on the Mac's next pull), mark submitted.
+document.addEventListener("click",async(e)=>{const b=e.target.closest("button[data-act]");if(!b||b.disabled)return;const act=b.dataset.act;if(act!=="save-answer"&&act!=="save-letter"&&act!=="submitted")return;
+ const head=document.querySelector(".kit-head");if(!head)return;b.disabled=true;
+ try{
+  if(act==="submitted"){await post("/api/tracker",{key:head.dataset.key,state:"Applied"});b.textContent="marked applied ✓";const t=head.querySelector(".tag");if(t){t.textContent="Applied";t.className="tag green"}return}
+  const card=b.closest(".answer"),text=card.querySelector("textarea").value;
+  await post("/api/kit-answer",{slug:head.dataset.slug,i:act==="save-letter"?"letter":parseInt(card.dataset.i,10),text});
+  const wc=card.querySelector(".wc");if(wc)wc.textContent=(text.trim()?text.trim().split(/\s+/).length:0)+" words · edited on your phone";
+  b.textContent="saved ✓";b.classList.add("saved");setTimeout(()=>{b.textContent="save";b.classList.remove("saved")},1600);
+ }finally{b.disabled=act==="submitted"&&b.textContent.startsWith("marked")}
+});
+document.addEventListener("input",(e)=>{const t=e.target.closest("textarea.ans");if(!t)return;const b=t.closest(".answer").querySelector('button[data-act^="save"]');if(b){b.textContent="save";b.classList.remove("saved")}});`;
 
 /* ---------------------------------------------------------------- small helpers */
 

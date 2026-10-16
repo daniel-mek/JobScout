@@ -3,6 +3,9 @@
     .venv/bin/python -m scout.sync push     # matches, page state, config text, tracker  -> Worker KV
     .venv/bin/python -m scout.sync pull     # tracker, prep queue, passed keys  <- Worker KV, into data/
     .venv/bin/python -m scout.sync push --tracker-only   # just data/tracker.json -> Worker KV (after /prep or /status)
+    .venv/bin/python -m scout.sync push --kits           # applications/*/ -> the dashboard's Review page (Mac only)
+
+pull also writes answers and cover letters edited on the Review page back into applications/ (when it exists).
 
 --tracker-only exists because the Mac's data/matches.json is an old copy: a full push from the Mac would
 replace the dashboard's matches with it. The tracker merges per posting, newer "updated" wins.
@@ -23,6 +26,8 @@ import os
 import sys
 import urllib.request
 from pathlib import Path
+
+from scout import kits
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -98,6 +103,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("command", choices=["push", "pull"])
     ap.add_argument("--tracker-only", action="store_true", help="push: send only data/tracker.json")
+    ap.add_argument("--kits", action="store_true", help="push: send the prep kits in applications/ to the Review page")
     args = ap.parse_args()
     cfg = settings()
     if not cfg:
@@ -105,15 +111,22 @@ def main() -> int:
         return 0
     url, secret = cfg
     try:
-        if args.command == "push" and args.tracker_only:
+        if args.command == "push" and args.kits:
+            packed = kits.pack_all()
+            result = _call(f"{url}/api/ingest-kits", secret, "POST", {"kits": packed})
+            print(f"pushed {result.get('kits', 0)} prep kits to the Review page")
+        elif args.command == "push" and args.tracker_only:
             result = _call(f"{url}/api/ingest-tracker", secret, "POST", {"tracker": _load(DATA / "tracker.json", {})})
             print(f"pushed tracker ({result.get('tracker', 0)} rows on the dashboard)")
         elif args.command == "push":
             result = _call(f"{url}/api/ingest", secret, "POST", build_push_payload())
             print(f"pushed {result.get('matches', 0)} matches to the dashboard")
         else:
-            summary = apply_pull(_call(f"{url}/api/export", secret))
-            print(f"pulled tracker ({summary['tracker']}), queue ({summary['queue']}), passed ({summary['passed']})")
+            state = _call(f"{url}/api/export", secret)
+            summary = apply_pull(state)
+            edits = kits.apply_edits(state.get("kit_edits", {}))
+            print(f"pulled tracker ({summary['tracker']}), queue ({summary['queue']}), passed ({summary['passed']})"
+                  + (f", {edits} edit(s) from the Review page written into applications/" if edits else ""))
     except Exception as exc:
         print(f"sync {args.command} failed: {exc}", file=sys.stderr)
         return 1
