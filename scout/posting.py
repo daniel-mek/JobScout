@@ -152,11 +152,39 @@ def read_ashby(url: str) -> dict | None:
     if jobs is None:
         return None
     job = next((j for j in jobs if j.get("id", "").lower() == job_id), None)
-    if job is None or job.get("isListed") is False:
-        return dict(CLOSED, apply_url=url)
+    if job is None:
+        return read_ashby_unlisted(org, job_id, url)
     return {"kind": "ashby", "title": job.get("title", ""), "location": job.get("location", ""),
             "posted": job.get("publishedAt", ""), "closes": "", "text": job.get("descriptionPlain", ""),
             "apply_url": job.get("jobUrl") or url}
+
+
+_ASHBY_QUERY = ("query ApiJobPosting($organizationHostedJobsPageName: String!, $jobPostingId: String!) { "
+                "jobPosting(organizationHostedJobsPageName: $organizationHostedJobsPageName, jobPostingId: $jobPostingId) "
+                "{ id title descriptionHtml } }")
+
+
+def read_ashby_unlisted(org: str, job_id: str, url: str) -> dict | None:
+    """A job missing from the board list can still be open but unlisted (Deepgram's Fall 2026/Summer 2027 intern).
+    Ask the job page's own API: no posting means closed; a failed request means unknown."""
+    body = json.dumps({"operationName": "ApiJobPosting", "query": _ASHBY_QUERY,
+                       "variables": {"organizationHostedJobsPageName": org, "jobPostingId": job_id}}).encode("utf-8")
+    request = urllib.request.Request("https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobPosting", data=body,
+                                     headers={"User-Agent": USER_AGENT, "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            answer = json.load(response)
+    except Exception:
+        return None
+    if answer.get("errors") or "data" not in answer:
+        return None
+    job = (answer.get("data") or {}).get("jobPosting")
+    if job is None:
+        return dict(CLOSED, apply_url=url)
+    if not job.get("descriptionHtml"):
+        return None
+    return {"kind": "ashby", "title": job.get("title", ""), "location": "", "posted": "", "closes": "",
+            "text": _clean(job["descriptionHtml"]), "apply_url": url}
 
 
 def read_eightfold(url: str) -> dict | None:
@@ -194,8 +222,16 @@ def read_plain(url: str) -> dict | None:
             "posted": "", "closes": "", "text": text, "apply_url": url}
 
 
+_LEVER_APPLY = re.compile(r"^(https://jobs\.lever\.co/[^/?#]+/[0-9a-f-]{36})/apply\b", re.I)
+
+
 def read_posting(url: str) -> dict | None:
     """The posting as {kind, title, location, posted, closes, text, apply_url}, or None when unreadable."""
+    # A Lever /apply link is the form, whose graduation-date dropdown lists every year; read the description.
+    url = _LEVER_APPLY.sub(r"\1", url)
+    # A Microsoft search link with no pid names no job: its page is the whole search result, not a posting.
+    if host_of(url) == "apply.careers.microsoft.com" and "/job/" not in url and "pid=" not in url:
+        return None
     for reader in (read_workday, read_greenhouse, read_ashby, read_eightfold):
         post = reader(url)
         if post:

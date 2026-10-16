@@ -20,7 +20,7 @@ class Push(unittest.TestCase):
             (c / "targets.yaml").write_text("tier1: {}\n")
             payload = sync.build_push_payload(d, c)
             self.assertEqual(payload["matches"][0]["first_seen"], "2026-10-14T22:00:00+00:00")
-            self.assertEqual(payload["tracker"]["a"]["state"], "Prepped")
+            self.assertNotIn("tracker", payload, "the cron must never send back the tracker it pulled")
             self.assertEqual(payload["config_text"]["targets"], "tier1: {}\n")
             self.assertEqual(payload["config_text"]["scoring"], "")
             self.assertEqual(payload["total_matches"], 1, "falls back to the rows sent when the file has no total")

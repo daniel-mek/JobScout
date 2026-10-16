@@ -192,6 +192,17 @@ class ReviewFixes(unittest.TestCase):
         self.assertFalse(matching.graduate_title("Scenes Intern (BS/MS)"))
         self.assertFalse(matching.graduate_title("Software Engineer Intern (B.S./M.S.)"))
 
+    def test_review_two_title_and_place_cases(self):
+        self.assertFalse(self.kept("Software Defined Radio Hardware Intern", "Astranis")[0])
+        self.assertTrue(matching.graduate_title("Design Engineer Intern - Graduate-Level"))
+        self.assertTrue(matching.graduate_title("Software Engineering Intern, Master\u2019s"))
+        self.assertTrue(matching.graduate_title("Data Platform Intern - MS"))
+        self.assertFalse(matching.graduate_title("Microsoft Office Specialist Intern"))
+        for place in ("Indianapolis", "Arlington, VA, On-site", "Remote, Abilene"):
+            self.assertFalse(matching.outside_us_only([place], T), place)
+        self.assertTrue(matching.outside_us_only(["Toronto, ON"], T))
+        self.assertTrue(matching.outside_us_only(["Waterloo, ON, Canada"], T))
+
     def test_missing_role_words(self):
         self.assertEqual(matching.classify_role("Application Development Intern", T), "swe")
         self.assertEqual(matching.classify_role("Computer Science Intern", T), "swe")

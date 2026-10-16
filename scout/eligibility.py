@@ -34,18 +34,27 @@ ROOT = Path(__file__).resolve().parent.parent
 CACHE_PATH = ROOT / "data" / "eligibility_cache.json"
 CACHE_DAYS = 14
 CLOSED = "\0closed"  # fetch_text's answer for a posting the board says is gone
-CACHE_VERSION = 3  # bump when the verdict rules change, so old verdicts are re-read
+CACHE_VERSION = 4  # bump when the verdict rules change, so old verdicts are re-read
 
 _TAGS = re.compile(r"<script.*?</script>|<style.*?</style>|<[^>]+>", re.S | re.I)
 _YEAR = re.compile(r"\b(20[2-3][0-9])\b")
-# A graduation requirement is a sentence with "graduat...", "class of", or "degree expected" in it.
+# A graduation requirement is a sentence with "graduating", "graduation", "class of", or "degree expected" in it.
 # Every year in that sentence counts, so "December 2028, May 2029, December 2029, or May 2030" yields all four.
 # The text is flattened to one line first: Pinterest puts "graduate by" and "June 2029" on separate lines.
+# "graduate degree", "graduate students", and the like are about degree level, not a date: Northrop Grumman's
+# "undergraduate or graduate degree ... enrolled full time in Fall 2027" is not a 2027 graduation rule.
 _GRAD_SENTENCE = re.compile(
-    r"[^.]{0,80}\b(?:graduat\w*|class of|degree expected|expected (?:degree|completion)|degree completion)\b[^.]{0,160}", re.I)
+    r"[^.]{0,80}\b(?:graduat(?:e[sd]?|ing|ion)\b(?!\s+(?:degrees?|students?|programs?|level|school|studies|coursework|research))"
+    r"|class of\b|degree expected\b|expected (?:degree|completion)\b|degree completion\b)[^.]{0,160}", re.I)
 # "2028 or later" is a floor, not a single year. "graduate before Summer 2028" / "by June 2029" is a ceiling.
 _OPEN_AFTER = re.compile(r"\b20[2-3][0-9]\s*(?:or|and)\s*(?:later|after|beyond)\b|\b20[2-3][0-9]\s*onwards?\b", re.I)
 _CEILING = re.compile(r"\b(?:before|by|no later than|prior to)\s+(?:[a-z/]+\s+){0,2}20[2-3][0-9]\b", re.I)
+# Floors: "on or after December 2027", "no earlier than May 2028", "do not anticipate graduating before May 2028",
+# and "students graduating by Summer 2027 are not eligible". Checked before _CEILING, which they would otherwise trip.
+_FLOOR = re.compile(
+    r"\b(?:(?:on|in) or after|after|no earlier than)\s+(?:[a-z/]+\s+){0,2}20[2-3][0-9]\b"
+    r"|\bnot\b[^.]{0,40}?\b(?:before|prior to)\s+(?:[a-z/]+\s+){0,2}20[2-3][0-9]\b"
+    r"|\b(?:before|by|prior to)\s+(?:[a-z/]+\s+){0,2}20[2-3][0-9]\b[^.]{0,30}\b(?:are|is) (?:not |in)eligible", re.I)
 _UNDERCLASS = re.compile(r"\b(freshman|freshmen|sophomore|first[- ]year|second[- ]year|underclass\w*)\b", re.I)
 # Phrases that mean "not a freshman": Google writes "penultimate academic year", others say "rising junior".
 _UPPERCLASS = re.compile(
@@ -92,9 +101,9 @@ def grad_ranges(text: str, this_year: int | None = None) -> list[tuple[int, int]
         if not years:
             continue
         low, high = min(years), max(years)
-        if _OPEN_AFTER.search(sentence):
+        if _OPEN_AFTER.search(sentence) or _FLOOR.search(sentence):
             high = 9999
-        if _CEILING.search(sentence):
+        elif _CEILING.search(sentence):
             low = 0
         ranges.append((low, high))
     return ranges
@@ -152,8 +161,10 @@ def check(listing: dict, graduation_year: int, cache: dict, allow_network: bool 
         return listing
     text = fetch_text(url)
     if text is None:
-        verdict, note = "unknown", "page could not be read"
-    elif text == CLOSED:
+        # Not cached: one timeout should not lock a Tier 1 posting at "unknown" for two weeks.
+        listing["eligibility"], listing["eligibility_note"] = "unknown", "page could not be read"
+        return listing
+    if text == CLOSED:
         verdict, note = "closed", "the posting has been taken down"
     else:
         verdict, note = verdict_from_text(text, graduation_year)

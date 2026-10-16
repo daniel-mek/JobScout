@@ -12,6 +12,8 @@ on:
     inputs:
       mode:
         description: "watch, digest, test, or catchup (once: the big tech postings the first run seeded)"
+        type: choice
+        options: [watch, digest, test, catchup]
         default: "watch"
 
 permissions:
@@ -42,14 +44,17 @@ jobs:
           git fetch --depth=1 origin data
           git worktree add -B data data origin/data
 
+      # The input reaches the shell only as an environment variable and is checked against the four modes,
+      # so nothing typed into "Run workflow" (or sent through the API) can become part of a command.
       - name: Pick the mode
         id: mode
+        env:
+          INPUT_MODE: ${{ github.event.inputs.mode }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "mode=${{ github.event.inputs.mode }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "mode=watch" >> "$GITHUB_OUTPUT"
-          fi
+          case "${INPUT_MODE:-watch}" in
+            watch|digest|test|catchup) echo "mode=${INPUT_MODE:-watch}" >> "$GITHUB_OUTPUT" ;;
+            *) echo "unknown mode" >&2; exit 1 ;;
+          esac
 
       - name: Pull phone changes from the dashboard
         env:
@@ -60,7 +65,8 @@ jobs:
       - name: Run Scout
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-        run: python -m scout.run --mode "${{ steps.mode.outputs.mode }}"
+          MODE: ${{ steps.mode.outputs.mode }}
+        run: python -m scout.run --mode "$MODE"
 
       - name: Push this run to the dashboard
         if: always()
@@ -72,6 +78,8 @@ jobs:
       - name: Commit data to the data branch
         if: always()
         working-directory: data
+        env:
+          MODE: ${{ steps.mode.outputs.mode }}
         run: |
           git config user.name "scout-bot"
           git config user.email "scout-bot@users.noreply.github.com"
@@ -79,7 +87,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "nothing to commit"
           else
-            git commit -m "data: ${{ steps.mode.outputs.mode }} run $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git commit -m "data: ${MODE} run $(TZ=America/New_York date +'%Y-%m-%d %-I:%M %p ET')"
             git pull --rebase origin data || true
             git push origin HEAD:data
           fi

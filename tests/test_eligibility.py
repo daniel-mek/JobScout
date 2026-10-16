@@ -10,7 +10,7 @@ GRAD = 2030
 class Verdicts(unittest.TestCase):
     def test_range_that_excludes_him(self):
         text = "<p>Candidates must be graduating between December 2027 and June 2028.</p>"
-        verdict, note = eligibility.verdict_from_text(eligibility._TAGS.sub(" ", text), GRAD)
+        verdict, note = eligibility.verdict_from_text(eligibility._TAGS.sub(" ", text), GRAD, this_year=2026)
         self.assertEqual(verdict, "ineligible")
         self.assertIn("2027", note)
 
@@ -20,7 +20,7 @@ class Verdicts(unittest.TestCase):
 
     def test_single_year_that_excludes_him(self):
         text = "Expected graduation date: May 2028."
-        self.assertEqual(eligibility.verdict_from_text(text, GRAD)[0], "ineligible")
+        self.assertEqual(eligibility.verdict_from_text(text, GRAD, this_year=2026)[0], "ineligible")
 
     def test_underclass_words_win(self):
         text = "This program is for freshmen and sophomores. Graduating 2029 or later preferred."
@@ -128,6 +128,28 @@ class Windows(unittest.TestCase):
         finally:
             eligibility.fetch_text = original
         self.assertEqual(item["eligibility"], "closed")
+
+    def test_floors_are_not_deadlines(self):
+        for text in ("Graduation date expected in or after December 2027.",
+                     "Must graduate on or after July 2028.",
+                     "Candidates who do not anticipate graduating before May 2028.",
+                     "Students graduating by Summer 2027 are not eligible."):
+            self.assertEqual(self.verdict(text)[0], "ok", text)
+
+    def test_graduate_degree_is_not_a_date(self):
+        text = "Pursuing an undergraduate or graduate degree; will be enrolled full time in Fall 2027."
+        self.assertEqual(self.verdict(text)[0], "unknown")
+
+    def test_unreadable_pages_are_not_cached(self):
+        original = eligibility.fetch_text
+        eligibility.fetch_text = lambda url: None
+        try:
+            cache = {}
+            item = {"url": "https://boards.greenhouse.io/acme/jobs/1"}
+            eligibility.check(item, GRAD, cache, allow_network=True)
+        finally:
+            eligibility.fetch_text = original
+        self.assertEqual((item["eligibility"], cache), ("unknown", {}))
 
     def test_old_cache_entries_are_reread(self):
         url = "https://boards.greenhouse.io/acme/jobs/1"

@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 TARGETS_PATH = ROOT / "config" / "targets.yaml"
 
 # Short words that must match whole words only. "it" inside "Pittsburgh" is not an IT job.
-SHORT_TOKENS = {"it", "ui", "ux", "swe", "sde", "pm", "apm", "ai", "ml", "web", "ios", "nj", "ny", "nyc", "uk", "aws", "ibm", "x", "step", "rf"}
+SHORT_TOKENS = {"india", "it", "ui", "ux", "swe", "sde", "pm", "apm", "ai", "ml", "web", "ios", "nj", "ny", "nyc", "uk", "aws", "ibm", "x", "step", "rf"}
 
 US_STATES = {
     "al", "ak", "az", "ar", "ca", "co", "ct", "de", "fl", "ga", "hi", "id", "il", "in", "ia", "ks", "ky", "la", "me",
@@ -91,7 +91,8 @@ def company_tier(company: str, targets: dict) -> tuple[int, str | None]:
 # ---------------------------------------------------------------- role
 
 # Titles that are for graduate students whatever the degrees field says: "Software Engineering Intern, Masters".
-_GRAD_TITLE = re.compile(r"(?<![a-z])(master'?s|mba|ph\.?\s?d|ms/phd|m\.s\.|doctoral)(?![a-z])", re.I)
+_GRAD_TITLE = re.compile(r"(?<![a-z])(master['\u2019]?s|mba|ph\.?\s?d|ms/phd|m\.s\.|doctoral|graduate[- ]level)(?![a-z])"
+                         r"|[-(]\s*ms\s*\)?\s*$", re.I)
 
 
 _UNDERGRAD_TITLE = re.compile(r"(?<![a-z])(bs|b\.s\.|ba|bachelor'?s?|undergrad\w*)(?![a-z])", re.I)
@@ -108,7 +109,8 @@ def excluded_title(title: str, targets: dict) -> bool:
     "Privacy and Civil Liberties Software Engineer Intern" is a software job that happens to contain "civil".
     """
     text = _clean(title)
-    if any(_word_match(text, w) for w in targets["roles"].get("software_overrides", [])):
+    # "Software Defined Radio Hardware Intern" is still hardware: the override needs a title without "hardware".
+    if any(_word_match(text, w) for w in targets["roles"].get("software_overrides", [])) and "hardware" not in text:
         return False
     return any(_word_match(text, w) for w in targets["roles"].get("exclude", []))
 
@@ -166,7 +168,7 @@ def location_class(locations: list[str], targets: dict) -> str:
         if _looks_us(loc):
             best = "us"
             continue
-        if any(_word_match(loc, w) for w in cfg.get("non_us_words", [])):
+        if _looks_canada(loc) or any(_word_match(loc, w) for w in cfg.get("non_us_words", [])):
             continue  # a non-US location can never raise the class
         if any(_word_match(loc, w) for w in cfg.get("remote_words", [])):
             return "priority"  # bare "Remote" with no other country named
@@ -180,9 +182,18 @@ def outside_us_only(locations: list[str], targets: dict) -> bool:
         return False
     for raw in locations:
         loc = _clean(raw)
-        if _looks_us(loc) or not any(_word_match(loc, w) for w in cfg.get("non_us_words", [])):
+        if _looks_us(loc) or not (_looks_canada(loc) or any(_word_match(loc, w) for w in cfg.get("non_us_words", []))):
             return False
     return True
+
+
+CA_PROVINCES = {"on", "bc", "qc", "ab", "ns", "mb", "sk", "nb", "nl", "pe"}
+
+
+def _looks_canada(loc: str) -> bool:
+    """'Toronto, ON' or 'Waterloo, ON, Canada': a province code as the last or second-to-last part."""
+    parts = [p.strip() for p in loc.split(",")]
+    return parts[-1] in CA_PROVINCES or (len(parts) > 1 and parts[-1] == "canada" and parts[-2] in CA_PROVINCES)
 
 
 def _looks_us(loc: str) -> bool:

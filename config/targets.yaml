@@ -90,8 +90,7 @@ locations:
   non_us_words: [canada, uk, "united kingdom", london, india, ireland, germany, france, singapore, australia,
                  netherlands, israel, poland, spain, italy, japan, mexico, brazil, "remote in canada",
                  "remote in uk", "remote in europe", toronto, vancouver, montreal, ottawa, dublin, bangalore,
-                 bengaluru, hyderabad, tel aviv, berlin, paris, amsterdam, sydney, zurich, ", on", ", bc", ", qc",
-                 ", ab", ", ns", ontario, "british columbia", quebec, scotland, edinburgh, belfast]
+                 bengaluru, hyderabad, tel aviv, berlin, paris, amsterdam, sydney, zurich, ontario, "british columbia", quebec, scotland, edinburgh, belfast]
 
 # Words you care about. Each hit in the title adds a few points (see scoring.yaml).
 keywords: [ai, "ai applications", ios, accessibility, "developer tools", "developer experience", cloud,

@@ -74,27 +74,31 @@ async function heartbeat(env, now) {
   const last = Date.parse(data.generated_at || "") || 0;
   const ageMin = (now - last) / 60000;
   if (env.GH_DISPATCH_TOKEN && env.GH_REPO && ageMin > START_AFTER_MIN) {
-    const r = await fetch(`https://api.github.com/repos/${env.GH_REPO}/actions/workflows/scout.yml/dispatches`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${env.GH_DISPATCH_TOKEN}`, Accept: "application/vnd.github+json",
-                 "User-Agent": "scout-dashboard-cron", "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: "main", inputs: { mode: "watch" } }),
-    });
-    console.log(`scout run ${r.status === 204 ? "started" : "not started: " + r.status}, last run ${Math.round(ageMin)} min ago`);
+    try { await startRun(env, ageMin); } catch (e) { console.log(`scout run not started: ${e}`); }  // the warning below still runs
   }
   if (env.NTFY_TOPIC && ageMin > WARN_AFTER_MIN) {
     const health = await get(env, "health", {});
     if (health.warned_for === (data.generated_at || "never")) return;  // one alert per outage
     const since = last ? when(data.generated_at) : "it was set up";
-    await fetch("https://ntfy.sh", {
+    const r = await fetch("https://ntfy.sh", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ topic: env.NTFY_TOPIC, title: `Scout: no run since ${since}`, priority: 4, tags: ["warning"],
         message: "No Scout run has reached the dashboard in over 4 hours, so no alerts are going out. Check the Actions tab on GitHub.",
         click: env.GH_REPO ? `https://github.com/${env.GH_REPO}/actions` : undefined }),
-    });
-    await put(env, "health", { warned_for: data.generated_at || "never", warned_at: new Date(now).toISOString() });
+    }).catch(() => null);
+    if (r && r.ok) await put(env, "health", { warned_for: data.generated_at || "never", warned_at: new Date(now).toISOString() });
   }
+}
+
+async function startRun(env, ageMin) {
+  const r = await fetch(`https://api.github.com/repos/${env.GH_REPO}/actions/workflows/scout.yml/dispatches`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.GH_DISPATCH_TOKEN}`, Accept: "application/vnd.github+json",
+               "User-Agent": "scout-dashboard-cron", "Content-Type": "application/json" },
+    body: JSON.stringify({ ref: "main", inputs: { mode: "watch" } }),
+  });
+  console.log(`scout run ${r.status === 204 ? "started" : "not started: " + r.status}, last run ${Math.round(ageMin)} min ago`);
 }
 
 /* ---------------------------------------------------------------- auth */
@@ -200,7 +204,7 @@ async function setTracker(request, env) {
   row.updated = today;
   if (state === "Applied" && !row.applied) row.applied = today;
   if (typeof next === "string") row.next = next;
-  row.history.push({ date: today, state });
+  (row.history ||= []).push({ date: today, state });
   tracker[key] = row;
   await put(env, "tracker", tracker);
   return json({ ok: true, row });
@@ -260,7 +264,7 @@ async function newPage(env) {
       <div class="actions">
         <button class="btn accent" data-act="queue" ${queued.has(m.key) ? "disabled" : ""}>${queued.has(m.key) ? "queued ✓" : "prep this"}</button>
         <button class="btn" data-act="pass">pass</button>
-        <a class="btn ghost" href="${esc(m.url)}" target="_blank" rel="noopener">posting ↗</a>
+        <a class="btn ghost" href="${esc(safeUrl(m.url))}" target="_blank" rel="noopener">posting ↗</a>
       </div>
     </article>`;
 
@@ -287,7 +291,7 @@ async function newPage(env) {
       <div class="row"><h3>${esc(m.company)}</h3><span class="score">${m.score}</span></div>
       <div class="title">${esc(m.title)}</div>
       <div class="meta">passed ${age(passed[m.key])}</div>
-      <div class="actions"><button class="btn accent" data-act="unpass">unpass</button><a class="btn ghost" href="${esc(m.url)}" target="_blank" rel="noopener">posting ↗</a></div>
+      <div class="actions"><button class="btn accent" data-act="unpass">unpass</button><a class="btn ghost" href="${esc(safeUrl(m.url))}" target="_blank" rel="noopener">posting ↗</a></div>
     </article>`;
 
   const body = `
@@ -306,7 +310,7 @@ async function programsPage(env) {
       <div class="tags"><span class="tag${p.changed_at ? " accent" : ""}">${p.changed_at ? "new words " + age(p.changed_at) : "no changes yet"}</span>${p.failures ? `<span class="tag red">${p.failures} failed fetch${p.failures > 1 ? "es" : ""}</span>` : ""}</div>
       <h3>${esc(p.name || url)}</h3>
       ${p.last_change ? `<div class="change"><b>what changed:</b>${esc(p.last_change).replace(/\n/g, "<br>")}</div><div class="meta">a change means go look. it does not mean applications are open.</div>` : ""}<div class="meta">checked ${age(p.checked_at)}</div>
-      <div class="actions"><a class="btn ghost" href="${esc(url)}" target="_blank" rel="noopener">open page ↗</a></div>
+      <div class="actions"><a class="btn ghost" href="${esc(safeUrl(url))}" target="_blank" rel="noopener">open page ↗</a></div>
     </article>`).join("");
   const finds = data.matches.filter((m) => (m.early_career === "strong" || m.role === "ambassador") && !passed[m.key]).map((m) => `
     <article class="card">
@@ -314,7 +318,7 @@ async function programsPage(env) {
       <div class="row"><h3>${esc(m.company)}</h3><span class="score">${m.score}</span></div>
       <div class="title">${esc(m.title)}</div>
       <div class="meta">${esc((m.locations || []).slice(0, 2).join(", "))} · ${age(m.date_posted)}</div>
-      <div class="actions"><a class="btn ghost" href="${esc(m.url)}" target="_blank" rel="noopener">posting ↗</a></div>
+      <div class="actions"><a class="btn ghost" href="${esc(safeUrl(m.url))}" target="_blank" rel="noopener">posting ↗</a></div>
     </article>`).join("");
   const body = `
     <p class="note">these pages are where freshman programs show up first. scout reads them every hour and pings you when the words change.</p>
@@ -340,7 +344,7 @@ async function trackerPage(env) {
         <select data-act="state">${options(r.state)}</select>
         <textarea data-act="next" rows="1" placeholder="next action">${esc(r.next || "")}</textarea>
         <button class="btn accent" data-act="save">save</button>
-        ${r.url ? `<a class="btn ghost" href="${esc(r.url)}" target="_blank" rel="noopener">posting ↗</a>` : ""}
+        ${r.url ? `<a class="btn ghost" href="${esc(safeUrl(r.url))}" target="_blank" rel="noopener">posting ↗</a>` : ""}
       </div>
     </article>`).join("");
   const body = `
@@ -541,6 +545,7 @@ main > *:nth-child(2){animation-delay:.04s} main > *:nth-child(3){animation-dela
 .btn.tapped{animation:wiggle .35s ease}
 @keyframes wiggle{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
 .card.dim{transition:opacity .3s}
+.row h3{min-width:0;overflow-wrap:anywhere} .tile b{font-size:clamp(26px,8vw,34px)}
 /* the next-action box takes its own line and grows with the text, so nothing gets cut off */
 textarea[data-act="next"]{flex:1 1 100%;width:100%;order:-1;resize:none;overflow:hidden;line-height:1.35;border-radius:18px;padding:11px 16px;min-height:44px}
 /* the hero card: a sheen sweeps across, the number pops and counts up (CLIENT_JS), the tiles bounce in one by one */
@@ -577,11 +582,11 @@ h2::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:4px;bor
 // The only JavaScript the pages need: send a tap to the API and update the card in place.
 const CLIENT_JS = `
 // The next-action box grows to fit its text instead of cutting it off.
-document.querySelectorAll('textarea[data-act="next"]').forEach(function(t){const fit=function(){t.style.height="auto";t.style.height=t.scrollHeight+t.offsetHeight-t.clientHeight+"px"};fit();t.addEventListener("input",fit)});
-// The hero numbers count up from zero on load (about a second, done before anyone can tap pass).
-(function(){if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;document.querySelectorAll(".stat-big,.tile b").forEach(function(el,n){const end=parseInt(el.textContent,10);if(!(end>0))return;const t0=performance.now()+150+n*120,dur=end>20?1100:600;el.textContent="0";requestAnimationFrame(function tick(t){const k=Math.min(1,Math.max(0,(t-t0)/dur));el.textContent=Math.round(end*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(tick)})})})();
+document.querySelectorAll('textarea[data-act="next"]').forEach(function(t){const fit=function(){t.style.height="auto";t.style.height=t.scrollHeight+t.offsetHeight-t.clientHeight+"px"};fit();t.addEventListener("input",fit);addEventListener("resize",fit);if(document.fonts)document.fonts.ready.then(fit)});
+// The hero numbers count up from zero on load. bump() moves the target too, so a pass mid-count still lands right.
+(function(){if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;document.querySelectorAll(".stat-big,.tile b").forEach(function(el,n){const end=parseInt(el.textContent,10);if(!(end>0))return;el.dataset.end=end;const t0=performance.now()+150+n*120,dur=end>20?1100:600;el.textContent="0";requestAnimationFrame(function tick(t){const k=Math.min(1,Math.max(0,(t-t0)/dur)),goal=+el.dataset.end;el.textContent=Math.round(goal*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(tick);else delete el.dataset.end})})})();
 async function post(url, body){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(!r.ok){alert("that didn't save. try again.");throw new Error(r.status)}return r.json()}
-function bump(id,d){const el=document.getElementById(id);if(el)el.textContent=Math.max(0,(parseInt(el.textContent,10)||0)+d)}
+function bump(id,d){const el=document.getElementById(id);if(!el)return;if(el.dataset.end)el.dataset.end=Math.max(0,+el.dataset.end+d);el.textContent=Math.max(0,(parseInt(el.textContent,10)||0)+d)}
 function syncPassed(){const box=document.getElementById("passed");const n=parseInt((document.getElementById("passed-count")||{}).textContent,10)||0;if(box){box.hidden=n===0;if(n===0)box.open=false}}
 function passedClone(card,key){const a=document.createElement("article");a.className="card passed";a.dataset.key=key;a.dataset.origin="main";
  const row=document.createElement("div");row.className="row";const h=document.createElement("h3");h.textContent=(card.querySelector("h3")||{}).textContent||"";const sc=document.createElement("span");sc.className="score";sc.textContent=(card.querySelector(".score")||{}).textContent||"";row.append(h,sc);
@@ -628,6 +633,10 @@ function age(ts) {
 function when(iso) {
   if (!iso) return "never";
   return new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+// Posting and page links come from outside lists: only http(s) links become hrefs, never javascript: or data:.
+function safeUrl(u) {
+  return /^https?:\/\//i.test(String(u || "")) ? u : "#";
 }
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));

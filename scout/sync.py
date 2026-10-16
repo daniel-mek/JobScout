@@ -59,7 +59,10 @@ def _call(url: str, secret: str, method: str = "GET", body: dict | None = None) 
 
 
 def build_push_payload(data_dir: Path = DATA, config_dir: Path = ROOT / "config") -> dict:
-    """Everything the dashboard shows, from the files the cron just wrote."""
+    """Everything the dashboard shows, from the files the cron just wrote.
+
+    Not the tracker: the cron never changes it, and sending back the copy it pulled minutes earlier would undo
+    a phone edit made in between (both stamp the same date). /prep and /status use push --tracker-only."""
     matches = _load(data_dir / "matches.json", {"matches": [], "counts": {}, "generated_at": ""})
     seen = _load(data_dir / "seen.json", {})
     for m in matches["matches"]:
@@ -75,7 +78,6 @@ def build_push_payload(data_dir: Path = DATA, config_dir: Path = ROOT / "config"
         "open_total": matches.get("open_total", matches.get("total_matches", len(matches["matches"]))),
         "matches": matches["matches"],
         "pages": _load(data_dir / "pages.json", {}),
-        "tracker": _load(data_dir / "tracker.json", {}),
         "config_text": config_text,
     }
 
