@@ -79,8 +79,14 @@ def dedupe(listings: list[dict]) -> list[dict]:
             sources = existing.setdefault("sources", [existing.get("source")])
             if item.get("source") not in sources:
                 sources.append(item.get("source"))
+            # Remember every URL and the newest post date, so a repost under the same title can still alert.
+            if url and url not in existing["urls"]:
+                existing["urls"].append(url)
+            existing["latest_posted"] = max(existing["latest_posted"], item.get("date_posted") or 0)
             continue
         item.setdefault("sources", [item.get("source")])
+        item["urls"] = [url] if url else []
+        item["latest_posted"] = item.get("date_posted") or 0
         if url:
             by_url[url] = item
         by_key[key] = item

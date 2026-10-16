@@ -82,6 +82,8 @@ def match_push(m: dict, now: float) -> dict:
         f"Eligibility: {elig}, {m['eligibility_note']}" if elig != "unknown" and m.get("eligibility_note")
         else "Eligibility: unknown, check the graduation year before you apply",
     ]
+    if m.get("citizens_only"):
+        lines.append("US citizens only")
     # Only a page that names his graduation year (or says freshman) gets the loud push.
     # An unread page still alerts, quietly, because "unknown" is never hidden.
     if elig != "ok":

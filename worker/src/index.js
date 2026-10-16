@@ -184,6 +184,7 @@ async function newPage(env) {
         ${m.tier <= 2 ? `<span class="tag ink">tier ${m.tier}</span>` : ""}
         ${m.early_career === "strong" ? '<span class="tag accent">freshman friendly</span>' : ""}
         ${m.eligibility === "ineligible" ? '<span class="tag red">not eligible</span>' : m.eligibility === "closed" ? '<span class="tag red">closed</span>' : ""}
+        ${m.citizens_only ? '<span class="tag ink">US citizens only</span>' : ""}
         ${isNew ? '<span class="tag accent">new</span>' : ""}
       </div>
       <div class="row"><h3>${esc(m.company)}</h3><span class="score">${m.score}</span></div>

@@ -50,8 +50,8 @@ early_career_weak: ["early career", "early careers"]
 
 # Roles, in priority order. The first group whose words appear in the title wins.
 # "ambassador" is checked before "exclude" so "Campus Ambassador (Marketing)" is not thrown out as marketing.
-# Then "exclude": a title with any of these words is not a Scout role at all
-# (hardware, quant, pure data science, mechanical, etc.), unless it also hits a program above.
+# Then "exclude": a title with any of these words is not a Scout role at all (hardware, quant, pure data
+# science, mechanical, etc.), even inside a freshman program, unless it also has a "software_overrides" word.
 roles:
   ambassador: ["campus ambassador", "student ambassador", "brand ambassador", "campus expert", "campus leader",
                "campus rep", "campus representative", "student partner", "student rep", "student representative",
@@ -63,6 +63,9 @@ roles:
             "machine learning scientist", phd, "ph.d", biostat, nursing, legal, "sales intern", "marketing intern",
             "hr intern", "human resources", finance intern, "financial analyst", "supply chain", logistics,
             "business intelligence", "data engineer", "data analyst", "analytics engineer", "business analyst"]
+  # A title with one of these is a software job even if it also has an exclude word
+  # ("Privacy and Civil Liberties Software Engineer", "Software Engineer, Trading Systems").
+  software_overrides: [software, "full stack", "full-stack", frontend, "front end", backend, "back end"]
   design: [ux, ui, "user experience", "product design", "design engineer", "creative technolog", "visual design",
            "interaction design", "ux/ui", "ui/ux"]
   pm: ["product manag", "product management", apm, "associate product", "product intern", "program manag",
@@ -70,11 +73,13 @@ roles:
   it: [it, "information technology", "help desk", "service desk", "it support", "technical support",
        "desktop support", "support engineer", "solutions engineer", "systems administrator", sysadmin,
        infrastructure, network, cybersecurity, "security engineer", "systems engineer", "systems intern",
-       "cloud engineer", devops, "site reliability"]
+       "cloud engineer", devops, "site reliability", "technology intern", "technology analyst intern",
+       "digital technology"]
   swe: [software, swe, sde, developer, "full stack", fullstack, "full-stack", "front end", frontend, "front-end",
         "back end", backend, "back-end", mobile, ios, android, web, programmer, programming, "application engineer",
         "applications engineer", "platform engineer", engineer, engineering, "ai engineer", "ml engineer",
-        "machine learning engineer", "ai applications", "applied ai", "developer technology"]
+        "machine learning engineer", "ai applications", "applied ai", "developer technology",
+        "application development", "software development", "computer science", "technical staff", python]
 
 # Where you want to be, best first. Priority locations and US remote get the full location points,
 # anywhere else in the US gets some, outside the US gets none. Nothing is hidden for location.
@@ -85,7 +90,8 @@ locations:
   non_us_words: [canada, uk, "united kingdom", london, india, ireland, germany, france, singapore, australia,
                  netherlands, israel, poland, spain, italy, japan, mexico, brazil, "remote in canada",
                  "remote in uk", "remote in europe", toronto, vancouver, montreal, ottawa, dublin, bangalore,
-                 bengaluru, hyderabad, tel aviv, berlin, paris, amsterdam, sydney, zurich]
+                 bengaluru, hyderabad, tel aviv, berlin, paris, amsterdam, sydney, zurich, ", on", ", bc", ", qc",
+                 ", ab", ", ns", ontario, "british columbia", quebec, scotland, edinburgh, belfast]
 
 # Words you care about. Each hit in the title adds a few points (see scoring.yaml).
 keywords: [ai, "ai applications", ios, accessibility, "developer tools", "developer experience", cloud,
@@ -93,6 +99,11 @@ keywords: [ai, "ai applications", ios, accessibility, "developer tools", "develo
 
 # Degree values that mean "graduate students only". A listing whose degrees are ONLY these is dropped.
 graduate_only_degrees: ["Master's", "PhD", "MBA"]
+
+# Work authorization. Authorized to work in the US with no sponsorship needed, so "Does Not Offer
+# Sponsorship" never matters. us_citizen decides "U.S. Citizenship is Required" postings:
+# false drops them, true keeps them, null (not confirmed yet) keeps them with a "US citizens only" label.
+us_citizen: null
 
 # Your expected graduation year, for the page check that reads "graduating in 2027 or 2028" off the posting.
 graduation_year: 2030

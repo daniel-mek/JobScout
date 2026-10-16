@@ -67,7 +67,7 @@ def mode_watch(sender: Sender, now: float, seed: bool = False) -> None:
     if seed:
         # First run only: everything that exists today counts as already seen, so the phone
         # gets alerts for what appears from now on, not a flood of a thousand old postings.
-        fresh = [m for m in matches if m["key"] not in seen]
+        fresh = [m for m in matches if alerts.is_new(m, seen)]
         alerts.mark_seen(seen, fresh, "seeded", now)
         print(f"seeded {len(fresh)} existing matches as seen; no pushes")
     else:

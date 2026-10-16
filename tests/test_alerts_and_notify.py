@@ -43,6 +43,19 @@ class Selection(unittest.TestCase):
         self.assertEqual(len(chosen), W["digest_size"])
 
 
+class Reposts(unittest.TestCase):
+    def test_same_title_new_url_posted_later_alerts_again(self):
+        seen = {}
+        first = match("k", tier=1, score=80)
+        first.update(urls=["https://x.com/1"], latest_posted=NOW - 86400 * 30)
+        alerts.mark_seen(seen, [first], "instant", NOW - 86400 * 20)
+        self.assertFalse(alerts.is_new(first, seen))
+        repost = dict(first, urls=["https://x.com/2"], latest_posted=NOW - 86400)
+        self.assertTrue(alerts.is_new(repost, seen))
+        old_twin = dict(first, urls=["https://x.com/3"], latest_posted=NOW - 86400 * 40)
+        self.assertFalse(alerts.is_new(old_twin, seen))
+
+
 class Messages(unittest.TestCase):
     def test_match_push_has_no_personal_data_and_a_link(self):
         push = notify.match_push(match("a", tier=1, score=75, early_career="strong", eligibility="ok",

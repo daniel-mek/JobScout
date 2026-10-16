@@ -166,5 +166,57 @@ class Filters(unittest.TestCase):
         self.assertTrue(matching.passes_filters(recent, max_age_days=240, now=now)[0])
 
 
+class ReviewFixes(unittest.TestCase):
+    """Cases from the October 2026 product review, all from real 2027 listings."""
+
+    def kept(self, title, company="Acme", locations=("New York, NY",), url=""):
+        item = matching.describe({"company": company, "title": title, "locations": list(locations), "url": url,
+                                  "degrees": ["Bachelor's"], "terms": ["Summer 2027"], "active": True}, T)
+        return matching.passes_filters(item)
+
+    def test_hardware_is_out_even_inside_a_program(self):
+        url = "https://nvidia.wd5.myworkdayjobs.com/x/job/US-CA/NVIDIA-2027-Ignite-Internships--Hardware-Engineering_JR1"
+        self.assertEqual(self.kept("Hardware Engineering Intern", "NVIDIA", url=url), (False, "not a target role"))
+        url = "https://nvidia.wd5.myworkdayjobs.com/x/job/US-CA/NVIDIA-2027-Ignite-Internships--Software_JR2"
+        self.assertTrue(self.kept("Software Engineer Intern", "NVIDIA", url=url)[0])
+
+    def test_software_in_the_title_beats_an_exclude_word(self):
+        self.assertTrue(self.kept("Privacy and Civil Liberties Software Engineer Intern", "Palantir")[0])
+        self.assertTrue(self.kept("Software Engineer Intern, Trading Systems")[0])
+        self.assertFalse(self.kept("Quantitative Trading Intern")[0])
+
+    def test_graduate_titles_drop_but_mixed_ones_stay(self):
+        self.assertEqual(self.kept("Software Engineering Intern, Masters", "Apple")[1], "graduate students only")
+        self.assertEqual(self.kept("Product Owner Intern - MBA", "Waymo")[1], "graduate students only")
+        self.assertEqual(self.kept("Software Engineer Intern - MS/PhD", "Waymo")[1], "graduate students only")
+        self.assertFalse(matching.graduate_title("Scenes Intern (BS/MS)"))
+        self.assertFalse(matching.graduate_title("Software Engineer Intern (B.S./M.S.)"))
+
+    def test_missing_role_words(self):
+        self.assertEqual(matching.classify_role("Application Development Intern", T), "swe")
+        self.assertEqual(matching.classify_role("Computer Science Intern", T), "swe")
+        self.assertEqual(matching.classify_role("Member of Technical Staff Intern", T), "swe")
+        self.assertEqual(matching.classify_role("Technology Intern", T), "it")
+
+    def test_only_foreign_locations_drop(self):
+        self.assertEqual(self.kept("Software Developer Intern", "Amazon", locations=("London, UK", "Edinburgh, UK"))[1],
+                         "outside the US")
+        self.assertTrue(self.kept("Software Engineer Intern", locations=("Toronto, ON, Canada", "Seattle, WA"))[0])
+        self.assertTrue(self.kept("Software Engineer Intern", locations=("Multiple Locations",))[0])
+
+    def test_citizenship_only_drops_when_the_config_says_no(self):
+        row = {"company": "Acme", "title": "Software Engineer Intern", "locations": ["Arlington, VA"], "url": "",
+               "degrees": [], "terms": ["Summer 2027"], "active": True, "sponsorship": "U.S. Citizenship is Required"}
+        unknown = matching.describe(dict(row), dict(T, us_citizen=None))
+        self.assertTrue(unknown["citizens_only"])
+        self.assertTrue(matching.passes_filters(unknown)[0])
+        no = matching.describe(dict(row), dict(T, us_citizen=False))
+        self.assertEqual(matching.passes_filters(no), (False, "US citizens only"))
+
+    def test_us_places_written_without_abbreviations(self):
+        for place in ("Mountain View, California", "Georgia", "Washington, D.C.", "New Berlin, WI", "South SF", "San Jose"):
+            self.assertEqual(matching.location_class([place], T), "us", place)
+
+
 if __name__ == "__main__":
     unittest.main()
