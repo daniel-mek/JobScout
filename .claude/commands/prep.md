@@ -34,13 +34,31 @@ Present a short table: eligibility verdict with the quoted line from the posting
 
 Ask: "Draft the kit?" Wait for yes.
 
+## Step 1.5: Pick the story, ask the one question
+Written answers are where kits have failed (see the October 2026 post-mortem, if the candidate keeps one in `me/postmortems/`). Before drafting any written answer or letter:
+1. Load the candidate's voice skill and read its analysis and the corpus sections for applications, plus `me/voice-lessons.md` (its takeaways beat everything else here) and `me/story-bank.md` if it exists.
+2. Read the posting and company page **for selection only**: write down the one or two skills the role screens for, then pick ONE scene from the story bank that proves them. Stop using the research after that.
+3. If the chosen story has no outcome, or a fact you need is not in the profile or the story bank, ask the candidate exactly one question (and the field's word or character limit, if unknown) before drafting. Never invent a number, result, feeling, or name; never leave a placeholder in a draft they will read as final.
+
 ## Step 2: Drafter
+**Rules for every written answer and letter** (these replace any older "praise the company first" structure):
+- Open on a scene or an honest admission, never a thesis or a tagline.
+- Contain, in this priority: one decision with its reason, one outcome, one other shipped result, one honest gap they want to close.
+- Company content gets at most one clause. Never quote the posting or the mission back at the company; never explain the company to itself.
+- Explain every project the candidate owns in a clause the first time it appears; name each company one way, capitalized one way.
+- Anchor every relative date ("last summer", "this year") to today's date, or replace it with an absolute one.
+- Use the candidate's real numbers; never round up for drama. Never erase a mentor or claim they worked alone.
+- Their voice machinery, not just their topics: long connected sentences, one parenthetical aside, at most one mock-formal connector, their vocabulary only, an ending that calls back to the opening. "Instead of X" / "not just" at most once.
+- Follow any sensitivity in `me/voice.md` (for example, how to name a family business).
+
 1. **Resume.** Copy the closest base variant (`swe.json` for engineering, `pm.json` for product, `it.json` for IT) to `applications/<folder>/resume.json`. Then only select, reorder, and reword: lead with the bullets that match the posting's words, trim the least relevant to keep one page, use the posting's exact terms only where they are truthfully theirs (a posting that says "REST APIs" can find "REST APIs" in their skills; one that says "C++" cannot). Set `filename` to `<First>-<Last>-Resume-<Company>.pdf`. No summary line unless the base variant has one. Follow any project-order rule in `me/voice.md` (for example, which project leads) in the resume, the letter, and the answers.
 2. **Cover letter**, only if the posting asks for one or accepts one: `cover-letter.md` in the header format `scout/build_letter.py` expects (name, contact from `master_profile.md`, date, to, closing, then `---`). Under 300 words, three paragraphs: why this company and role specifically (from the posting text, nothing invented about the company), the two or three things they have done that match (real numbers from the profile), a short confident close. Reuse approved themes from `answer_bank.md` where they fit; never reuse lines `me/voice.md` marks as company-only.
 3. **Answers.** `answers.md`: a draft for each application question the posting lists, plus "Why this company?" and "Tell us about a project" if none are listed. Start from `answer_bank.md`, then make each one specific to this posting. Respect word limits.
 4. **Notes.** `notes.md`: fit summary, the eligibility quote, gaps and how to speak to them honestly, deadline, apply link, what to upload, and anything to check on the form (GPA field: leave blank).
 
 Write all files. Keep their exact text in context for the reviewer: what is on disk, character for character.
+
+**Pre-send check (mandatory before Step 3):** run `.venv/bin/python -m scout.voicecheck applications/<folder>/answers.md` (it reads `posting.txt` from the same folder and the candidate's private lists from `me/voice-check.yaml`). Fix every FAIL and resolve every WARN before anything goes to the reviewer or the candidate. Then walk the checklist the code cannot check: opens on a scene or admission; one decision with its reason, one outcome, one other shipped result, one honest gap; company content one clause or less; every fact traces to the profile, the story bank, or something they said this session; every owned project explained; ending calls back to the opening; word count reported against the field limit.
 
 ## Step 3: Reviewer (a fresh agent, drafts passed inline)
 Spawn one `general-purpose` agent with this prompt, filling the placeholders with the actual text. Paste every draft verbatim, exactly as it is on disk: `resume.json` as the raw JSON file (same keys, order, spacing, and escapes), never a summary, a rendered version, or a reformatted copy. Part A edits are applied with the Edit tool, so an `old_string` that came from a reformatted copy will not match the file.
@@ -79,6 +97,7 @@ Do not rewrite the documents. Do not add claims.
 If the reviewer errors or times out, resume it once (SendMessage to the same agent, or spawn it again with the same prompt if it cannot be resumed). If that fails too, do not wait or retry again: run checks A to D yourself against the same inputs, and say in `notes.md` and to them that this kit had no independent review.
 
 ## Step 4: Apply the review
+After applying edits, run `scout.voicecheck` again; a draft with a FAIL is never shown to the candidate.
 Apply every Part A edit with the Edit tool. Skip any edit that would add a claim not in the profile, and say which. Work through Part B with judgment. Then **show them the reviewer's flags** in a short list: what was changed, what was left, and every gap the posting has that they cannot fill.
 
 ## Step 5: Build and check
