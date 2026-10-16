@@ -25,7 +25,7 @@
 4. From the posting, extract and keep: company, exact role title, location, deadline or close date (only if stated), graduation-year or class-year requirement, required and preferred skills (verbatim words), whether a cover letter is required or optional, any application questions, and the apply link. Save the match JSON as `match.json` in the folder.
 
 ## Step 1: Fit and eligibility (show them before drafting)
-Read `me/master_profile.md`, `me/voice.md`, `me/answer_bank.md`, and `me/resumes/{swe,pm,it}.json` once.
+Read `me/master_profile.md`, `me/voice.md`, `me/answer_bank.md`, and `me/resumes/{swe,pm,it}.json` once. If a voice skill is installed (the candidate's voice.md names it), load it and read its writing corpus properly before drafting a single answer; the rules alone produce text that uses their facts without their voice.
 
 Present a short table: eligibility verdict with the quoted line from the posting (graduation years, class year, GPA, work authorization), then requirements mapped to STRONG / PARTIAL / GAP against their profile, then a one-line recommendation. If they are ineligible by a stated rule, say so and stop unless they say continue.
 
