@@ -63,9 +63,9 @@ def run(raw_by_source: dict[str, list], targets: dict, weights: dict, *, check_p
             item["eligibility"], item["eligibility_note"] = "unknown", "not checked (below top rows)"
     if allow_network:
         eligibility.save_cache(cache)
-    # A posting the page itself rules out (wrong graduation year, upperclassmen only) drops to the
+    # A posting the page itself rules out (wrong graduation year, upperclassmen only, taken down) drops to the
     # bottom. It is kept and labeled, never hidden, but it should not outrank something you can apply to.
-    kept.sort(key=lambda x: (x.get("eligibility") != "ineligible", x["score"], x.get("date_posted", 0)), reverse=True)
+    kept.sort(key=lambda x: (x.get("eligibility") not in ("ineligible", "closed"), x["score"], x.get("date_posted", 0)), reverse=True)
     counts["kept"] = len(kept)
     return kept, counts
 
@@ -89,7 +89,7 @@ def print_table(matches: list[dict], top: int, now: float) -> None:
         if len(m.get("locations", [])) > 2:
             loc += f" (+{len(m['locations']) - 2})"
         elig = m.get("eligibility", "unknown")
-        flag = {"ok": "eligible", "ineligible": "INELIGIBLE", "unknown": "unknown"}[elig]
+        flag = {"ok": "eligible", "ineligible": "INELIGIBLE", "closed": "CLOSED", "unknown": "unknown"}[elig]
         print(f"{i:>2}. [{m['score']:>3}] {m['company']}  |  {m['title']}")
         print(f"      {loc}  |  posted {age_text(m.get('date_posted', 0), now)}  |  {flag}: {m.get('eligibility_note', '')}")
         print(f"      {scoring.explain(m)}")

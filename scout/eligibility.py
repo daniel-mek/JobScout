@@ -11,6 +11,7 @@ Verdicts:
                 freshman/sophomore
   "ineligible"  the page names graduation windows and yours is in none of them, or names no year and asks
                 for penultimate-year, final-year, junior, or senior students
+  "closed"      the board says the posting is gone (treated like "ineligible": never pushed, sorted last)
   "unknown"     the page could not be read, or says nothing about graduation year (never hidden, just labeled)
 
 Reading the page is scout/posting.py's job (Workday, Google Careers, Greenhouse, Lever, Ashby).
@@ -32,7 +33,8 @@ from scout import posting
 ROOT = Path(__file__).resolve().parent.parent
 CACHE_PATH = ROOT / "data" / "eligibility_cache.json"
 CACHE_DAYS = 14
-CACHE_VERSION = 2  # bump when the verdict rules change, so old verdicts are re-read
+CLOSED = "\0closed"  # fetch_text's answer for a posting the board says is gone
+CACHE_VERSION = 3  # bump when the verdict rules change, so old verdicts are re-read
 
 _TAGS = re.compile(r"<script.*?</script>|<style.*?</style>|<[^>]+>", re.S | re.I)
 _YEAR = re.compile(r"\b(20[2-3][0-9])\b")
@@ -56,8 +58,10 @@ def is_readable_board(url: str) -> bool:
 
 
 def fetch_text(url: str) -> str | None:
-    """The posting's text, or None when the board cannot be read server-side."""
+    """The posting's text, CLOSED when the board says it is gone, or None when it cannot be read server-side."""
     post = posting.read_posting(url)
+    if post and post.get("closed"):
+        return CLOSED
     return post["text"] if post else None
 
 
@@ -149,6 +153,8 @@ def check(listing: dict, graduation_year: int, cache: dict, allow_network: bool 
     text = fetch_text(url)
     if text is None:
         verdict, note = "unknown", "page could not be read"
+    elif text == CLOSED:
+        verdict, note = "closed", "the posting has been taken down"
     else:
         verdict, note = verdict_from_text(text, graduation_year)
     cache[url] = {"verdict": verdict, "note": note, "checked_at": int(time.time()), "v": CACHE_VERSION}

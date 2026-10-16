@@ -50,7 +50,10 @@ class Verdicts(unittest.TestCase):
         self.assertTrue(eligibility.is_readable_board("https://acme.wd5.myworkdayjobs.com/en-US/Careers/job/NYC/SWE-Intern_R1"))
         self.assertTrue(eligibility.is_readable_board("https://www.google.com/about/careers/applications/jobs/results/123"))
         self.assertFalse(eligibility.is_readable_board("https://evil-greenhouse.io/x"))
-        self.assertFalse(eligibility.is_readable_board("https://www.amazon.jobs/en/jobs/1"))
+        self.assertTrue(eligibility.is_readable_board("https://www.amazon.jobs/en/jobs/1"))
+        self.assertTrue(eligibility.is_readable_board("https://explore.jobs.netflix.net/careers/job/790318904468"))
+        self.assertTrue(eligibility.is_readable_board("https://careers.withwaymo.com/jobs?gh_jid=8198218"))
+        self.assertFalse(eligibility.is_readable_board("https://careers.example.com/jobs?gh_jid=1"))
 
     def test_upperclass_phrases_are_ineligible(self):
         text = "This internship is intended for students in their penultimate academic year, pursuing a Bachelor's degree."
@@ -115,6 +118,16 @@ class Windows(unittest.TestCase):
         verdict, note = self.verdict(text)
         self.assertEqual(verdict, "ineligible")
         self.assertIn("rising junior", note)
+
+    def test_a_closed_posting_is_labeled_closed(self):
+        original = eligibility.fetch_text
+        eligibility.fetch_text = lambda url: eligibility.CLOSED
+        try:
+            item = {"url": "https://boards.greenhouse.io/acme/jobs/1"}
+            eligibility.check(item, GRAD, cache={}, allow_network=True)
+        finally:
+            eligibility.fetch_text = original
+        self.assertEqual(item["eligibility"], "closed")
 
     def test_old_cache_entries_are_reread(self):
         url = "https://boards.greenhouse.io/acme/jobs/1"

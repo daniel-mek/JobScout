@@ -14,6 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SEEN_PATH = ROOT / "data" / "seen.json"
+RULED_OUT = ("ineligible", "closed")  # the posting page itself says he can't apply
 
 
 def load_seen(path: Path = SEEN_PATH) -> dict:
@@ -29,7 +30,7 @@ def save_seen(seen: dict, path: Path = SEEN_PATH) -> None:
 
 
 def is_instant(m: dict, weights: dict) -> bool:
-    if m.get("eligibility") == "ineligible":
+    if m.get("eligibility") in RULED_OUT:
         return False
     if m.get("early_career") == "strong" or m.get("role") == "ambassador":
         return True
@@ -45,7 +46,7 @@ def select_digest(matches: list[dict], seen: dict, weights: dict) -> list[dict]:
     floor = weights.get("min_score", 30)
     size = weights.get("digest_size", 10)
     pool = [m for m in matches if m["key"] not in seen and m.get("score", 0) >= floor
-            and m.get("eligibility") != "ineligible" and not is_instant(m, weights)]
+            and m.get("eligibility") not in RULED_OUT and not is_instant(m, weights)]
     return pool[:size]
 
 
