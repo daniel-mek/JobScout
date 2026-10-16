@@ -29,6 +29,26 @@ class Boards(unittest.TestCase):
         self.assertEqual(boards.greenhouse("pinterest", "Pinterest", NOW, fetch=lambda url: answer)[0]["url"],
                          "https://www.pinterestcareers.com/jobs/?gh_jid=8214788")
 
+    def test_anthropic_fellows_program_is_kept_and_phd_fellowships_are_dropped(self):
+        # Anthropic has no internships; its Fellows Program (open "regardless of previous experience") is the door.
+        # The PhD-only fellowships share the word "Fellow" but are not "fellows program" titles.
+        from scout import matching
+        answer = {"jobs": [
+            {"id": 5183044008, "title": "Anthropic Fellows Program, AI Safety & Security",
+             "absolute_url": "https://job-boards.greenhouse.io/anthropic/jobs/5183044008",
+             "location": {"name": "London, UK; Remote-Friendly, United States; San Francisco, CA"}},
+            {"id": 5447080008, "title": "Conceptual Reasoning Fellow",
+             "absolute_url": "https://job-boards.greenhouse.io/anthropic/jobs/5447080008",
+             "location": {"name": "Remote-Friendly, United States; San Francisco, CA"}},
+            {"id": 2, "title": "Research Engineer, Interpretability",
+             "absolute_url": "https://job-boards.greenhouse.io/anthropic/jobs/2", "location": {"name": "SF"}},
+        ]}
+        rows = boards.greenhouse("anthropic", "Anthropic", NOW, fetch=lambda url: answer)
+        self.assertEqual([r["title"] for r in rows], ["Anthropic Fellows Program, AI Safety & Security", "Conceptual Reasoning Fellow"])
+        targets = matching.load_targets()
+        kept = [r["title"] for r in rows if matching.passes_filters(matching.describe(r, targets))[0]]
+        self.assertEqual(kept, ["Anthropic Fellows Program, AI Safety & Security"])
+
     def test_terms_when_the_title_has_no_year(self):
         self.assertEqual(boards.terms_for("Data Analyst, Intern", NOW), ["Summer 2027 (year not stated)"])
         self.assertEqual(boards.terms_for("Software Engineer Intern (Winter 2027)", NOW), ["Winter 2027"])

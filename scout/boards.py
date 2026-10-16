@@ -3,7 +3,7 @@
 The Simplify and vanshb03 lists are built around software engineering, so a posting like Figma's
 "Product Design Intern (2027)" never reaches them. Greenhouse, Ashby, and Lever publish every company's
 open jobs as public JSON, with no login, so Scout reads the boards named in config/targets.yaml (boards:)
-and keeps only internship and co-op titles.
+and keeps only internship, co-op, and fellowship titles (Anthropic has no internships, only a Fellows Program).
 
 Each kept job becomes a row in the same shape listings.py produces, with source "boards". The URL is the
 one the lists use for the same posting (boards.greenhouse.io/<board>/jobs/<id>, or the company's own
@@ -20,7 +20,7 @@ import urllib.request
 from datetime import datetime, timezone
 
 USER_AGENT = "scout-internship-watcher/0.1 (personal project; reads public job boards only)"
-INTERN = re.compile(r"\b(intern|interns|internship|co-?op)\b", re.I)
+INTERN = re.compile(r"\b(intern|interns|internship|co-?op|fellow|fellows|fellowship)\b", re.I)
 _YEAR = re.compile(r"\b(20[2-3][0-9])\b")
 _SEASON = re.compile(r"\b(summer|fall|winter|spring)\b", re.I)
 

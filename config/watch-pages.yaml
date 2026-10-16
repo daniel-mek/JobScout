@@ -46,3 +46,11 @@ pages:
   - name: GitHub Campus Experts
     url: https://githubcampus.expert/
     note: Campus ambassador-style program; applications open in cycles.
+
+  - name: Anthropic careers
+    url: https://www.anthropic.com/careers
+    note: Its FAQ says "We don't currently offer internships." Alerts if that line changes or a student program appears. The Fellows Program itself arrives through the Greenhouse board.
+
+  - name: Anthropic Claude Campus (Builder Club ambassadors)
+    url: https://www.anthropic.com/campus
+    note: Undergrad track leads a Claude Builder Club, $3,600 stipend. 2026 window was Sept 1 to Sept 12; expect it to reopen around Sept 1, 2027.
