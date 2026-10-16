@@ -24,8 +24,11 @@
    If it prints "unreadable", ask them to paste the description and save what they paste to `posting.txt` yourself. Never draft from a title alone.
 4. From the posting, extract and keep: company, exact role title, location, deadline or close date (only if stated), graduation-year or class-year requirement, required and preferred skills (verbatim words), whether a cover letter is required or optional, any application questions, and the apply link. Save the match JSON as `match.json` in the folder.
 
+## Step 0.5: Learn from their last edits
+Run `.venv/bin/python -m scout.sync pull` first (it writes answers edited on the Review page back into the kits and logs each one, draft next to edit, in `me/voice-lessons.md`). Then open `me/voice-lessons.md`. For every entry marked `[new]`: compare the draft with their edit, work out what the edit teaches (a word they cut, a sentence shape they rebuilt, a fact they corrected, a structure they want), and add one to three takeaways to the top of the **Takeaways** list, each with the date and a short example from the edit. Change `[new]` to `[learned <date>]`. A fact they corrected also goes into `me/master_profile.md`. Then tell them in one line what you learned. Do this every time, even when nothing is queued: the file only gets better if every edit is read.
+
 ## Step 1: Fit and eligibility (show them before drafting)
-Read `me/master_profile.md`, `me/voice.md`, `me/answer_bank.md`, and `me/resumes/{swe,pm,it}.json` once. If a voice skill is installed (the candidate's voice.md names it), load it and read its writing corpus properly before drafting a single answer; the rules alone produce text that uses their facts without their voice.
+Read `me/master_profile.md`, `me/voice-lessons.md` (its Takeaways beat every general rule), `me/voice.md`, `me/answer_bank.md`, and `me/resumes/{swe,pm,it}.json` once. If a voice skill is installed (the candidate's voice.md names it), load it and read its writing corpus properly before drafting a single answer; the rules alone produce text that uses their facts without their voice.
 
 Present a short table: eligibility verdict with the quoted line from the posting (graduation years, class year, GPA, work authorization), then requirements mapped to STRONG / PARTIAL / GAP against their profile, then a one-line recommendation. If they are ineligible by a stated rule, say so and stop unless they say continue.
 

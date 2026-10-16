@@ -30,6 +30,10 @@ class Kits(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
+        (self.root / "me").mkdir()
+        self.lessons = mock.patch.object(kits, "LESSONS", self.root / "me" / "voice-lessons.md")
+        self.lessons.start()
+        self.addCleanup(self.lessons.stop)
         self.kit = self.root / "acme-software-engineer-intern"
         self.kit.mkdir()
         (self.kit / "answers.md").write_text(ANSWERS)
@@ -58,6 +62,11 @@ class Kits(unittest.TestCase):
         self.assertIn("## Why Acme?\n\nBecause Acme ships, and I want in.\n", text)
         self.assertIn("Command Center puts everything on one screen.", text)
         self.assertEqual(kits.apply_edits(edits, self.root), 0, "a second pull changes nothing")
+        log = (self.root / "me" / "voice-lessons.md").read_text()
+        self.assertIn("### [new]", log)
+        self.assertIn("> Because Acme ships.", log)
+        self.assertIn("> Because Acme ships, and I want in.", log)
+        self.assertEqual(log.count("### [new]"), 1, "only real changes are logged")
 
     def test_a_renamed_question_and_unknown_kits_are_left_alone(self):
         edits = {"acme-software-engineer-intern": {"answers": [{"q": "Old heading", "a": "x", "edited": True}]},

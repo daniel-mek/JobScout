@@ -20,6 +20,21 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 APPLICATIONS = ROOT / "applications"
+LESSONS = ROOT / "me" / "voice-lessons.md"   # private: every edit he makes, and what it teaches
+
+LESSONS_HEADER = """# Voice lessons (private, grows with every edit)
+
+Read this before drafting anything with his name on it. His edits beat every general rule.
+
+## Takeaways
+
+(Distilled from the edits below at the start of each /prep. Newest first. Each one: the rule, then the edit that taught it.)
+
+## Edits
+
+Logged automatically by `scout.sync pull` when he saves an edit on the Review page. Entries marked [new] have not been
+turned into takeaways yet.
+"""
 _HEADING = re.compile(r"^## (.+)$", re.M)
 
 
@@ -88,6 +103,27 @@ def pack_all(root: Path = APPLICATIONS) -> list[dict]:
     return [k for k in (pack(f) for f in sorted(root.iterdir()) if f.is_dir()) if k]
 
 
+def log_lesson(company: str, question: str, draft: str, edited: str, path: Path | None = None) -> None:
+    """Append one before/after pair to the lessons file, marked [new] until /prep distills it."""
+    path = path or LESSONS
+    if not path.parent.exists():
+        return  # no me/ folder (the cron): nothing personal is ever written there
+    if not path.exists():
+        path.write_text(LESSONS_HEADER, encoding="utf-8")
+    quote = lambda t: "\n".join("> " + line if line else ">" for line in t.strip().splitlines())
+    day = datetime.now().strftime("%Y-%m-%d")
+    entry = f"\n### [new] {day} · {company} · {question}\n\nDraft:\n\n{quote(draft)}\n\nHis edit:\n\n{quote(edited)}\n"
+    with path.open("a", encoding="utf-8") as f:
+        f.write(entry)
+
+
+def _company(folder: Path) -> str:
+    try:
+        return json.loads((folder / "match.json").read_text(encoding="utf-8")).get("company") or folder.name
+    except (OSError, ValueError):
+        return folder.name
+
+
 def apply_letter(folder: Path, body: str) -> bool:
     """Put a letter edited on the phone back under the header of cover-letter.md and rebuild its PDF."""
     path = folder / "cover-letter.md"
@@ -96,6 +132,7 @@ def apply_letter(folder: Path, body: str) -> bool:
     header, sep, old = path.read_text(encoding="utf-8").partition("---")
     if not sep or old.strip() == body.strip():
         return False
+    log_lesson(_company(folder), "Cover letter", old, body)
     path.write_text(f"{header}---\n{body.strip()}\n", encoding="utf-8")
     import subprocess, sys
     subprocess.run([sys.executable, str(ROOT / "scout" / "build_letter.py"), str(path)], check=False)
@@ -120,6 +157,7 @@ def apply_edits(edits: dict, root: Path = APPLICATIONS) -> int:
         here = 0
         for s in sections:
             if s["q"] in phone and phone[s["q"]].strip() != s["a"].strip():
+                log_lesson(_company(root / slug), s["q"], s["a"], phone[s["q"]])
                 s["a"] = phone[s["q"]]
                 here += 1
         changed += here
