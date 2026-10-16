@@ -30,7 +30,7 @@ Cloudflare Worker: password-protected dashboard (New, Programs, Tracker, Setting
 ```
 
 - **Scoring without AI.** Every posting gets a 0 to 100 score from plain rules in `config/scoring.yaml`: role, company tier, whether it's built for freshmen and sophomores, degree, location, and freshness. Every card shows its math.
-- **Eligibility, read from the posting.** Scout reads posting pages on Workday, Google Careers, Greenhouse, Lever, and Ashby for graduation-year or class-year requirements and sinks the ones that rule you out.
+- **Eligibility, read from the posting.** Scout reads posting pages on Workday, Google Careers, Greenhouse, Lever, Ashby, Eightfold (Netflix, Microsoft), and Amazon for graduation-year or class-year requirements, never pushes the ones that rule you out, and labels postings that have been taken down.
 - **Program pages watched for changes.** Freshman programs (Microsoft Explore, NVIDIA's university page, and others) often open without appearing in any list, so Scout hashes those pages and pushes the new lines when they change, ignoring rotating job carousels.
 - **Prep kits with a second pair of eyes.** A drafter writes from your master profile only; a separate reviewer pass checks every claim against it, plus the posting's must-haves, and lists what you don't have instead of faking it.
 
@@ -50,7 +50,7 @@ The plan is for Scout to work for anyone looking for an internship or a job, wha
 ## Make it yours
 
 1. Clone, create a Python 3.12 venv, `pip install -r requirements.txt` (add `requirements-resume.txt` for PDFs).
-2. Edit `config/targets.yaml`: roles and the words that identify them, companies by tier, locations, keywords, graduation year.
+2. Edit `config/targets.yaml`: roles and the words that identify them, companies by tier, locations, keywords, graduation year, and `us_citizen`.
 3. Copy `me.example/` to `me/` (gitignored) and fill in your master profile, then run `/interview` in Claude Code to build your resumes.
 4. Set the repo secrets (`NTFY_TOPIC`; plus `SCOUT_URL` and `SCOUT_INGEST_SECRET` if you deploy the dashboard) and enable the workflow.
 
