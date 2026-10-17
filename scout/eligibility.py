@@ -34,7 +34,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CACHE_PATH = ROOT / "data" / "eligibility_cache.json"
 CACHE_DAYS = 14
 CLOSED = "\0closed"  # fetch_text's answer for a posting the board says is gone
-CACHE_VERSION = 4  # bump when the verdict rules change, so old verdicts are re-read
+CACHE_VERSION = 5  # bump when the verdict rules change, so old verdicts are re-read
 
 _TAGS = re.compile(r"<script.*?</script>|<style.*?</style>|<[^>]+>", re.S | re.I)
 _YEAR = re.compile(r"\b(20[2-3][0-9])\b")
@@ -149,10 +149,11 @@ def save_cache(cache: dict, path: Path = CACHE_PATH) -> None:
     Path(path).write_text(json.dumps(cache, indent=1, sort_keys=True), encoding="utf-8")
 
 
-def check(listing: dict, graduation_year: int, cache: dict, allow_network: bool = True) -> dict:
+def check(listing: dict, graduation_year: int | None, cache: dict, allow_network: bool = True) -> dict:
     """Attach 'eligibility' and 'eligibility_note' to a listing. Uses the cache first, then the network."""
     url = listing.get("url", "")
-    cached = cache.get(url)
+    cache_key = f"{url}|grad={graduation_year}|level={listing.get('career_level', '')}"
+    cached = cache.get(cache_key)
     if cached and cached.get("v") == CACHE_VERSION and time.time() - cached.get("checked_at", 0) < CACHE_DAYS * 24 * 3600:
         listing["eligibility"], listing["eligibility_note"] = cached["verdict"], cached["note"]
         return listing
@@ -166,8 +167,11 @@ def check(listing: dict, graduation_year: int, cache: dict, allow_network: bool 
         return listing
     if text == CLOSED:
         verdict, note = "closed", "the posting has been taken down"
+    elif listing.get("career_level") == "entry_level" or graduation_year is None:
+        verdict, note = "unknown", "graduation eligibility not evaluated; review posting requirements"
     else:
         verdict, note = verdict_from_text(text, graduation_year)
-    cache[url] = {"verdict": verdict, "note": note, "checked_at": int(time.time()), "v": CACHE_VERSION}
+    cache[cache_key] = {"verdict": verdict, "note": note, "checked_at": int(time.time()), "v": CACHE_VERSION}
     listing["eligibility"], listing["eligibility_note"] = verdict, note
     return listing
+

@@ -12,6 +12,8 @@ from urllib.parse import urlsplit
 
 import yaml
 
+from scout import career
+
 ROOT = Path(__file__).resolve().parent.parent
 TARGETS_PATH = ROOT / "config" / "targets.yaml"
 
@@ -145,7 +147,7 @@ def early_career(title: str, company_key: str | None, targets: dict, url: str = 
         return "strong"
     if any(_word_match(text, w) for w in programs.get("any", [])):
         return "strong"
-    if any(_word_match(text, w) for w in targets.get("early_career_weak", [])):
+    if career.level(title) == "entry_level" or any(_word_match(text, w) for w in targets.get("early_career_weak", [])):
         return "weak"
     return "none"
 
@@ -239,9 +241,11 @@ def keyword_hits(title: str, targets: dict) -> list[str]:
 def describe(listing: dict, targets: dict) -> dict:
     """Attach tier, role, early-career, location, degree, and keyword facts to a listing (in place)."""
     tier, company_key = company_tier(listing["company"], targets)
+    listing["career_level"] = listing.get("career_level") or career.level(listing["title"])
     listing["tier"] = tier
     listing["company_key"] = company_key
     listing["role"] = classify_role(listing["title"], targets)
+    listing["search_role_blocked"] = bool(targets.get("search_roles")) and listing["role"] not in targets["search_roles"]
     listing["early_career"] = early_career(listing["title"], company_key, targets, listing.get("url", ""))
     listing["location_class"] = location_class(listing.get("locations", []), targets)
     listing["outside_us_only"] = outside_us_only(listing.get("locations", []), targets)
@@ -262,7 +266,9 @@ def passes_filters(listing: dict, cycle_year: str = "2027", max_age_days: int | 
     """Hard drops only. Returns (keep, reason). Everything that passes gets scored, nothing is hidden for location."""
     if not listing.get("active", True):
         return False, "inactive"
-    if not any(cycle_year in t for t in listing.get("terms", [])):
+    if listing.get("career_level") == "experienced":
+        return False, "experienced role"
+    if listing.get("career_level") != "entry_level" and not any(cycle_year in t for t in listing.get("terms", [])):
         return False, "not a 2027 term"
     if max_age_days and listing.get("date_posted"):
         import time
@@ -277,8 +283,11 @@ def passes_filters(listing: dict, cycle_year: str = "2027", max_age_days: int | 
         return False, "US citizens only"
     # A freshman program keeps a title with no role word ("Explore Program"), but not one that names
     # a field he isn't looking for: NVIDIA's Ignite program also has a Hardware Engineering track.
+    if listing.get("search_role_blocked"):
+        return False, "not a target role"
     if listing.get("excluded"):
         return False, "not a target role"
     if listing.get("role") == "none" and listing.get("early_career") != "strong":
         return False, "not a target role"
     return True, "ok"
+

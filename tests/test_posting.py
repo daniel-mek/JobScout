@@ -2,6 +2,7 @@
 
 import json
 import unittest
+from unittest import mock
 
 from scout import alerts, posting
 
@@ -50,7 +51,8 @@ class Readers(unittest.TestCase):
         web = self.fake({board: (200, jobs)})
         post = posting.read_posting("https://jobs.ashbyhq.com/notion/3fba1c39-c5cb-47d7-9ad2-1cec4d7e9d0c/application?embed=true")
         self.assertIn("Summer 2028", post["text"])
-        gone = posting.read_posting("https://jobs.ashbyhq.com/notion/00000000-0000-0000-0000-000000000000")
+        with mock.patch.object(posting, "read_ashby_unlisted", return_value={"closed": True}):
+            gone = posting.read_posting("https://jobs.ashbyhq.com/notion/00000000-0000-0000-0000-000000000000")
         self.assertTrue(gone["closed"])
         self.assertEqual(web.asked.count(board), 1)
 
@@ -76,3 +78,4 @@ class Readers(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

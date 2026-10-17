@@ -33,7 +33,8 @@ class Score(unittest.TestCase):
         pm = scoring.score(described(role="pm"), W, NOW)["score"]
         it = scoring.score(described(role="it"), W, NOW)["score"]
         design = scoring.score(described(role="design"), W, NOW)["score"]
-        self.assertTrue(swe > amb > pm > it > design)
+        self.assertEqual(swe, it)
+        self.assertTrue(swe > amb > pm > design)
 
     def test_program_beats_plain_tier1_swe(self):
         # A freshman program at an unknown company with no role word in the title must outrank
@@ -89,3 +90,4 @@ class Score(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

@@ -41,8 +41,15 @@ jobs:
       # only holds code. It is checked out into data/ and committed back there after the run.
       - name: Check out the data branch into data/
         run: |
-          git fetch --depth=1 origin data
-          git worktree add -B data data origin/data
+          git ls-remote --heads origin data > /tmp/scout-data-ref
+          if [ -s /tmp/scout-data-ref ]; then
+            git fetch --depth=1 origin data
+            git worktree add -B data data origin/data
+          else
+            # A new fork copies main only. Start with an empty state branch.
+            git worktree add --detach data HEAD
+            git -C data switch --orphan data
+          fi
 
       # The input reaches the shell only as an environment variable and is checked against the four modes,
       # so nothing typed into "Run workflow" (or sent through the API) can become part of a command.
@@ -91,3 +98,4 @@ jobs:
             git pull --rebase origin data || true
             git push origin HEAD:data
           fi
+

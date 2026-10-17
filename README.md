@@ -1,4 +1,6 @@
-# Scout
+# JobScout
+
+This fork searches early-career IT and computer science jobs: junior, entry-level, new-graduate, and internship roles. It reads the public Simplify new-graduate feed alongside the existing internship lists and configured Greenhouse, Lever, and Ashby company boards. See [early-career setup](docs/early-career.md).
 
 **🚧 In development.** It runs every day for one person's internship search; making it work for anyone is the next step ([where this is going](#where-this-is-going)).
 
@@ -57,3 +59,4 @@ The plan is for Scout to work for anyone looking for an internship or a job, wha
 How every piece runs, with commands: [docs/operations.md](docs/operations.md). Design decisions and why: [docs/decisions.md](docs/decisions.md). Code borrowed from MIT and Apache projects is listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 I built it with help from Claude Code. MIT license.
+

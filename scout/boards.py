@@ -1,15 +1,8 @@
-"""Read target companies' own job boards, for internships the public lists never carry.
+"""Read public Greenhouse, Lever, and Ashby boards for early-career roles.
 
-The Simplify and vanshb03 lists are built around software engineering, so a posting like Figma's
-"Product Design Intern (2027)" never reaches them. Greenhouse, Ashby, and Lever publish every company's
-open jobs as public JSON, with no login, so Scout reads the boards named in config/targets.yaml (boards:)
-and keeps only internship, co-op, and fellowship titles (Anthropic has no internships, only a Fellows Program).
-
-Each kept job becomes a row in the same shape listings.py produces, with source "boards". The URL is the
-one the lists use for the same posting (boards.greenhouse.io/<board>/jobs/<id>, or the company's own
-careers link), so dedupe.py merges a posting both carry, and the list's row (its title, its key) wins.
-
-Board text is untrusted: titles and locations are stored and matched, never followed or executed.
+Internship, co-op, fellowship, junior, entry-level, and graduate titles are collected.
+The downstream matcher limits results to the configured IT/CS role families.
+Board text is untrusted data and is never executed.
 """
 
 from __future__ import annotations
@@ -19,7 +12,9 @@ import re
 import urllib.request
 from datetime import datetime, timezone
 
-USER_AGENT = "scout-internship-watcher/0.1 (personal project; reads public job boards only)"
+from scout import career
+
+USER_AGENT = "jobscout-early-career-watcher/0.1 (personal project; reads public job boards only)"
 INTERN = re.compile(r"\b(intern|interns|internship|co-?op|fellow|fellows|fellowship)\b", re.I)
 _YEAR = re.compile(r"\b(20[2-3][0-9])\b")
 _SEASON = re.compile(r"\b(summer|fall|winter|spring)\b", re.I)
@@ -53,7 +48,7 @@ def _split_places(text: str) -> list[str]:
 def _row(company: str, board: str, job_id: str, title: str, url: str, places: list[str], posted: int,
          now: datetime | None) -> dict:
     return {"id": f"{board}:{job_id}", "source": "boards", "company": company, "title": title.strip(), "url": url,
-            "locations": places, "terms": terms_for(title, now), "degrees": [], "sponsorship": "Other",
+            "locations": places, "career_level": career.level(title), "terms": terms_for(title, now) if INTERN.search(title) else [], "degrees": [], "sponsorship": "Other",
             "category": None, "date_posted": posted, "date_updated": posted, "active": True}
 
 
@@ -67,7 +62,7 @@ def _iso_seconds(text: str) -> int:
 def greenhouse(board: str, company: str, now: datetime | None = None, fetch=_get) -> list[dict]:
     rows = []
     for job in fetch(f"https://boards-api.greenhouse.io/v1/boards/{board}/jobs").get("jobs", []):
-        if not INTERN.search(job.get("title", "")):
+        if not career.board_candidate(job.get("title", "")):
             continue
         absolute = job.get("absolute_url", "")
         # Lists link greenhouse-hosted jobs without the ?gh_jid echo, and company-hosted ones with it.
@@ -81,7 +76,7 @@ def greenhouse(board: str, company: str, now: datetime | None = None, fetch=_get
 def ashby(org: str, company: str, now: datetime | None = None, fetch=_get) -> list[dict]:
     rows = []
     for job in fetch(f"https://api.ashbyhq.com/posting-api/job-board/{org}").get("jobs", []):
-        if not INTERN.search(job.get("title", "")) or job.get("isListed") is False:
+        if not career.board_candidate(job.get("title", "")) or job.get("isListed") is False:
             continue
         places = [job.get("location", "")] + [s.get("location", "") for s in job.get("secondaryLocations") or []]
         rows.append(_row(company, org, job["id"], job["title"], f"https://jobs.ashbyhq.com/{org}/{job['id']}",
@@ -92,7 +87,7 @@ def ashby(org: str, company: str, now: datetime | None = None, fetch=_get) -> li
 def lever(org: str, company: str, now: datetime | None = None, fetch=_get) -> list[dict]:
     rows = []
     for job in fetch(f"https://api.lever.co/v0/postings/{org}?mode=json"):
-        if not INTERN.search(job.get("text", "")):
+        if not career.board_candidate(job.get("text", "")):
             continue
         categories = job.get("categories") or {}
         places = categories.get("allLocations") or [categories.get("location", "")]
@@ -119,3 +114,4 @@ def fetch_boards(config: dict, now: datetime | None = None) -> tuple[list[dict],
             except Exception as exc:  # a 404 or a timeout on one board: report it, keep going
                 errors.append(f"boards: {kind} {board}: {exc}")
     return rows, errors
+

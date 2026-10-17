@@ -62,7 +62,7 @@ def run(raw_by_source: dict[str, list], targets: dict, weights: dict, *, check_p
     cache = eligibility.load_cache()
     for i, item in enumerate(kept):
         if i < check_pages or could_push(item):
-            eligibility.check(item, int(targets.get("graduation_year", 2030)), cache, allow_network)
+            eligibility.check(item, targets.get("graduation_year"), cache, allow_network)
         else:
             item["eligibility"], item["eligibility_note"] = "unknown", "not checked (below top rows)"
     if allow_network and save:
@@ -151,3 +151,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

@@ -46,6 +46,7 @@ class Boards(unittest.TestCase):
         rows = boards.greenhouse("anthropic", "Anthropic", NOW, fetch=lambda url: answer)
         self.assertEqual([r["title"] for r in rows], ["Anthropic Fellows Program, AI Safety & Security", "Conceptual Reasoning Fellow"])
         targets = matching.load_targets()
+        targets.pop("search_roles", None)
         kept = [r["title"] for r in rows if matching.passes_filters(matching.describe(r, targets))[0]]
         self.assertEqual(kept, ["Anthropic Fellows Program, AI Safety & Security"])
 
@@ -90,3 +91,4 @@ class Boards(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

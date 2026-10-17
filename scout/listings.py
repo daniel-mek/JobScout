@@ -1,6 +1,7 @@
 """Fetch the public internship lists and normalize every row into one shape.
 
 Sources (all free, all public JSON, no login):
+  simplify_newgrad  SimplifyJobs/New-Grad-Positions (full-time graduate roles)
   simplify  SimplifyJobs/Summer2027-Internships  (~13 MB, ~17K rows, the main list)
   vanshb03  vanshb03/Summer2027-Internships      (~275 KB, MIT, a separate community list)
   boards    target companies' own Greenhouse, Ashby, and Lever boards (scout/boards.py, targets.yaml boards:),
@@ -35,14 +36,15 @@ from pathlib import Path
 
 import yaml
 
-from scout import boards
+from scout import boards, career
 
 SOURCES = {
+    "simplify_newgrad": "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",
     "simplify": "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json",
     "vanshb03": "https://raw.githubusercontent.com/vanshb03/Summer2027-Internships/main/.github/scripts/listings.json",
 }
 
-USER_AGENT = "scout-internship-watcher/0.1 (personal project; reads public JSON only)"
+USER_AGENT = "jobscout-early-career-watcher/0.1 (personal project; reads public JSON only)"
 
 
 class SourceError(Exception):
@@ -107,7 +109,14 @@ def normalize_vanshb03(row: dict) -> dict:
     }
 
 
-NORMALIZERS = {"simplify": normalize_simplify, "vanshb03": normalize_vanshb03, "boards": lambda row: row}
+def normalize_newgrad(row: dict) -> dict:
+    item = normalize_simplify(row)
+    item["source"] = "simplify_newgrad"
+    item["career_level"] = career.level(item["title"], curated_newgrad=True)
+    return item
+
+
+NORMALIZERS = {"simplify_newgrad": normalize_newgrad, "simplify": normalize_simplify, "vanshb03": normalize_vanshb03, "boards": lambda row: row}
 TARGETS_PATH = Path(__file__).resolve().parent.parent / "config" / "targets.yaml"
 
 
@@ -129,7 +138,7 @@ def fetch_all(sources: dict[str, str] | None = None, with_boards: bool = True) -
     One broken source must not hide the other, so errors are collected, not raised.
     The caller decides whether to alert on them.
     """
-    sources = sources or SOURCES
+    sources = SOURCES if sources is None else sources
     raw: dict[str, list] = {}
     errors: list[str] = []
     for name, url in sources.items():
@@ -143,3 +152,4 @@ def fetch_all(sources: dict[str, str] | None = None, with_boards: bool = True) -
         raw["boards"] = rows
         errors.extend(board_errors)
     return raw, errors
+

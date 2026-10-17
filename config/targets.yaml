@@ -32,11 +32,8 @@ tier2:
   oracle: [oracle]
   anthropic: [anthropic]
 
-# Company job boards read directly (scout/boards.py), for internships the public lists never carry:
-# the lists are built around software engineering, so design roles like Figma's Product Design Intern
-# only show up here. Board name: company name as the lists write it. Only intern, co-op, and fellow titles are kept.
-# Anthropic has no internships (its careers FAQ says so); its Fellows Program is the student-reachable door.
-# Checked 2026-10-16; the other Tier 1 and 2 companies use Workday or their own sites, which the lists cover.
+# Public company ATS boards. Internships plus explicit junior, entry-level and new-grad titles.
+# Add employer board slugs here; a failing board is reported without blocking other sources.
 boards:
   greenhouse: {figma: Figma, pinterest: Pinterest, airbnb: Airbnb, duolingo: Duolingo, anthropic: Anthropic}
   ashby: {notion: Notion}
@@ -60,7 +57,7 @@ programs:
 
 # "Early career" on its own is usually just a job level at banks and insurers, not a freshman program,
 # so it gets a small boost, not the big one.
-early_career_weak: ["early career", "early careers"]
+early_career_weak: ["early career", "early careers", "early-career", "entry level", "entry-level", "new grad", "new graduate", "junior", "associate"]
 
 # Roles, in priority order. The first group whose words appear in the title wins.
 # "ambassador" is checked before "exclude" so "Campus Ambassador (Marketing)" is not thrown out as marketing.
@@ -86,7 +83,7 @@ roles:
   pm: ["product manag", "product management", apm, "associate product", "product intern", "program manag",
        "technical program", "product analyst", "product owner", "product operations", "product strategy"]
   it: [it, "information technology", "help desk", "service desk", "it support", "technical support",
-       "desktop support", "support engineer", "solutions engineer", "systems administrator", sysadmin,
+       "desktop support", "computer support", "support technician", "support specialist", "network technician", "network administrator", "security analyst", "soc analyst", "information security", "support engineer", "solutions engineer", "systems administrator", sysadmin,
        infrastructure, network, cybersecurity, "security engineer", "systems engineer", "systems intern",
        "cloud engineer", devops, "site reliability", "technology intern", "technology analyst intern",
        "digital technology"]
@@ -118,11 +115,16 @@ graduate_only_degrees: ["Master's", "PhD", "MBA"]
 # Sponsorship" never matters. us_citizen decides "U.S. Citizenship is Required" postings:
 # false drops them, true keeps them, null (not confirmed yet) keeps them with a "US citizens only" label.
 # Postings outside the US are dropped for now (matching.outside_us_only); opening them up is a later option.
-us_citizen: true
+us_citizen: null
 
-# Your expected graduation year, for the page check that reads "graduating in 2027 or 2028" off the posting.
-graduation_year: 2030
+# Set your actual graduation year to enable internship graduation-window checks.
+# null leaves eligibility unknown instead of using the upstream owner's 2030 profile.
+graduation_year: null
 
 # Listings posted more than this many days ago are dropped even if the list still says "active".
 # (The Simplify list only hides rows after about 2 months in its README, but the JSON keeps them active.)
 max_age_days: 240
+
+
+# Focus this fork on IT and CS; remove this list to restore all legacy role groups.
+search_roles: [it, swe]

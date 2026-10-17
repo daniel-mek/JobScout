@@ -2,14 +2,14 @@
 # next to each match, so if a ranking looks wrong, change the number here and rerun.
 # The raw total can go a little over 100; it is capped at 100.
 
-# Role match from the title. SWE ranks first, then ambassador programs, PM, IT, and design-adjacent roles.
+# IT and CS roles receive equal role points in this fork.
 # A title that matches no role is dropped before scoring, unless it hits a freshman/sophomore program;
 # a program whose title names no role (e.g. "Explore Program") gets the "program" points instead of 0.
 role:
   swe: 30
   ambassador: 28
   pm: 24
-  it: 18
+  it: 30
   design: 15
   program: 20
   none: 0
@@ -68,3 +68,4 @@ min_score: 30
 # Everything else that passed the filters waits for the 7:00 PM digest, which carries the top digest_size.
 instant_min_score: 60
 digest_size: 10
+
