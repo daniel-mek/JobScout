@@ -1,17 +1,17 @@
 # Implementation status
 
-Assessed 2026-10-17. Code baseline: 366005b18d8f28a866ce9f17ba1cd249cca39c38. Scope: preparation/readiness only; Phase 1 has not started.
+Assessed 2026-10-17. Code baseline: 366005b18d8f28a866ce9f17ba1cd249cca39c38. Scope: Phase 1 is implemented and locally verified; native PostgreSQL CI confirmation is still pending. Phase 2 has not started.
 
 Status vocabulary: NOT_STARTED, IN_PROGRESS, COMPLETE, PARTIAL, BLOCKED. COMPLETE applies only to the stated scope and verified behavior. At the final product audit, map NOT_STARTED to NOT_IMPLEMENTED and externally blocked items to BLOCKED_EXTERNALLY; do not treat this baseline as that final audit.
 
 ## Readiness
 
-Ready to begin Phase 1 implementation: YES. No live AI, ATS, Gmail or Calendar credentials are required for local foundation work with deterministic parsing and fixtures. Phase 1 complete: NO. Production ready: NO. The repository is not a deployable Next.js/FastAPI application yet.
+Ready to begin Phase 1 implementation: YES. No live AI, ATS, Gmail or Calendar credentials are required for local foundation work with deterministic parsing and fixtures. Phase 1 implementation: delivered. Local verification: passed. Phase 1 final sign-off remains PARTIAL pending native PostgreSQL integration confirmation in CI. Production ready: NO. A separate buildable Next.js/FastAPI application now exists.
 
 | Phase | Status against target spec | Existing behavior / remaining gap |
 | --- | --- | --- |
 | Preparation | COMPLETE | Full supplied spec preserved; architecture, source policy, security, operations, deployment and gap assessment documented; baseline verified |
-| 1 Foundation/onboarding | PARTIAL | Shared-password dashboard and private Markdown/JSON profile examples exist; accounts, owner scope, API/database, upload/parsing/review, persistent onboarding and preference UI missing |
+| 1 Foundation/onboarding | PARTIAL | Accounts/sessions/ownership, relational profile records, migrations, PDF/DOCX extraction and review, private resume versions, career preferences/hard requirements, persisted onboarding, and protected dashboard implemented. Local API/browser/static/build checks pass; native PostgreSQL CI confirmation pending |
 | 2 Sources/ingestion | PARTIAL | Greenhouse/Lever/Ashby readers, new-grad feed, normalized dictionaries and URL dedupe; registry enforcement, SmartRecruiters, formal provenance/versions, secure import and persisted source health missing |
 | 3 Matching/eligibility | PARTIAL | Title-based level classifier, filters, one explainable score and availability checks; description-based requirements, confirmed-evidence match, hard-requirement engine, two scores and contradiction caps missing |
 | 4 Discovery/saving | PARTIAL | Ranked New page, Saved/Passed, prep queue and ntfy digest; rich filters, saved searches, in-app notifications and score-based briefs missing |
@@ -37,7 +37,7 @@ Ready to begin Phase 1 implementation: YES. No live AI, ATS, Gmail or Calendar c
 | Notifications/scheduling | alerts.py, notify.py, run.py; scout workflow | Preserve legacy path; no per-user in-app notification/saved-search guarantees |
 | Authentication | Worker login/validCookie | Single-user only; do not reuse shared identity as multi-user auth |
 
-## Baseline checks
+## Preparation baseline checks (before Phase 1)
 
 - Python unit/regression suite: 163 run, 161 passed, 2 skipped because private Figma regression texts are absent. No failures. External services are mocked.
 - Python compilation: passed for scout/ and tests/.
@@ -48,15 +48,28 @@ Ready to begin Phase 1 implementation: YES. No live AI, ATS, Gmail or Calendar c
 
 ## Conflicts and blockers
 
-1. Target architecture is substantially different. Introduce it beside the working code, then migrate deliberately; do not call the legacy app complete for the new spec.
+1. The target Phase 1 architecture now runs beside the working legacy code. No legacy private-data migration or new-account job discovery integration is included.
 2. Current discovery is full-time IT/CS only by user instruction. Preserve that default; do not restore internship targeting while importing the broader taxonomy.
 3. SourcePolicy is documented but not runtime-enforced. Legacy generic/Workday/Eightfold fetchers need policy review and SSRF work before exposure through the new product.
 4. Current matching is title-based and cannot resolve entry-level titles demanding five years from the description. This is a Phase 3 gap.
 5. worker/wrangler.toml still references the upstream repository and inherited namespace. Verify/replace before any deployment.
 6. Current deployments, provider credentials, backups and restores have not been checked. Optional credentialed integrations are not prerequisites for Phase 1.
-7. The specification explicitly limits the immediate task to preparation/readiness and says not to begin later phases until instructed. No future phase implementation is included here.
+7. The user subsequently authorized Phase 1. Later phases remain outside this change; the new account dashboard does not yet connect to legacy job/application data.
 
-## Next authorized implementation boundary
+## Phase 1 implementation evidence
 
-When Phase 1 is requested: scaffold web/API and PostgreSQL migrations; implement account/session/ownership controls; secure PDF/DOCX extraction with deterministic demo parsing; reviewed versioned profiles; configurable career preferences and hard requirements; persisted onboarding and a protected dashboard shell. Add .env.example, appropriate lint/static/typecheck tools and CI. Test two-user isolation and onboarding end to end before marking Phase 1 complete.
+- Next.js 16.4.2, React 19.3.1, strict TypeScript, Tailwind and native accessible controls; root npm workspace with locked dependencies.
+- FastAPI/SQLAlchemy/Pydantic API, initial Alembic migration with persisted role taxonomy, PostgreSQL target and local SQLite fallback. Relational education, experience, projects, certifications and skill/evidence records; JSON is used for immutable version snapshots and bounded preference data.
+- Argon2id passwords, hashed revocable opaque sessions, rotation/expiry/logout, origin/session-bound CSRF checks, persistent login throttles and owner-scoped read/write/download/history.
+- Bounded PDF/DOCX uploads, isolated extraction, deterministic review-required parsing, conservative aliases/evidence, editable profile confirmation, optimistic revision checks and immutable first-confirmed resume snapshots. S3 adapter contract tested with a fake provider.
+- 22 API/unit/integration tests passed on SQLite, including migration upgrade/check/downgrade/upgrade, ownership, session expiry/revocation, CSRF/origin, upload safety, PDF/DOCX success/failure, parser validation, evidence, preferences, version history and storage.
+- 3 Chromium end-to-end tests passed: signup through reviewed profile/preferences to dashboard; refresh persistence, download, replacement-resume review/history and logout; mobile invalid-upload/error/overflow; protected routes and unauthorized writes.
+- Dashboard automated WCAG A/AA checks passed. Desktop and mobile screenshots inspected internally. This is a scoped automated check, not a full accessibility certification.
+- Frontend ESLint, TypeScript, production build; Python Ruff/format and mypy; legacy dashboard syntax and original regression suite passed (163 run, 161 passed, 2 unchanged private-fixture skips).
+- npm production dependency audit reported zero known vulnerabilities at validation time. This does not replace future dependency/security reviews.
+- Phase 1 CI is configured for native PostgreSQL plus SQLite integration and browser checks. This sandbox cannot switch to the non-root OS user PostgreSQL requires; local native PostgreSQL and Docker execution were unavailable. No successful hosted CI run or live deployment is claimed.
+- Browser archive download failed; compatible Chromium from an alternate local package was used for actual browser verification. No browser fallback runtime is added as a production application dependency.
 
+## Boundary and next work
+
+Phase 1 code is delivered. Complete PostgreSQL CI confirmation before upgrading its status to COMPLETE. No Phase 2 ingestion, scoring, contact, Gmail/Calendar, or interview features were added. Keep the legacy watcher and application data separate until an explicit migration/integration phase. See [PHASE1.md](PHASE1.md) for local setup and host configuration.

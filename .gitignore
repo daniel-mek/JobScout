@@ -54,3 +54,12 @@ data/passed.json
 
 # Runtime state. In GitHub Actions this is the "data" branch checked out here.
 data/
+
+# Public templates and Phase 1 build/test outputs
+!.env.example
+!.env.*.example
+.next/
+*.tsbuildinfo
+playwright-report/
+test-results/
+coverage/

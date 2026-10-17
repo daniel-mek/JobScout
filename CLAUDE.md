@@ -21,7 +21,7 @@ python -m compileall -q scout tests
 node --check worker/src/index.js
 git diff --check
 ```
-Keep legitimate tests. Add phase-appropriate integration, ownership, security, and end-to-end tests as the new stack appears. Frontend lint/typecheck, backend static checks, migrations, and Playwright are not configured yet; do not report them as passing. Never commit secrets, private resumes, generated candidate packets, or production data.
+Keep legitimate tests. Add phase-appropriate integration, ownership, security, and end-to-end tests as the new stack appears. Phase 1 now provides frontend lint/typecheck/build, Ruff/mypy, Alembic migrations, API tests and Playwright. Use docs/PHASE1.md for commands; report exact results and native PostgreSQL CI status. Never commit secrets, private resumes, generated candidate packets, or production data.
 
 At each phase start, inspect code and reread these documents. At phase end, record exact checks, skips, blockers, and actual end-to-end behavior. A model, route, mock, or successful build alone is not a complete feature or production readiness.
 

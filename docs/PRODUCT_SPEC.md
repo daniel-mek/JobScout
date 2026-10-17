@@ -4,7 +4,7 @@ Imported from the user-provided specification. The exact supplied text is preser
 
 ## Repository decisions and precedence
 
-The supplied specification describes the target product, not completed functionality. See [implementation status](IMPLEMENTATION_STATUS.md). Preserve working JobScout features while adding the target architecture incrementally. Discovery remains full-time early-career IT/CS without an assumed graduation year or restored student-program boosts. Historical internships may be truthful resume evidence. Existing deployed names are not renamed in this task. Immediate scope is inspection, permanent documentation, architecture/source policy, health checks, and Phase 1 readiness; Phase 1 has not started.
+The supplied specification describes the target product, not completed functionality. See [implementation status](IMPLEMENTATION_STATUS.md). Preserve working JobScout features while adding the target architecture incrementally. Discovery remains full-time early-career IT/CS without an assumed graduation year or restored student-program boosts. Historical internships may be truthful resume evidence. Existing deployed names are not renamed in this task. The initial preparation scope was completed, and the user subsequently authorized Phase 1 on 2026-10-17. Phase 1 implementation and remaining verification are recorded in IMPLEMENTATION_STATUS.md. The original supplied phase boundaries remain preserved below.
 
 ## Authoritative supplied specification
 

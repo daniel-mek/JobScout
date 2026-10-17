@@ -1,0 +1,60 @@
+import Link from "next/link";
+import { LayoutDashboard, Settings2, ArrowUpRight, Sprout } from "lucide-react";
+import { Logout } from "./logout";
+export function Shell({
+  children,
+  email,
+  active = "dashboard",
+}: {
+  children: React.ReactNode;
+  email: string;
+  active?: string;
+}) {
+  return (
+    <div className="app-layout">
+      <aside className="app-sidebar">
+        <Link href="/" className="wordmark">
+          apply<span>os</span>
+          <i>↗</i>
+        </Link>
+        <p className="eyebrow">Your workspace</p>
+        <nav aria-label="Main navigation">
+          <Link
+            aria-current={active === "dashboard" ? "page" : undefined}
+            href="/dashboard"
+          >
+            <LayoutDashboard size={18} /> Dashboard
+          </Link>
+          <Link
+            aria-current={active === "settings" ? "page" : undefined}
+            href="/settings"
+          >
+            <Settings2 size={18} /> Profile & settings
+          </Link>
+        </nav>
+        <div className="sidebar-note">
+          <Sprout size={22} />
+          <p>
+            Thoughtful steps.
+            <br />
+            Better opportunities.
+          </p>
+        </div>
+        <div className="account">
+          <span className="avatar">{email[0].toUpperCase()}</span>
+          <span>{email}</span>
+        </div>
+        <Logout />
+      </aside>
+      <main id="main" className="dashboard-main">
+        <header className="topbar">
+          <span>YOUR NEXT CHAPTER</span>
+          <Link href="/settings">
+            Your profile <ArrowUpRight size={15} />
+          </Link>
+        </header>
+        {children}
+      </main>
+    </div>
+  );
+}

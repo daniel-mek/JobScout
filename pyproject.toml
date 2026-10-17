@@ -1,0 +1,15 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 110
+extend-exclude = ["scout", "worker", ".venv"]
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+ignore = ["B008"]
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true
+files = ["apps/api/applyos"]
+[tool.pytest.ini_options]
+testpaths = ["apps/api/tests"]
+pythonpath = ["."]

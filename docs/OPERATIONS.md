@@ -1,6 +1,6 @@
 # Operations and development commands
 
-This is the canonical operations document. The existing single-user runtime remains operational; the target ApplyOS services are not scaffolded. See [architecture](ARCHITECTURE.md), [security](SECURITY.md), [source policy](SOURCE_POLICY.md), [deployment](DEPLOYMENT.md), and [implementation status](IMPLEMENTATION_STATUS.md).
+This is the canonical operations document. The existing single-user runtime remains operational. Phase 1 account/resume/onboarding services now run separately; see [PHASE1.md](PHASE1.md) for their setup and checks. See [architecture](ARCHITECTURE.md), [security](SECURITY.md), [source policy](SOURCE_POLICY.md), [deployment](DEPLOYMENT.md), and [implementation status](IMPLEMENTATION_STATUS.md).
 
 ## Current development commands
 
@@ -31,7 +31,7 @@ Optional local resume generation requires requirements-resume.txt plus WeasyPrin
 
 ## Validation and boundaries
 
-The initial suite ran 163 tests, with 161 passing and 2 private-regression-fixture skips. Python compilation and dashboard syntax passed. No Next.js lint/typecheck, FastAPI tests, migrations, Playwright suite, or multi-user deployment currently exists. Add those checks as Phase 1 introduces the stack.
+The initial suite ran 163 tests, with 161 passing and 2 private-regression-fixture skips. Python compilation and dashboard syntax passed. Phase 1 now has frontend lint/typecheck/build, FastAPI integration tests, migrations and Playwright checks; their evidence and remaining external validation are tracked in IMPLEMENTATION_STATUS.md. No multi-user production deployment has been verified.
 
 Legacy scheduled ingestion is not SourceRegistry enforcement. Do not expose posting.py as a public manual-import API until its source policy and SSRF controls are implemented. Follow SOURCE_POLICY.md for activation decisions.
 

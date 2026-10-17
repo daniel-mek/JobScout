@@ -4,13 +4,13 @@
 
 The current Worker uses a shared dashboard password, HMAC-signed expiring cookies with HttpOnly/Secure/SameSite=Lax, and a separate ingestion secret. Rendering escapes text and restricts clickable URLs. These are useful single-user controls, not multi-user authentication or an ownership model.
 
-No account signup, secure password database, per-user authorization, upload pipeline, encrypted OAuth token store, or full privacy-deletion workflow exists. Authentication route code was inspected; this assessment is not a completed penetration test.
+Phase 1 adds a separate account-based API with Argon2id password hashes, server-revocable hashed session tokens, expiry/rotation, origin and CSRF checks, persistent login throttling, owner-scoped records/downloads, bounded uploads and isolated extraction. Private files use generated keys; confirmed profile/resume history is retained. API integration tests cover cross-user reads/writes/downloads. This is not a completed penetration test. Encrypted OAuth credentials and full privacy deletion are not implemented.
 
 Legacy scout/posting.py permits generic HTML retrieval and reverse-engineered employer endpoints. It lacks comprehensive IP/DNS/redirect SSRF controls. Do not expose it as an arbitrary user-facing fetch API. Source policy and SSRF enforcement remain implementation work.
 
 worker/wrangler.toml contains inherited deployment identifiers and an upstream GH_REPO. They are configuration, not credentials, but must be replaced/verified before deployment. A shared KV namespace must never be reused for unrelated users or environments.
 
-## Phase 1 controls
+## Phase 1 controls and review contract
 
 - Use a mature password-hashing implementation with Argon2id; opaque revocable sessions, secure cookies, expiry, logout and rotation. Rate-limit login/recovery and avoid account enumeration.
 - Validate CSRF/origin for cookie-authenticated mutations. Configure CORS explicitly; frontend route protection is not authorization.
@@ -34,3 +34,7 @@ Uploads, application snapshots and artifacts must honor source retention policie
 
 Verify authentication, cross-user isolation, IDOR, CSRF, XSS, safe redirects, SQL parameterization, SSRF, upload abuse, secret redaction and rate limiting with automated coverage. Add dependency auditing and error reporting as tooling appears. Production requires documented incident response, key rotation, migration rollback, backups and a tested restore. No multi-user deployment is certified by this preparation task.
 
+
+## Phase 1 validation boundary
+
+See [PHASE1.md](PHASE1.md) for exact implemented controls and limits. The PostgreSQL CI job and non-root container provide the intended production execution path. This sandbox cannot switch to a non-root PostgreSQL user, so native PostgreSQL runtime validation must be confirmed in CI. Live S3, hosted deployments, backups and restores remain unverified. Local SQLite and fake-provider tests are not substitutes for those checks.

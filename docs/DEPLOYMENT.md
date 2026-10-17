@@ -13,7 +13,7 @@ Legacy configuration:
 
 Follow [operations](OPERATIONS.md) for commands and the dry-run behavior when NTFY_TOPIC is absent.
 
-## Target deployment decision (not implemented)
+## Phase 1 deployment target
 
 | Component | Target | Required validation |
 | --- | --- | --- |
@@ -24,11 +24,11 @@ Follow [operations](OPERATIONS.md) for commands and the dry-run behavior when NT
 | Queue | Managed Redis | Private connectivity, credentials, retention/eviction settings |
 | Files | S3-compatible private object storage | Owner authorization, signed access, lifecycle/retention/deletion |
 
-No Dockerfiles, compose stack, API health routes or target deployment manifests exist yet. Add production-capable API/worker Dockerfiles when those services exist. Do not offer fake commands for absent apps.
+Phase 1 provides apps/api/Dockerfile, infrastructure/compose.yaml for local PostgreSQL, Alembic migrations, API /health, and a buildable Next.js workspace. See [PHASE1.md](PHASE1.md). No background worker is introduced before its phase. Actual Vercel/API/database/storage provisioning and hosted health checks have not been performed.
 
 ## Environment contract to introduce
 
-Phase 1 must add a placeholder-only .env.example and validation for required/optional/development values. Planned server-only categories: DATABASE_URL, session/cryptographic secrets, storage configuration, and later REDIS_URL, ANTHROPIC_API_KEY or other LLM credentials, Google OAuth secrets, USAJOBS credentials, ADZUNA_APP_ID/ADZUNA_APP_KEY. Only intentionally public browser configuration, such as a backend API base URL, may use NEXT_PUBLIC_*.
+Phase 1 includes .env.example and server-side configuration validation. Planned server-only categories: DATABASE_URL, session/cryptographic secrets, storage configuration, and later REDIS_URL, ANTHROPIC_API_KEY or other LLM credentials, Google OAuth secrets, USAJOBS credentials, ADZUNA_APP_ID/ADZUNA_APP_KEY. Only intentionally public browser configuration, such as a backend API base URL, may use NEXT_PUBLIC_*.
 
 Separate development, preview and production databases, queues, storage and signing keys. Choose secret delivery per service; do not pass backend secrets to Vercel's browser build.
 

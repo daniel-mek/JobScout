@@ -1,6 +1,10 @@
 # JobScout
 
-The supplied ApplyOS specification is now preserved in this repository. The current watcher/dashboard remains in place. The target application has not been scaffolded; see the [readiness and implementation assessment](docs/IMPLEMENTATION_STATUS.md).
+The supplied ApplyOS specification is now preserved in this repository. The existing watcher/dashboard remains in place. Phase 1 adds accounts, resume upload/review, persisted onboarding and preferences in a separate Next.js/FastAPI application. Start with the [Phase 1 setup guide](docs/PHASE1.md); see [implementation status](docs/IMPLEMENTATION_STATUS.md) for verification limits.
+
+## Phase 1 application
+
+Run the new app using [docs/PHASE1.md](docs/PHASE1.md). It includes PostgreSQL migrations, private resume versions, conservative offline parsing, profile review, career paths and separate preferences/hard requirements. The new account dashboard does not yet connect the legacy watcher or migrate legacy application history. No fake job metrics are shown.
 
 ## Product documentation
 

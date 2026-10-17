@@ -2,7 +2,7 @@
 
 ## Decision and scope
 
-Assessed 2026-10-17 against commit 366005b18d8f28a866ce9f17ba1cd249cca39c38. ApplyOS is the target product; JobScout is the current repository and runtime. This document establishes the migration direction; no target services have been scaffolded in this preparation task.
+Assessed 2026-10-17 against commit 366005b18d8f28a866ce9f17ba1cd249cca39c38. ApplyOS is the target product; JobScout is the current repository and runtime. Phase 1 now implements apps/web and apps/api beside the legacy runtime. See PHASE1.md for commands and validation limits.
 
 Preserve the working Python watcher and Cloudflare dashboard while introducing the specification's application incrementally. The current single-user architecture is useful but cannot substitute for authenticated, owner-scoped relational application data.
 
@@ -20,7 +20,7 @@ Preserve the working Python watcher and Cloudflare dashboard while introducing t
 | Preparation | Claude Code commands plus JSON-to-PDF resume/letter builders and voice checks |
 | Private data | gitignored me/ profile and resume variants; generated kits uploaded to private dashboard storage |
 
-The repository has pip requirements and an npm package/lockfile under worker/. There is no Next.js, FastAPI service, PostgreSQL schema, Alembic migration, Redis queue, or object-storage abstraction.
+The legacy code retains its own requirements and worker/ npm project. Phase 1 adds a root npm workspace/lockfile, Next.js 16 / React 19 / strict TypeScript / Tailwind, a FastAPI application, SQLAlchemy relational profile records, Alembic migrations, and local/S3 file-storage implementations. PostgreSQL is the primary target and production-enforced; SQLite is a local/test fallback. No Redis queue or future-phase worker is scaffolded.
 
 ## Target boundaries
 
@@ -54,5 +54,5 @@ Keep worker execution outside frontend serverless requests. Jobs must eventually
 
 ## Phase 1 acceptance boundary
 
-Build account/session/ownership foundations, migrations, protected dashboard shell, PDF/DOCX validation and extraction, deterministic demo parsing and parser validation, profile review/versioning, role preferences and hard requirements, and persisted onboarding. Verify two-user isolation and refresh/resume behavior. Do not implement later-phase ingestion, scoring, or Gmail features during Phase 1.
+Implemented account/session/ownership foundations, migrations, a protected dashboard shell, PDF/DOCX validation and isolated extraction, deterministic parsing and validation, profile review/versioning, role preferences/hard requirements, and persisted onboarding. The API owns authentication with Argon2id, revocable opaque sessions and trusted-origin/session-bound CSRF; the Next.js same-origin proxy forwards requests without exposing backend credentials. Two-user isolation and browser persistence are tested. Native PostgreSQL and live storage verification remain tracked release evidence. Do not implement later-phase ingestion, scoring, or Gmail features during Phase 1.
 
