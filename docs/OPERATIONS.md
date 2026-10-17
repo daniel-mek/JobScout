@@ -1,3 +1,44 @@
+# Operations and development commands
+
+This is the canonical operations document. The existing single-user runtime remains operational; the target ApplyOS services are not scaffolded. See [architecture](ARCHITECTURE.md), [security](SECURITY.md), [source policy](SOURCE_POLICY.md), [deployment](DEPLOYMENT.md), and [implementation status](IMPLEMENTATION_STATUS.md).
+
+## Current development commands
+
+From the repository root:
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m unittest discover -s tests -t .
+.venv/bin/python -m compileall -q scout tests
+node --check worker/src/index.js
+.venv/bin/python -m scout.watch --offline tests/fixtures --no-pages --out /tmp/jobscout-matches.json
+```
+
+The offline command reads the saved simplify_newgrad fixture, writes only the selected output, and does not contact job providers. Fixture matches are test data, not the user's production opportunities.
+
+For the existing dashboard:
+
+```sh
+cd worker
+npm ci
+npm run dev
+```
+
+Wrangler requires an appropriately supported Node runtime and local secrets configured privately. Publishing requires the deployment checks in DEPLOYMENT.md. Do not run npm run deploy simply to test syntax.
+
+Optional local resume generation requires requirements-resume.txt plus WeasyPrint system libraries. The existing README comments describe the macOS Pango setup; Linux system packages depend on the deployment image. This assessment did not run PDF rendering.
+
+## Validation and boundaries
+
+The initial suite ran 163 tests, with 161 passing and 2 private-regression-fixture skips. Python compilation and dashboard syntax passed. No Next.js lint/typecheck, FastAPI tests, migrations, Playwright suite, or multi-user deployment currently exists. Add those checks as Phase 1 introduces the stack.
+
+Legacy scheduled ingestion is not SourceRegistry enforcement. Do not expose posting.py as a public manual-import API until its source policy and SSRF controls are implemented. Follow SOURCE_POLICY.md for activation decisions.
+
+## Existing single-user operations reference
+
+The material below is retained for the existing watcher/dashboard. It does not establish target multi-user ownership, source approval, production readiness or account data isolation.
+
 # Running Scout
 
 The commands and moving parts behind the README. Everything below assumes a Python 3.12 venv at `.venv/`.

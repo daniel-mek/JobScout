@@ -1,5 +1,20 @@
 # JobScout
 
+The supplied ApplyOS specification is now preserved in this repository. The current watcher/dashboard remains in place. The target application has not been scaffolded; see the [readiness and implementation assessment](docs/IMPLEMENTATION_STATUS.md).
+
+## Product documentation
+
+- [Product specification](docs/PRODUCT_SPEC.md)
+- [Architecture and reuse plan](docs/ARCHITECTURE.md)
+- [Source policy](docs/SOURCE_POLICY.md)
+- [Security and privacy](docs/SECURITY.md)
+- [Implementation status](docs/IMPLEMENTATION_STATUS.md)
+- [Deployment](docs/DEPLOYMENT.md)
+- [Operations](docs/OPERATIONS.md)
+- [Claude Code instructions](CLAUDE.md)
+
+## Existing application
+
 This fork searches early-career IT and computer science jobs: junior, entry-level, and new-graduate full-time roles. It reads the public Simplify new-graduate feed and configured Greenhouse, Lever, and Ashby company boards. See [early-career setup](docs/early-career.md).
 
 **🚧 In development.** It runs every day for a full-time early-career IT and CS search; making it work for anyone is the next step ([where this is going](#where-this-is-going)).
@@ -55,7 +70,7 @@ The plan is for Scout to work for anyone looking for an internship or a job, wha
 3. Copy `me.example/` to `me/` (gitignored) and fill in your master profile, then run `/interview` in Claude Code to build your resumes.
 4. Set the repo secrets (`NTFY_TOPIC`; plus `SCOUT_URL` and `SCOUT_INGEST_SECRET` if you deploy the dashboard) and enable the workflow.
 
-How every piece runs, with commands: [docs/operations.md](docs/operations.md). Design decisions and why: [docs/decisions.md](docs/decisions.md). Code borrowed from MIT and Apache projects is listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+How every piece runs, with commands: [docs/OPERATIONS.md](docs/OPERATIONS.md). Design decisions and why: [docs/decisions.md](docs/decisions.md). Code borrowed from MIT and Apache projects is listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 I built it with help from Claude Code. MIT license.
 

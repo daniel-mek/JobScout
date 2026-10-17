@@ -39,7 +39,7 @@ other sources continue; the existing URL deduplication and application tracker s
    started with **Actions > scout > Run workflow**. It now initializes the missing `data`
    branch on a fresh fork. Set `NTFY_TOPIC` for the normal persisted watcher; without it,
    `scout.run` retains the existing dry-run behavior. `SCOUT_URL` and `SCOUT_INGEST_SECRET`
-   are needed only for dashboard sync. See [operations](operations.md).
+   are needed only for dashboard sync. See [operations](OPERATIONS.md).
 
 No API keys are needed for these job feeds. Source availability and schemas can change;
 source failures appear in the watcher output. Live collection requires outbound network access.

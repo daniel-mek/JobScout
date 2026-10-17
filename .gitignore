@@ -50,8 +50,7 @@ data/tracker.json
 data/queue.json
 data/passed.json
 
-# Claude Code instructions stay on this Mac, never on GitHub
-CLAUDE.md
+# Shared Claude Code instructions are versioned; personal facts stay in me/.
 
 # Runtime state. In GitHub Actions this is the "data" branch checked out here.
 data/
