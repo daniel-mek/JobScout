@@ -37,4 +37,4 @@ Verify authentication, cross-user isolation, IDOR, CSRF, XSS, safe redirects, SQ
 
 ## Phase 1 validation boundary
 
-See [PHASE1.md](PHASE1.md) for exact implemented controls and limits. The PostgreSQL CI job and non-root container provide the intended production execution path. This sandbox cannot switch to a non-root PostgreSQL user, so native PostgreSQL runtime validation must be confirmed in CI. Live S3, hosted deployments, backups and restores remain unverified. Local SQLite and fake-provider tests are not substitutes for those checks.
+See [PHASE1.md](PHASE1.md) for exact implemented controls and limits. The PostgreSQL CI job and non-root container provide the intended production execution path. This sandbox cannot switch to a non-root PostgreSQL user, so native PostgreSQL runtime validation was completed through the Phase 1 GitHub CI API job (run 39042290806). Live S3, hosted deployments, backups and restores remain unverified. Local SQLite and fake-provider tests are not substitutes for those checks.

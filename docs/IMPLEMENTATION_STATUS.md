@@ -1,17 +1,17 @@
 # Implementation status
 
-Assessed 2026-10-17. Code baseline: 366005b18d8f28a866ce9f17ba1cd249cca39c38. Scope: Phase 1 is implemented and locally verified; native PostgreSQL CI confirmation is still pending. Phase 2 has not started.
+Assessed 2026-10-17. Code baseline: 366005b18d8f28a866ce9f17ba1cd249cca39c38. Scope: Phase 1 is implemented and verified locally and in GitHub CI, including native PostgreSQL and the full browser suite. Phase 2 has not started.
 
 Status vocabulary: NOT_STARTED, IN_PROGRESS, COMPLETE, PARTIAL, BLOCKED. COMPLETE applies only to the stated scope and verified behavior. At the final product audit, map NOT_STARTED to NOT_IMPLEMENTED and externally blocked items to BLOCKED_EXTERNALLY; do not treat this baseline as that final audit.
 
 ## Readiness
 
-Ready to begin Phase 1 implementation: YES. No live AI, ATS, Gmail or Calendar credentials are required for local foundation work with deterministic parsing and fixtures. Phase 1 implementation: delivered. Local verification: passed. Phase 1 final sign-off remains PARTIAL pending native PostgreSQL integration confirmation in CI. Production ready: NO. A separate buildable Next.js/FastAPI application now exists.
+Ready to begin Phase 1 implementation: YES. No live AI, ATS, Gmail or Calendar credentials are required for local foundation work with deterministic parsing and fixtures. Phase 1 implementation and scoped verification: COMPLETE. Native PostgreSQL, API and web/browser CI passed in run 39042290806. Production ready: NO. A separate buildable Next.js/FastAPI application now exists.
 
 | Phase | Status against target spec | Existing behavior / remaining gap |
 | --- | --- | --- |
 | Preparation | COMPLETE | Full supplied spec preserved; architecture, source policy, security, operations, deployment and gap assessment documented; baseline verified |
-| 1 Foundation/onboarding | PARTIAL | Accounts/sessions/ownership, relational profile records, migrations, PDF/DOCX extraction and review, private resume versions, career preferences/hard requirements, persisted onboarding, and protected dashboard implemented. Local API/browser/static/build checks pass; native PostgreSQL CI confirmation pending |
+| 1 Foundation/onboarding | COMPLETE | Accounts/sessions/ownership, relational profile records, migrations, PDF/DOCX extraction and review, private resume versions, career preferences/hard requirements, persisted onboarding, and protected dashboard implemented. Local API/browser/static/build checks and hosted API/PostgreSQL/web/browser CI all pass |
 | 2 Sources/ingestion | PARTIAL | Greenhouse/Lever/Ashby readers, new-grad feed, normalized dictionaries and URL dedupe; registry enforcement, SmartRecruiters, formal provenance/versions, secure import and persisted source health missing |
 | 3 Matching/eligibility | PARTIAL | Title-based level classifier, filters, one explainable score and availability checks; description-based requirements, confirmed-evidence match, hard-requirement engine, two scores and contradiction caps missing |
 | 4 Discovery/saving | PARTIAL | Ranked New page, Saved/Passed, prep queue and ntfy digest; rich filters, saved searches, in-app notifications and score-based briefs missing |
@@ -67,9 +67,9 @@ Ready to begin Phase 1 implementation: YES. No live AI, ATS, Gmail or Calendar c
 - Dashboard automated WCAG A/AA checks passed. Desktop and mobile screenshots inspected internally. This is a scoped automated check, not a full accessibility certification.
 - Frontend ESLint, TypeScript, production build; Python Ruff/format and mypy; legacy dashboard syntax and original regression suite passed (163 run, 161 passed, 2 unchanged private-fixture skips).
 - npm production dependency audit reported zero known vulnerabilities at validation time. This does not replace future dependency/security reviews.
-- Phase 1 CI is configured for native PostgreSQL plus SQLite integration and browser checks. This sandbox cannot switch to the non-root OS user PostgreSQL requires; local native PostgreSQL and Docker execution were unavailable. No successful hosted CI run or live deployment is claimed.
+- Phase 1 CI is configured for native PostgreSQL plus SQLite integration and browser checks. This sandbox cannot switch to the non-root OS user PostgreSQL requires; local native PostgreSQL and Docker execution were unavailable. Both hosted jobs passed, including native PostgreSQL integration and the complete browser suite, in [run 39042290806](https://github.com/daniel-mek/JobScout/actions/runs/39042290806). No live deployment is claimed.
 - Browser archive download failed; compatible Chromium from an alternate local package was used for actual browser verification. No browser fallback runtime is added as a production application dependency.
 
 ## Boundary and next work
 
-Phase 1 code is delivered. Complete PostgreSQL CI confirmation before upgrading its status to COMPLETE. No Phase 2 ingestion, scoring, contact, Gmail/Calendar, or interview features were added. Keep the legacy watcher and application data separate until an explicit migration/integration phase. See [PHASE1.md](PHASE1.md) for local setup and host configuration.
+Phase 1 is COMPLETE for the specified foundation/onboarding scope; local and hosted checks passed. No Phase 2 ingestion, scoring, contact, Gmail/Calendar, or interview features were added. Keep the legacy watcher and application data separate until an explicit migration/integration phase. See [PHASE1.md](PHASE1.md) for local setup and host configuration.

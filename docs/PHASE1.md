@@ -58,7 +58,7 @@ npm run test:e2e
 
 Playwright starts isolated API/database/storage and web processes. It uses clearly synthetic resume/account data and does not call ATS, AI or email APIs. To use an existing local compatible Chromium in a constrained environment, set CHROMIUM_EXECUTABLE_PATH. This environment used that fallback because the upstream browser archive download failed. The browser tests include profile review, persistence, preferences, history, download, logout, error handling, protected routes, mobile overflow and dashboard WCAG A/AA automated checks.
 
-For PostgreSQL integration tests, use a dedicated database named applyos_test and set TEST_DATABASE_URL to its psycopg connection URL. Tests drop/rebuild its application schema. Do not provide a production connection. The GitHub Phase 1 workflow runs both SQLite and PostgreSQL tests plus the browser suite.
+For PostgreSQL integration tests, use a dedicated database named applyos_test and set TEST_DATABASE_URL to its psycopg connection URL. Tests drop/rebuild its application schema. Do not provide a production connection. The GitHub Phase 1 workflow runs both SQLite and PostgreSQL tests plus the browser suite; both jobs passed in [run 39042290806](https://github.com/daniel-mek/JobScout/actions/runs/39042290806).
 
 GET /health returns readiness only after schema migration. API responses use request IDs and do not expose raw validation input, stack traces or storage paths. Optional S3 support uses private, server-encrypted objects; the adapter contract is tested with a fake provider. Live S3 and deployment credentials were not tested.
 
