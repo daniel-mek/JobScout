@@ -1,9 +1,9 @@
 """Run the whole watcher once: fetch, normalize, dedupe, filter, score, write data/matches.json.
 
-    .venv/bin/python -m scout.watch                       # live: fetch both lists
+    .venv/bin/python -m scout.watch                       # live: fetch full-time job feeds
     .venv/bin/python -m scout.watch --top 30              # show more rows
     .venv/bin/python -m scout.watch --offline tests/fixtures   # use saved copies, no network
-    .venv/bin/python -m scout.watch --no-pages            # skip the graduation-year page check
+    .venv/bin/python -m scout.watch --no-pages            # skip the posting availability check
 
 What it prints: the top matches with a one-line breakdown each, then the counts of what was
 dropped and why. What it writes: data/matches.json (every listing that passed the filters, with
@@ -57,17 +57,17 @@ def run(raw_by_source: dict[str, list], targets: dict, weights: dict, *, check_p
         scoring.score(item, weights, now)
     kept.sort(key=lambda x: (x["score"], x.get("date_posted", 0)), reverse=True)
 
-    # Read the posting page for the top rows, plus every row that could push on its own (Tier 1 or 2,
-    # a freshman program, an ambassador program) wherever it ranks, so no alert goes out unchecked.
+    # Read the posting page for the top rows, plus every row that could push on its own (Tier 1 or 2)
+    # wherever it ranks, so no alert goes out unchecked.
     cache = eligibility.load_cache()
     for i, item in enumerate(kept):
         if i < check_pages or could_push(item):
-            eligibility.check(item, targets.get("graduation_year"), cache, allow_network)
+            eligibility.check(item, cache, allow_network)
         else:
             item["eligibility"], item["eligibility_note"] = "unknown", "not checked (below top rows)"
     if allow_network and save:
         eligibility.save_cache(cache)
-    # A posting the page itself rules out (wrong graduation year, upperclassmen only, taken down) drops to the
+    # A posting the page itself rules out (taken down) drops to the
     # bottom. It is kept and labeled, never hidden, but it should not outrank something you can apply to.
     kept.sort(key=lambda x: (x.get("eligibility") not in ("ineligible", "closed"), x["score"], x.get("date_posted", 0)), reverse=True)
     counts["kept"] = len(kept)
@@ -76,7 +76,7 @@ def run(raw_by_source: dict[str, list], targets: dict, weights: dict, *, check_p
 
 def could_push(item: dict) -> bool:
     """Rows that alert without waiting for the digest (see alerts.is_instant)."""
-    return item.get("tier", 3) <= 2 or item.get("early_career") == "strong" or item.get("role") == "ambassador"
+    return item.get("tier", 3) <= 2
 
 
 def age_text(date_posted: int, now: float) -> str:
@@ -116,8 +116,8 @@ def write_matches(matches: list[dict], counts: Counter, path: Path = MATCHES_PAT
 def main() -> int:
     ap = argparse.ArgumentParser(description="Run the Scout watcher once.")
     ap.add_argument("--top", type=int, default=20, help="rows to print (default 20)")
-    ap.add_argument("--offline", type=Path, default=None, help="folder with saved simplify.json and vanshb03.json")
-    ap.add_argument("--no-pages", action="store_true", help="skip fetching posting pages for the graduation check")
+    ap.add_argument("--offline", type=Path, default=None, help="folder with saved simplify_newgrad.json")
+    ap.add_argument("--no-pages", action="store_true", help="skip fetching posting pages for the posting availability check")
     ap.add_argument("--check-pages", type=int, default=40, help="how many top rows to page-check (default 40)")
     ap.add_argument("--out", type=Path, default=MATCHES_PATH)
     args = ap.parse_args()

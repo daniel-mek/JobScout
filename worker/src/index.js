@@ -436,10 +436,10 @@ async function newPage(env) {
     get(env, "matches", { matches: [], counts: {}, generated_at: "" }), get(env, "tracker", {}), get(env, "queue", []), get(env, "passed", {}), get(env, "last_visit", ""),
   ]);
   const queued = new Set(queue.map((q) => q.key));
-  const rows = data.matches.filter((m) => !tracker[m.key] && !passed[m.key]);
+  const rows = data.matches.filter((m) => m.career_level === "entry_level" && !tracker[m.key] && !passed[m.key]);
   const fresh = rows.filter((m) => m.first_seen && m.first_seen > lastVisit);
   const rest = rows.filter((m) => !fresh.includes(m));
-  const programs = rows.filter((m) => m.early_career === "strong" || m.role === "ambassador").length;
+  const programs = rows.filter((m) => m.career_level === "entry_level").length;
   // The cron uploads only the top matches (scout/watch.py write_matches), so the count comes from its total:
   // everything that passed the filters and that its own page does not rule out (open_total), minus the
   // uploaded ones you have tracked or passed.
@@ -452,7 +452,7 @@ async function newPage(env) {
       <div class="tags">
         <span class="tag">${esc(roleWord(m))}</span>
         ${m.tier <= 2 ? `<span class="tag ink">tier ${m.tier}</span>` : ""}
-        ${m.early_career === "strong" ? '<span class="tag accent">freshman friendly</span>' : ""}
+        ${m.career_level === "entry_level" ? '<span class="tag accent">entry level</span>' : ""}
         ${m.eligibility === "ineligible" ? '<span class="tag red">not eligible</span>' : m.eligibility === "closed" ? '<span class="tag red">closed</span>' : ""}
         ${m.citizens_only ? '<span class="tag ink">US citizens only</span>' : ""}
         ${isNew ? '<span class="tag accent">new</span>' : ""}
@@ -478,7 +478,7 @@ async function newPage(env) {
       </div>
       <div class="stat-tiles">
         <div class="tile${fresh.length ? " hot" : ""}"><b>${fresh.length}</b><span>new since your last visit</span></div>
-        <div class="tile"><b>${programs}</b><span>freshman friendly</span></div>
+        <div class="tile"><b>${programs}</b><span>entry level</span></div>
         <div class="tile"><b>${queue.length}</b><span>queued for /prep</span></div>
       </div>
       <div class="stat-foot">updated ${esc(when(data.generated_at))}</div>
@@ -504,27 +504,19 @@ async function newPage(env) {
 }
 
 async function programsPage(env) {
-  const [pages, data, tracker, passed] = await Promise.all([get(env, "pages", {}), get(env, "matches", { matches: [] }), get(env, "tracker", {}), get(env, "passed", {})]);
-  const watched = Object.entries(pages).map(([url, p]) => `
+  const [data, tracker, passed] = await Promise.all([ get(env, "matches", { matches: [] }), get(env, "tracker", {}), get(env, "passed", {})]);
+  const finds = data.matches.filter((m) => (m.career_level === "entry_level") && !passed[m.key]).map((m) => `
     <article class="card">
-      <div class="tags"><span class="tag${p.changed_at ? " accent" : ""}">${p.changed_at ? "new words " + age(p.changed_at) : "no changes yet"}</span>${p.failures ? `<span class="tag red">${p.failures} failed fetch${p.failures > 1 ? "es" : ""}</span>` : ""}</div>
-      <h3>${esc(p.name || url)}</h3>
-      ${p.last_change ? `<div class="change"><b>what changed:</b>${esc(p.last_change).replace(/\n/g, "<br>")}</div><div class="meta">a change means go look. it does not mean applications are open.</div>` : ""}<div class="meta">checked ${age(p.checked_at)}</div>
-      <div class="actions"><a class="btn ghost" href="${esc(safeUrl(url))}" target="_blank" rel="noopener">open page ↗</a></div>
-    </article>`).join("");
-  const finds = data.matches.filter((m) => (m.early_career === "strong" || m.role === "ambassador") && !passed[m.key]).map((m) => `
-    <article class="card">
-      <div class="tags"><span class="tag accent">${m.role === "ambassador" ? "ambassador" : "freshman friendly"}</span>${tracker[m.key] ? `<span class="tag ink">${esc(tracker[m.key].state)}</span>` : ""}</div>
+      <div class="tags"><span class="tag accent">entry level</span>${tracker[m.key] ? `<span class="tag ink">${esc(tracker[m.key].state)}</span>` : ""}</div>
       <div class="row"><h3>${esc(m.company)}</h3><span class="score">${m.score}</span></div>
       <div class="title">${esc(m.title)}</div>
       <div class="meta">${esc((m.locations || []).slice(0, 2).join(", "))} · ${age(m.date_posted)}</div>
       <div class="actions"><a class="btn ghost" href="${esc(safeUrl(m.url))}" target="_blank" rel="noopener">posting ↗</a></div>
     </article>`).join("");
   const body = `
-    <p class="note">these pages are where freshman programs show up first. scout reads them every hour and pings you when the words change.</p>
-    <h2>watched pages</h2>${watched || '<p class="note">no pages yet.</p>'}
-    <h2>found in the lists</h2>${finds || '<p class="note">none in the lists right now. the pages above are the early warning.</p>'}`;
-  return page(body, { title: "Programs", page: "programs", lead: "built for", head: "freshmen" });
+    <p class="note">full-time junior, entry-level, and new-graduate IT and CS jobs collected from public feeds and company boards.</p>
+    <h2>found in the lists</h2>${finds || '<p class="note">no early-career matches yet.</p>'}`;
+  return page(body, { title: "Early career", page: "programs", lead: "start your", head: "career" });
 }
 
 async function trackerPage(env) {
@@ -567,14 +559,14 @@ function aboutPage(loggedIn) {
   const body = `
     <article class="card">
       <h3>the short version</h3>
-      <p>Scout watches the public internship lists every hour, scores every posting against what you're looking for, and pings your phone when a strong one shows up. When you pick one, it builds a prep kit: a tailored one page resume, a cover letter if the posting wants one, and draft answers, all from facts you've already confirmed. <b>You always click submit yourself.</b> Scout never applies for you.</p>
+      <p>Scout watches the public early-career job feeds every hour, scores every posting against what you're looking for, and pings your phone when a strong one shows up. When you pick one, it builds a prep kit: a tailored one page resume, a cover letter if the posting wants one, and draft answers, all from facts you've already confirmed. <b>You always click submit yourself.</b> Scout never applies for you.</p>
     </article>
 
     <h2>how it works</h2>
     <ol class="steps">
-      <li class="card"><h3>find</h3><p>Every hour a free GitHub Actions job pulls two public internship lists (Simplify and Pitt CSC, plus a community list) and reads a handful of company program pages, like Microsoft Explore and NVIDIA's university page, for changes.</p></li>
-      <li class="card"><h3>score</h3><p>Each posting gets a score out of 100 from plain rules you can read and change: the role (software, product, IT, design, ambassador), the company tier, whether it's built for freshmen and sophomores, the degree it asks for, where it is, and how fresh it is. Tap "why 86?" on any card to see the math.</p></li>
-      <li class="card"><h3>alert</h3><p>Big companies with a strong score, any freshman or sophomore program, any ambassador role, and any change on a watched program page push to your phone right away through the free ntfy app. Everything else waits for one digest at 7:00 PM.</p></li>
+      <li class="card"><h3>find</h3><p>A GitHub Actions job pulls the public Simplify new-graduate feed and configured Greenhouse, Lever, and Ashby company boards. Internships, co-ops, fellowships, and student programs are excluded.</p></li>
+      <li class="card"><h3>score</h3><p>Each posting gets a score out of 100 from plain rules you can read and change: the role (software or IT), the company tier, early-career title signals, the degree it asks for, where it is, and how fresh it is. Tap "why 86?" on any card to see the math.</p></li>
+      <li class="card"><h3>alert</h3><p>Big companies with a strong score push to your phone right away through the free ntfy app. Everything else waits for one digest at 7:00 PM.</p></li>
       <li class="card"><h3>prep</h3><p>Tap "prep this" and the posting waits in a queue. Next time you open Claude Code, /prep reads the posting, checks whether you're eligible, drafts the kit from your master profile, and then a second reviewer pass checks every line against what you've actually done before you see it.</p></li>
       <li class="card"><h3>track</h3><p>The tracker follows each application from prepped to applied, online assessment, interview, and offer, and you can update it from your phone.</p></li>
     </ol>
@@ -589,7 +581,7 @@ function aboutPage(loggedIn) {
     </ul></article>
 
     <h2>where it's going</h2>
-    <article class="card"><p>Right now Scout is tuned for one first-year computer science student looking at tech internships. The plan is for it to work for anyone looking for an internship or a job, whatever their major or career: the scoring is already driven by an editable config file, so the next step is more sources for more fields and a setup that asks what you're looking for and writes that config for you.</p>
+    <article class="card"><p>Scout is tuned for full-time early-career IT and computer science jobs. The plan is for it to work for anyone looking for an internship or a job, whatever their major or career: the scoring is already driven by an editable config file, so the next step is more sources for more fields and a setup that asks what you're looking for and writes that config for you.</p>
       <div class="actions"><a class="btn accent" href="https://github.com/jeremiah123-luma/scout" target="_blank" rel="noopener">see the code ↗</a>${loggedIn ? '<a class="btn" href="/">back to scout</a>' : '<a class="btn" href="/login">log in</a>'}</div>
     </article>`;
   return page(body, { title: "What is Scout", page: "about", lead: "what is", head: "scout?", nav: loggedIn });
@@ -622,7 +614,7 @@ show();if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matc
 const PAGE_COLORS = { about: "#3fa9b5", new: "#cf6a2e", programs: "#9b84d8", review: "#cf6a2e", tracker: "#3fa9b5", settings: "#e7c98f", login: "#9b84d8" };
 
 // Settings stays at /settings (linked from the about page) but leaves the dock to make room for Review.
-const NAV = `<nav class="dock"><a href="/">new</a><a href="/programs">programs</a><a href="/review">review</a><a href="/tracker">tracker</a></nav>`;
+const NAV = `<nav class="dock"><a href="/">new</a><a href="/programs">early career</a><a href="/review">review</a><a href="/tracker">tracker</a></nav>`;
 
 function loginForm(message) {
   return page(`<form method="post" action="/login" class="login">

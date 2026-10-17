@@ -74,28 +74,13 @@ class Role(unittest.TestCase):
 
 
 class EarlyCareer(unittest.TestCase):
-    def test_strong_words(self):
-        self.assertEqual(matching.early_career("Software Engineering Intern (Freshman/Sophomore)", None, T), "strong")
-        self.assertEqual(matching.early_career("Early Insights Program", None, T), "strong")
-        self.assertEqual(matching.early_career("Exploratory Software Internship", None, T), "strong")
-        self.assertEqual(matching.early_career("Technology Externship", None, T), "strong")
-        self.assertEqual(matching.early_career("Student Ambassador", None, T), "strong")
+    def test_fulltime_signals(self):
+        self.assertEqual(matching.early_career("Junior Software Engineer", None, T), "weak")
+        self.assertEqual(matching.early_career("Software Engineer", None, T), "none")
 
-    def test_named_programs(self):
-        self.assertEqual(matching.early_career("Explore Internship", "microsoft", T), "strong")
-        self.assertEqual(matching.early_career("2027 Ignite Internships, Software Engineering", "nvidia", T), "strong")
-        self.assertEqual(matching.early_career("STEP Intern", "google", T), "strong")
-
-    def test_program_word_in_url(self):
-        url = "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite/job/US-CA-Santa-Clara/NVIDIA-2027-Ignite-Internships--Software-Engineering_JR2026958"
-        self.assertEqual(matching.early_career("Software Engineer Intern", "nvidia", T, url), "strong")
-        self.assertEqual(matching.early_career("Software Engineer Intern", "nvidia", T, "https://nvidia.wd5.myworkdayjobs.com/x/Software-Engineering_JR1"), "none")
-
-    def test_weak(self):
-        self.assertEqual(matching.early_career("Early Career Intern - Technology", "invesco", T), "weak")
-
-    def test_none(self):
-        self.assertEqual(matching.early_career("Software Engineer Intern", None, T), "none")
+    def test_student_programs_receive_no_boost(self):
+        for title in ("Microsoft Explore", "Google STEP", "NVIDIA Ignite", "Freshman/Sophomore Intern"):
+            self.assertEqual(matching.early_career(title, "google", T), "none")
 
 
 class Location(unittest.TestCase):
@@ -139,7 +124,7 @@ class Degrees(unittest.TestCase):
 
 class Filters(unittest.TestCase):
     def base(self, **over):
-        item = {"active": True, "terms": ["Summer 2027"], "degree_class": "bachelors", "role": "swe", "early_career": "none"}
+        item = {"active": True, "career_level": "entry_level", "terms": [], "degree_class": "bachelors", "role": "swe", "early_career": "none"}
         item.update(over)
         return item
 
@@ -148,12 +133,12 @@ class Filters(unittest.TestCase):
 
     def test_drops(self):
         self.assertEqual(matching.passes_filters(self.base(active=False))[1], "inactive")
-        self.assertEqual(matching.passes_filters(self.base(terms=["Summer 2026"]))[1], "not a 2027 term")
+        self.assertEqual(matching.passes_filters(self.base(career_level="internship"))[1], "not a full-time early-career role")
         self.assertEqual(matching.passes_filters(self.base(degree_class="graduate_only"))[1], "graduate students only")
         self.assertEqual(matching.passes_filters(self.base(role="none"))[1], "not a target role")
 
-    def test_program_rescues_unknown_role(self):
-        self.assertTrue(matching.passes_filters(self.base(role="none", early_career="strong"))[0])
+    def test_program_does_not_rescue_unknown_role(self):
+        self.assertFalse(matching.passes_filters(self.base(role="none", early_career="strong"))[0])
 
     def test_non_us_is_not_dropped(self):
         self.assertTrue(matching.passes_filters(self.base(location_class="other"))[0])
@@ -175,29 +160,29 @@ class ReviewFixes(unittest.TestCase):
         return matching.passes_filters(item)
 
     def test_hardware_is_out_even_inside_a_program(self):
-        url = "https://nvidia.wd5.myworkdayjobs.com/x/job/US-CA/NVIDIA-2027-Ignite-Internships--Hardware-Engineering_JR1"
-        self.assertEqual(self.kept("Hardware Engineering Intern", "NVIDIA", url=url), (False, "not a target role"))
-        url = "https://nvidia.wd5.myworkdayjobs.com/x/job/US-CA/NVIDIA-2027-Ignite-Internships--Software_JR2"
-        self.assertTrue(self.kept("Software Engineer Intern", "NVIDIA", url=url)[0])
+        url = "Junior https://nvidia.wd5.myworkdayjobs.com/x/job/US-CA/NVIDIA-2027-Ignite-ships--Hardware-Engineering_JR1"
+        self.assertEqual(self.kept("Junior Hardware Engineering ", "NVIDIA", url=url), (False, "not a target role"))
+        url = "Junior https://nvidia.wd5.myworkdayjobs.com/x/job/US-CA/NVIDIA-2027-Ignite-ships--Software_JR2"
+        self.assertTrue(self.kept("Junior Software Engineer ", "NVIDIA", url=url)[0])
 
     def test_software_in_the_title_beats_an_exclude_word(self):
-        self.assertTrue(self.kept("Privacy and Civil Liberties Software Engineer Intern", "Palantir")[0])
-        self.assertTrue(self.kept("Software Engineer Intern, Trading Systems")[0])
-        self.assertFalse(self.kept("Quantitative Trading Intern")[0])
+        self.assertTrue(self.kept("Junior Privacy and Civil Liberties Software Engineer ", "Palantir")[0])
+        self.assertTrue(self.kept("Junior Software Engineer , Trading Systems")[0])
+        self.assertFalse(self.kept("Junior Quantitative Trading ")[0])
 
     def test_graduate_titles_drop_but_mixed_ones_stay(self):
-        self.assertEqual(self.kept("Software Engineering Intern, Masters", "Apple")[1], "graduate students only")
-        self.assertEqual(self.kept("Product Owner Intern - MBA", "Waymo")[1], "graduate students only")
-        self.assertEqual(self.kept("Software Engineer Intern - MS/PhD", "Waymo")[1], "graduate students only")
-        self.assertFalse(matching.graduate_title("Scenes Intern (BS/MS)"))
-        self.assertFalse(matching.graduate_title("Software Engineer Intern (B.S./M.S.)"))
+        self.assertEqual(self.kept("Junior Software Engineering , Masters", "Apple")[1], "graduate students only")
+        self.assertEqual(self.kept("Junior Product Owner  - MBA", "Waymo")[1], "graduate students only")
+        self.assertEqual(self.kept("Junior Software Engineer  - MS/PhD", "Waymo")[1], "graduate students only")
+        self.assertFalse(matching.graduate_title("Junior Scenes  (BS/MS)"))
+        self.assertFalse(matching.graduate_title("Junior Software Engineer  (B.S./M.S.)"))
 
     def test_review_two_title_and_place_cases(self):
-        self.assertFalse(self.kept("Software Defined Radio Hardware Intern", "Astranis")[0])
-        self.assertTrue(matching.graduate_title("Design Engineer Intern - Graduate-Level"))
-        self.assertTrue(matching.graduate_title("Software Engineering Intern, Master\u2019s"))
-        self.assertTrue(matching.graduate_title("Data Platform Intern - MS"))
-        self.assertFalse(matching.graduate_title("Microsoft Office Specialist Intern"))
+        self.assertFalse(self.kept("Junior Software Defined Radio Hardware ", "Astranis")[0])
+        self.assertTrue(matching.graduate_title("Junior Design Engineer  - Graduate-Level"))
+        self.assertTrue(matching.graduate_title("Junior Software Engineering , Master\u2019s"))
+        self.assertTrue(matching.graduate_title("Junior Data Platform  - MS"))
+        self.assertFalse(matching.graduate_title("Junior Microsoft Office Specialist "))
         for place in ("Indianapolis", "Arlington, VA, On-site", "Remote, Abilene"):
             self.assertFalse(matching.outside_us_only([place], T), place)
         self.assertTrue(matching.outside_us_only(["Toronto, ON"], T))
@@ -206,25 +191,25 @@ class ReviewFixes(unittest.TestCase):
         self.assertEqual(matching.location_class(["Sunnyvale, CA"], T), "us")
 
     def test_electronics_design_is_not_ux(self):
-        self.assertEqual(matching.classify_role("Electronics Design Engineering Intern - Low Voltage", T), "none")
-        self.assertEqual(matching.classify_role("Electronic Design Engineer Intern - Energy Engineering", T), "none")
-        self.assertEqual(matching.classify_role("UI/UX Design Intern", T), "design")
-        self.assertEqual(matching.classify_role("Consumer Electronics Software Engineer Intern", T), "swe")
+        self.assertEqual(matching.classify_role("Junior Electronics Design Engineering  - Low Voltage", T), "none")
+        self.assertEqual(matching.classify_role("Junior Electronic Design Engineer  - Energy Engineering", T), "none")
+        self.assertEqual(matching.classify_role("Junior UI/UX Design ", T), "design")
+        self.assertEqual(matching.classify_role("Junior Consumer Electronics Software Engineer ", T), "swe")
 
     def test_missing_role_words(self):
-        self.assertEqual(matching.classify_role("Application Development Intern", T), "swe")
-        self.assertEqual(matching.classify_role("Computer Science Intern", T), "swe")
-        self.assertEqual(matching.classify_role("Member of Technical Staff Intern", T), "swe")
-        self.assertEqual(matching.classify_role("Technology Intern", T), "it")
+        self.assertEqual(matching.classify_role("Junior Application Development ", T), "swe")
+        self.assertEqual(matching.classify_role("Junior Computer Science ", T), "swe")
+        self.assertEqual(matching.classify_role("Junior Member of Technical Staff ", T), "swe")
+        self.assertEqual(matching.classify_role("Junior IT Support Specialist", T), "it")
 
     def test_only_foreign_locations_drop(self):
-        self.assertEqual(self.kept("Software Developer Intern", "Amazon", locations=("London, UK", "Edinburgh, UK"))[1],
+        self.assertEqual(self.kept("Junior Software Developer ", "Amazon", locations=("London, UK", "Edinburgh, UK"))[1],
                          "outside the US")
-        self.assertTrue(self.kept("Software Engineer Intern", locations=("Toronto, ON, Canada", "Seattle, WA"))[0])
-        self.assertTrue(self.kept("Software Engineer Intern", locations=("Multiple Locations",))[0])
+        self.assertTrue(self.kept("Junior Software Engineer ", locations=("Toronto, ON, Canada", "Seattle, WA"))[0])
+        self.assertTrue(self.kept("Junior Software Engineer ", locations=("Multiple Locations",))[0])
 
     def test_citizenship_only_drops_when_the_config_says_no(self):
-        row = {"company": "Acme", "title": "Software Engineer Intern", "locations": ["Arlington, VA"], "url": "",
+        row = {"company": "Acme", "title": "Junior Software Engineer ", "locations": ["Arlington, VA"], "url": "",
                "degrees": [], "terms": ["Summer 2027"], "active": True, "sponsorship": "U.S. Citizenship is Required"}
         unknown = matching.describe(dict(row), dict(T, us_citizen=None))
         self.assertTrue(unknown["citizens_only"])

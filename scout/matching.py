@@ -1,4 +1,4 @@
-"""Decide what a listing is: which company tier, which role, where, and whether it is freshman-friendly.
+"""Decide what a listing is: which company tier, which role, where, and its early-career level.
 
 Everything here reads config/targets.yaml and returns plain strings, so scoring.py can turn
 the answers into points and the breakdown can show a human why.
@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from urllib.parse import urlsplit
 
 import yaml
 
@@ -135,18 +134,8 @@ def classify_role(title: str, targets: dict) -> str:
 # ---------------------------------------------------------------- early career
 
 def early_career(title: str, company_key: str | None, targets: dict, url: str = "") -> str:
-    """Return 'strong' (freshman/sophomore word or a named program), 'weak' ('early career'), or 'none'.
-
-    The URL is searched too, because the lists often shorten titles: NVIDIA's Ignite posting is listed
-    as "Software Engineer Intern" while its URL says "NVIDIA-2027-Ignite-Internships".
-    """
-    path = re.sub(r"[-_/+.%]+", " ", urlsplit(url).path.lower()) if url else ""
-    text = _clean(title) + " " + path
-    programs = targets.get("programs", {})
-    if company_key and any(_word_match(text, w) for w in programs.get(company_key, [])):
-        return "strong"
-    if any(_word_match(text, w) for w in programs.get("any", [])):
-        return "strong"
+    """Return a title-based early-career signal; student programs receive no boost."""
+    text = _clean(title)
     if career.level(title) == "entry_level" or any(_word_match(text, w) for w in targets.get("early_career_weak", [])):
         return "weak"
     return "none"
@@ -261,15 +250,13 @@ def describe(listing: dict, targets: dict) -> dict:
     return listing
 
 
-def passes_filters(listing: dict, cycle_year: str = "2027", max_age_days: int | None = None,
+def passes_filters(listing: dict, max_age_days: int | None = None,
                    now: float | None = None) -> tuple[bool, str]:
     """Hard drops only. Returns (keep, reason). Everything that passes gets scored, nothing is hidden for location."""
     if not listing.get("active", True):
         return False, "inactive"
     if listing.get("career_level") == "experienced":
         return False, "experienced role"
-    if listing.get("career_level") != "entry_level" and not any(cycle_year in t for t in listing.get("terms", [])):
-        return False, "not a 2027 term"
     if max_age_days and listing.get("date_posted"):
         import time
         age_days = ((now if now is not None else time.time()) - listing["date_posted"]) / 86400
@@ -281,13 +268,13 @@ def passes_filters(listing: dict, cycle_year: str = "2027", max_age_days: int | 
         return False, "outside the US"
     if listing.get("citizenship_blocked"):
         return False, "US citizens only"
-    # A freshman program keeps a title with no role word ("Explore Program"), but not one that names
-    # a field he isn't looking for: NVIDIA's Ignite program also has a Hardware Engineering track.
     if listing.get("search_role_blocked"):
         return False, "not a target role"
     if listing.get("excluded"):
         return False, "not a target role"
-    if listing.get("role") == "none" and listing.get("early_career") != "strong":
+    if listing.get("role") == "none":
         return False, "not a target role"
+    if listing.get("career_level") != "entry_level":
+        return False, "not a full-time early-career role"
     return True, "ok"
 

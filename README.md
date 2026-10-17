@@ -1,18 +1,17 @@
 # JobScout
 
-This fork searches early-career IT and computer science jobs: junior, entry-level, new-graduate, and internship roles. It reads the public Simplify new-graduate feed alongside the existing internship lists and configured Greenhouse, Lever, and Ashby company boards. See [early-career setup](docs/early-career.md).
+This fork searches early-career IT and computer science jobs: junior, entry-level, and new-graduate full-time roles. It reads the public Simplify new-graduate feed and configured Greenhouse, Lever, and Ashby company boards. See [early-career setup](docs/early-career.md).
 
-**🚧 In development.** It runs every day for one person's internship search; making it work for anyone is the next step ([where this is going](#where-this-is-going)).
+**🚧 In development.** It runs every day for a full-time early-career IT and CS search; making it work for anyone is the next step ([where this is going](#where-this-is-going)).
 
-<img src="docs/mac-new.png" alt="Scout dashboard on a Mac: the New page with open matches and a grid of scored internship cards">
+<img src="docs/mac-new.png" alt="Scout dashboard on a Mac: the New page with open matches and a grid of scored job cards">
 
 <p align="center">
   <img src="docs/phone-new.png" width="30%" alt="Scout on a phone: New page with the match count and the top scored posting">
-  <img src="docs/phone-programs.png" width="30%" alt="Scout on a phone: Programs page listing the watched freshman program pages">
   <img src="docs/phone-about.png" width="30%" alt="Scout on a phone: the what is scout page explaining find, score, alert, prep, and track">
 </p>
 
-Scout is an internship radar. About every hour it reads the public internship lists and the job boards of the companies you care about most, scores each posting against what you're looking for, and pushes an alert to your phone when a strong match drops. For any posting you pick, it builds a prep kit: a one-page tailored resume, a cover letter if the posting wants one, and draft answers, all from facts you've already confirmed. The public [what is scout?](https://scout-dashboard.jeremysleman.workers.dev/about) page explains it in five steps.
+Scout is an early-career job radar. About every hour it reads the public new-graduate feed and the job boards of the companies you care about most, scores each posting against what you're looking for, and pushes an alert to your phone when a strong match drops. For any posting you pick, it builds a prep kit: a one-page tailored resume, a cover letter if the posting wants one, and draft answers, all from facts you've already confirmed. The public [what is scout?](https://scout-dashboard.jeremysleman.workers.dev/about) page explains it in five steps.
 
 **You always click Submit yourself.** Scout never submits an application, never logs into a job site, never creates accounts, and never solves captchas. It finds, ranks, alerts, and preps.
 
@@ -28,12 +27,12 @@ GitHub Actions, every hour              Your Mac, on demand (Claude Code)
   -> state saved to the "data" branch
             |
             v
-Cloudflare Worker: password-protected dashboard (New, Programs, Tracker, Settings) + KV
+Cloudflare Worker: password-protected dashboard (New, Early career, Tracker, Settings) + KV
 ```
 
-- **Scoring without AI.** Every posting gets a 0 to 100 score from plain rules in `config/scoring.yaml`: role, company tier, whether it's built for freshmen and sophomores, degree, location, and freshness. Every card shows its math.
-- **Eligibility, read from the posting.** Scout reads posting pages on Workday, Google Careers, Greenhouse, Lever, Ashby, Eightfold (Netflix, Microsoft), and Amazon for graduation-year or class-year requirements, never pushes the ones that rule you out, and labels postings that have been taken down.
-- **Program pages watched for changes.** Freshman programs (Microsoft Explore, NVIDIA's university page, and others) often open without appearing in any list, so Scout hashes those pages and pushes the new lines when they change, ignoring rotating job carousels.
+- **Scoring without AI.** Every posting gets a 0 to 100 score from plain rules in `config/scoring.yaml`: role, company tier, early-career title signals, degree, location, and freshness. Every card shows its math.
+- **Posting availability.** Scout checks supported posting pages and labels closed jobs. Personal eligibility stays unknown until you review the requirements.
+- **Full-time early-career search.** Internship feeds, freshman programs, and student-program watches are disabled.
 - **Prep kits with a second pair of eyes.** A drafter writes from your master profile only; a separate reviewer pass checks every claim against it, plus the posting's must-haves, and lists what you don't have instead of faking it.
 
 ## Tech
@@ -47,7 +46,7 @@ Cloudflare Worker: password-protected dashboard (New, Programs, Tracker, Setting
 
 ## Where this is going
 
-The plan is for Scout to work for anyone looking for an internship or a job, whatever their major or career. Already general: scoring and filtering are driven by `config/targets.yaml` and `config/scoring.yaml`, the prep kit works from any master profile, and the dashboard and alerts don't care what the postings are. Still tech-specific: the two data sources are tech internship lists. Next: sources for more fields (starting with the Greenhouse, Lever, and Ashby board APIs, which cover companies in every industry), then a setup command that asks what you're looking for and writes the config for you.
+The plan is for Scout to work for anyone looking for an internship or a job, whatever their major or career. Already general: scoring and filtering are driven by `config/targets.yaml` and `config/scoring.yaml`, the prep kit works from any master profile, and the dashboard and alerts don't care what the postings are. Current sources: the Simplify new-graduate list and Greenhouse, Lever, and Ashby boards. Next: sources for more fields (starting with the Greenhouse, Lever, and Ashby board APIs, which cover companies in every industry), then a setup command that asks what you're looking for and writes the config for you.
 
 ## Make it yours
 

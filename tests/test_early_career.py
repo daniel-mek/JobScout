@@ -59,22 +59,24 @@ class EarlyCareer(unittest.TestCase):
     def test_fulltime_is_not_rejected_using_internship_graduation_rules(self):
         item = {"url": "https://example.com/job", "career_level": "entry_level"}
         with mock.patch.object(eligibility, "is_readable_board", return_value=True), \
-             mock.patch.object(eligibility, "fetch_text", return_value="Graduating in 2027."):
-            eligibility.check(item, 2030, {})
+             mock.patch.object(eligibility, "fetch_text", return_value="Graduating in 2027. Open to juniors and seniors."):
+            eligibility.check(item, {})
         self.assertEqual(item["eligibility"], "unknown")
 
     def test_closed_fulltime_is_still_detected(self):
         item = {"url": "https://example.com/job", "career_level": "entry_level"}
         with mock.patch.object(eligibility, "is_readable_board", return_value=True), \
              mock.patch.object(eligibility, "fetch_text", return_value=eligibility.CLOSED):
-            eligibility.check(item, None, {})
+            eligibility.check(item, {})
         self.assertEqual(item["eligibility"], "closed")
 
-    def test_cache_is_scoped_to_graduation_profile(self):
-        cache = {}
-        with mock.patch.object(eligibility, "is_readable_board", return_value=True), \
-             mock.patch.object(eligibility, "fetch_text", return_value="Graduating in 2029."):
-            first = eligibility.check({"url": "https://example.com/job"}, 2030, cache)
-            second = eligibility.check({"url": "https://example.com/job"}, 2029, cache)
-        self.assertEqual(first["eligibility"], "ineligible")
-        self.assertEqual(second["eligibility"], "ok")
+    def test_only_fulltime_sources_enabled(self):
+        self.assertEqual(set(listings.SOURCES), {"simplify_newgrad"})
+
+    def test_internships_in_newgrad_feed_are_rejected(self):
+        titles = ["Junior Software Engineer Intern", "IT Co-op", "IT Co op", "Software Engineering Fellowship", "Freshman Software Engineer Program"]
+        raw = {"simplify_newgrad": [dict(company_name="Acme", title=t, active=True,
+               url=f"https://example.com/{i}") for i, t in enumerate(titles)]}
+        matches, counts = watch.run(raw, matching.load_targets(), scoring.load_weights(), allow_network=False, save=False)
+        self.assertEqual(matches, [])
+        self.assertEqual(counts["dropped: not a full-time early-career role"], len(titles))

@@ -39,9 +39,6 @@ def score(listing: dict, weights: dict, now: float | None = None) -> dict:
     w = weights
     loc = listing.get("location_class", "unknown")
     role = listing.get("role", "none")
-    if role == "none" and listing.get("early_career") == "strong":
-        role = "program"  # "Explore Program" names no role but is exactly what a freshman wants
-        listing["role"] = role
     fresh = freshness_class(listing.get("date_posted", 0), now)
     if fresh == "over_90d" and listing.get("tier", 3) in w.get("no_stale_penalty_tiers", []):
         fresh = "older"

@@ -23,8 +23,8 @@ class Score(unittest.TestCase):
     def test_capped_at_100(self):
         item = scoring.score(described(tier=1, early_career="strong", degree_class="bachelors",
                                        location_class="priority", date_posted=NOW - 60,
-                                       keyword_hits=["ai", "ios", "cloud", "design"]), W, NOW)
-        self.assertEqual(item["score"], 100)
+                                       keyword_hits=["ai", "ios", "cloud", "design"]), dict(W, tier={1: 100}), NOW)
+        self.assertEqual(item["score"], min(100, sum(item["breakdown"].values())))
         self.assertGreater(sum(item["breakdown"].values()), 100)
 
     def test_role_order(self):
@@ -36,13 +36,10 @@ class Score(unittest.TestCase):
         self.assertEqual(swe, it)
         self.assertTrue(swe > amb > pm > design)
 
-    def test_program_beats_plain_tier1_swe(self):
-        # A freshman program at an unknown company with no role word in the title must outrank
-        # a plain Tier 1 SWE posting, because those programs are the point for a freshman.
-        program = scoring.score(described(role="none", early_career="strong", tier=3, location_class="us"), W, NOW)
-        plain = scoring.score(described(role="swe", tier=1, degree_class="bachelors", location_class="us"), W, NOW)
-        self.assertEqual(program["role"], "program")
-        self.assertGreater(program["score"], plain["score"])
+    def test_student_program_has_no_bonus(self):
+        program = scoring.score(described(role="none", early_career="strong"), W, NOW)
+        self.assertEqual(program["breakdown"]["role"], 0)
+        self.assertEqual(program["breakdown"]["early_career"], 0)
 
     def test_unknown_degrees_cost_nothing(self):
         # Graduate-only rows are dropped before scoring, so a blank degrees field is just missing data.

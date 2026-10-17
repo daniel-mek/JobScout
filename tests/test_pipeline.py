@@ -11,8 +11,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 class Pipeline(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        raw = {"simplify": listings.load_json(FIXTURES / "simplify.json"),
-               "vanshb03": listings.load_json(FIXTURES / "vanshb03.json")}
+        raw = {"simplify_newgrad": listings.load_json(FIXTURES / "simplify_newgrad.json")}
         cls.matches, cls.counts = watch.run(raw, matching.load_targets(), scoring.load_weights(),
                                             check_pages=5, allow_network=False, now=1_800_000_000)
 
@@ -25,16 +24,15 @@ class Pipeline(unittest.TestCase):
             if watch.could_push(m):
                 self.assertNotEqual(m["eligibility_note"], "not checked (below top rows)", m["title"])
 
-    def test_no_graduate_only_or_inactive_or_wrong_year(self):
+    def test_only_active_fulltime_early_career_roles(self):
         for m in self.matches:
             self.assertNotEqual(m["degree_class"], "graduate_only", m["title"])
             self.assertTrue(m["active"])
-            self.assertTrue(any("2027" in t for t in m["terms"]), m["title"])
+            self.assertEqual(m["career_level"], "entry_level")
 
-    def test_no_hardware_or_quant_without_a_program(self):
+    def test_only_target_roles(self):
         for m in self.matches:
-            if m["role"] == "none":
-                self.assertEqual(m["early_career"], "strong", m["title"])
+            self.assertIn(m["role"], ("it", "swe"))
 
     def test_sorted_eligible_first_then_score_then_date(self):
         keys = [(m["eligibility"] != "ineligible", m["score"], m["date_posted"]) for m in self.matches]
@@ -42,9 +40,9 @@ class Pipeline(unittest.TestCase):
 
     def test_ineligible_sinks_below_eligible(self):
         from scout import eligibility
-        raw = {"simplify": listings.load_json(FIXTURES / "simplify.json")}
+        raw = {"simplify_newgrad": listings.load_json(FIXTURES / "simplify_newgrad.json")}
         original = eligibility.check
-        def fake_check(item, grad, cache, allow_network=True):
+        def fake_check(item, cache, allow_network=True):
             item["eligibility"], item["eligibility_note"] = ("ineligible", "test") if item is first[0] else ("unknown", "")
             return item
         first = []

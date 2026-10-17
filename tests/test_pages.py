@@ -117,7 +117,7 @@ class Watching(unittest.TestCase):
 
     def test_config_loads(self):
         loaded = pages.load_pages()
-        self.assertGreaterEqual(len(loaded), 5)
+        self.assertEqual(loaded, [])
         for p in loaded:
             self.assertTrue(p["url"].startswith("https://"))
             self.assertTrue(p.get("name"))

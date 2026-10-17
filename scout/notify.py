@@ -69,10 +69,6 @@ def _age(m: dict, now: float) -> str:
 def match_push(m: dict, now: float) -> dict:
     """One instant alert for one posting."""
     why = []
-    if m.get("early_career") == "strong":
-        why.append("freshman/sophomore program")
-    if m.get("role") == "ambassador":
-        why.append("ambassador program")
     if m.get("tier", 3) <= 2:
         why.append(f"Tier {m['tier']}")
     elig = m.get("eligibility", "unknown")
@@ -80,22 +76,22 @@ def match_push(m: dict, now: float) -> dict:
         _location(m),
         f"Score {m['score']} ({', '.join(why) or 'match'}), {_age(m, now)}",
         f"Eligibility: {elig}, {m['eligibility_note']}" if elig != "unknown" and m.get("eligibility_note")
-        else "Eligibility: unknown, check the graduation year before you apply",
+        else "Eligibility: unknown, review the posting requirements before you apply",
     ]
     if m.get("citizens_only"):
         lines.append("US citizens only")
-    # Only a page that names his graduation year (or says freshman) gets the loud push.
+    # Personal eligibility stays unknown unless confirmed.
     # An unread page still alerts, quietly, because "unknown" is never hidden.
     if elig != "ok":
         priority = 3
     else:
-        priority = 5 if m.get("early_career") == "strong" else 4
+        priority = 4
     return {
         "title": f"{m['company']}: {m['title']}"[:120],
         "message": "\n".join(lines),
         "click": m.get("url"),
         "priority": priority,
-        "tags": ["star2"] if m.get("early_career") == "strong" else ["briefcase"],
+        "tags": ["briefcase"],
     }
 
 

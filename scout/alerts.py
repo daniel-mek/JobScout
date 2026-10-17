@@ -1,7 +1,6 @@
 """Decide which matches get an instant push and which wait for the 7:00 PM digest.
 
-Instant (every run): Tier 1 or Tier 2 at or above `instant_min_score`, any freshman/sophomore program,
-any ambassador program. Everything else that passed the filters goes into the daily digest, top N by score.
+Instant (every run): Tier 1 or Tier 2 at or above `instant_min_score`. Everything else that passed the filters goes into the daily digest, top N by score.
 data/seen.json remembers every key that has been alerted, with its URLs, so nothing alerts twice
 but a repost under a reused title still does.
 """
@@ -33,8 +32,6 @@ def save_seen(seen: dict, path: Path = SEEN_PATH) -> None:
 def is_instant(m: dict, weights: dict) -> bool:
     if m.get("eligibility") in RULED_OUT:
         return False
-    if m.get("early_career") == "strong" or m.get("role") == "ambassador":
-        return True
     return m.get("tier", 3) <= 2 and m.get("score", 0) >= weights.get("instant_min_score", 60)
 
 
@@ -70,14 +67,14 @@ def select_digest(matches: list[dict], seen: dict, weights: dict) -> list[dict]:
 def is_catchup(m: dict, seen: dict) -> bool:
     """Seeded on the first run (so it never alerted), worth an alert today, and not ruled out by its page.
 
-    "Worth an alert" is Tier 1 or 2, or a freshman/sophomore program. A row only counts while it is still
+    "Worth an alert" is Tier 1 or 2. A row only counts while it is still
     in the current matches, so anything that dropped off the lists since the seed is left alone.
     """
     if (seen.get(m["key"]) or {}).get("via") != "seeded":
         return False
     if m.get("eligibility") in RULED_OUT:
         return False
-    return m.get("tier", 3) <= 2 or m.get("early_career") == "strong"
+    return m.get("tier", 3) <= 2
 
 
 def select_catchup(matches: list[dict], seen: dict) -> list[dict]:

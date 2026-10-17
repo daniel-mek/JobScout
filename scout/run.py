@@ -154,7 +154,7 @@ def on_data_branch() -> bool:
 
 
 def mode_catchup(sender: Sender, now: float) -> None:
-    """One push for what the first run's --seed swallowed: Tier 1 or 2 postings and freshman programs that are
+    """One push for what the first run's --seed swallowed: Tier 1 or 2 postings that are
     still on the lists and not ruled out by their page. Each one listed is marked via "catchup", so a second
     run only sends what did not fit the first time, and once everything has gone out it sends "nothing"."""
     # Only the cron's checkout of the data branch holds the real seen list. On the Mac, data/ is an old

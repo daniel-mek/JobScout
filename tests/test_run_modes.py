@@ -61,15 +61,15 @@ class Catchup(unittest.TestCase):
         ]
         seen = seeded("ms", "prog", "t2", "plain", "gone", "ruled", "dropped")   # "dropped" left the lists
         seen["pushed"] = {"at": "2026-10-15T01:17:00+00:00", "via": "instant", "urls": ["https://x.com/pushed"]}
-        self.assertEqual([m["key"] for m in alerts.select_catchup(matches, seen)], ["ms", "prog", "t2"])
+        self.assertEqual([m["key"] for m in alerts.select_catchup(matches, seen)], ["ms", "t2"])
 
         pushes, saved = self.go(matches, seen)
         self.assertEqual(len(pushes), 1, "one digest, not one push per posting")
         self.assertIn("Microsoft", pushes[0]["message"])
-        self.assertIn("https://x.com/prog", pushes[0]["message"])
+        self.assertNotIn("https://x.com/prog", pushes[0]["message"])
         self.assertNotIn("x.com/plain", pushes[0]["message"])
         after = saved[-1]
-        self.assertEqual({k for k, v in after.items() if v["via"] == "catchup"}, {"ms", "prog", "t2"})
+        self.assertEqual({k for k, v in after.items() if v["via"] == "catchup"}, {"ms", "t2"})
         self.assertEqual(after["dropped"]["via"], "seeded")
 
     def test_a_real_send_off_the_data_branch_refuses(self):
@@ -128,8 +128,7 @@ class DryRunSavesNothing(unittest.TestCase):
     """--dry-run must leave data/ exactly as it was: no seen list, no matches, no eligibility cache, no page prints."""
 
     def test_watch_dry_run_writes_no_file(self):
-        raw = {"simplify": listings.load_json(FIXTURES / "simplify.json"),
-               "vanshb03": listings.load_json(FIXTURES / "vanshb03.json")}
+        raw = {"simplify_newgrad": listings.load_json(FIXTURES / "simplify_newgrad.json")}
         writes = []
 
         def record(name):
@@ -182,15 +181,15 @@ class PageChecksCanSkipSaving(unittest.TestCase):
 class EligibilityCacheInDryRun(unittest.TestCase):
     def test_watch_run_save_false_keeps_the_cache_in_memory(self):
         from scout import matching, watch
-        raw = {"simplify": listings.load_json(FIXTURES / "simplify.json")}
-        with mock.patch.object(eligibility, "fetch_text", return_value="Graduating in 2030."), \
+        raw = {"simplify_newgrad": listings.load_json(FIXTURES / "simplify_newgrad.json")}
+        with mock.patch.object(eligibility, "fetch_text", return_value="Full-time junior software engineer."), \
              mock.patch.object(eligibility, "is_readable_board", return_value=True), \
              mock.patch.object(eligibility, "load_cache", return_value={}), \
              mock.patch.object(eligibility, "save_cache") as save:
-            matches, _ = watch.run(raw, dict(matching.load_targets(), graduation_year=2030), W, check_pages=3, allow_network=True, now=NOW, save=False)
+            matches, _ = watch.run(raw, matching.load_targets(), W, check_pages=3, allow_network=True, now=NOW, save=False)
             save.assert_not_called()
-            self.assertTrue(any(m["eligibility"] == "ok" for m in matches), "pages were still read")
-            watch.run(raw, dict(matching.load_targets(), graduation_year=2030), W, check_pages=3, allow_network=True, now=NOW)
+            self.assertTrue(any("posting available" in m["eligibility_note"] for m in matches), "pages were still read")
+            watch.run(raw, matching.load_targets(), W, check_pages=3, allow_network=True, now=NOW)
             save.assert_called_once()
 
 

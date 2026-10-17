@@ -1,33 +1,7 @@
-"""Fetch the public internship lists and normalize every row into one shape.
+"""Fetch public full-time new-graduate and company ATS listings.
 
-Sources (all free, all public JSON, no login):
-  simplify_newgrad  SimplifyJobs/New-Grad-Positions (full-time graduate roles)
-  simplify  SimplifyJobs/Summer2027-Internships  (~13 MB, ~17K rows, the main list)
-  vanshb03  vanshb03/Summer2027-Internships      (~275 KB, MIT, a separate community list)
-  boards    target companies' own Greenhouse, Ashby, and Lever boards (scout/boards.py, targets.yaml boards:),
-            for internships the lists never carry, like design roles
-
-Every row becomes a plain dict with the same keys, so nothing downstream cares which list it came from:
-
-  {
-    "id": "...",                 # the source's own id
-    "source": "simplify",        # which list
-    "company": "Google",
-    "title": "Software Engineering Intern, Summer 2027",
-    "url": "https://...",
-    "locations": ["NYC", "Mountain View, CA"],
-    "terms": ["Summer 2027"],    # vanshb03 rows carry a season with no year; the list is scoped to 2027
-    "degrees": ["Bachelor's"],   # [] when the source does not say
-    "sponsorship": "Other",      # "Other" | "Offers Sponsorship" | "Does Not Offer Sponsorship" | "U.S. Citizenship is Required"
-    "category": "Software",      # the source's category when it has one, else None
-    "date_posted": 1760000000,   # unix seconds
-    "date_updated": 1760000000,
-    "active": True,
-  }
-
-Network calls live only in fetch_json(). Tests pass saved fixture files instead.
+Legacy normalizers remain available for reading previously saved source data.
 """
-
 from __future__ import annotations
 
 import json
@@ -40,8 +14,6 @@ from scout import boards, career
 
 SOURCES = {
     "simplify_newgrad": "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",
-    "simplify": "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json",
-    "vanshb03": "https://raw.githubusercontent.com/vanshb03/Summer2027-Internships/main/.github/scripts/listings.json",
 }
 
 USER_AGENT = "jobscout-early-career-watcher/0.1 (personal project; reads public JSON only)"

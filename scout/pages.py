@@ -1,9 +1,6 @@
 """Watch program pages for changes.
 
-Big tech freshman programs (Microsoft Explore, Google STEP, NVIDIA Ignite, Meta University) often open
-without ever showing up in the internship lists, so Scout watches the official pages themselves.
-Each run fetches every page in config/watch-pages.yaml, strips it to plain text, and compares a hash
-of that text with the last run. When it changes, Scout alerts with the first few new sentences.
+No pages are enabled by default; full-time listings come from the public job feeds.
 
 State lives in data/pages.json (one record per URL) and data/pages/<slug>.prints: one short fingerprint
 per line of the last text seen, so the next run can tell which lines are new without the repo keeping
