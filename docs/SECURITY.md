@@ -1,5 +1,7 @@
 # Security and privacy
 
+Phase 2 adds owner-scoped job/source/history routes, fixed-host HTTPS with public DNS validation and pinned TLS connections, redirect/body/time limits, provider/board approval gates, and retention filtering across live and historical records. Submitted URLs are not arbitrarily fetched. Operator policy tightening purges restricted history. See [PHASE2.md](PHASE2.md); live provider/deployment verification remains outstanding.
+
 ## Current assessment
 
 The current Worker uses a shared dashboard password, HMAC-signed expiring cookies with HttpOnly/Secure/SameSite=Lax, and a separate ingestion secret. Rendering escapes text and restricts clickable URLs. These are useful single-user controls, not multi-user authentication or an ownership model.

@@ -1,4 +1,4 @@
-name: Phase 1 application
+name: ApplyOS application
 on:
   push:
     branches: [main]
@@ -27,8 +27,8 @@ jobs:
           cache: pip
           cache-dependency-path: apps/api/requirements.lock
       - run: pip install -r apps/api/requirements.lock -r requirements.txt
-      - run: ruff check apps/api
-      - run: ruff format --check apps/api
+      - run: ruff check apps/api packages/job_sources
+      - run: ruff format --check apps/api packages/job_sources
       - run: mypy apps/api/applyos
       - run: pytest -q apps/api/tests
       - name: PostgreSQL migrations and integration tests

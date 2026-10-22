@@ -28,7 +28,9 @@ export default defineConfig({
       timeout: 30000,
     },
     {
-      command: "npm run dev",
+      command: process.env.E2E_PRODUCTION
+        ? "npm run start"
+        : "npm run dev -- --webpack",
       url: "http://localhost:3000/login",
       reuseExistingServer: false,
       timeout: 60000,

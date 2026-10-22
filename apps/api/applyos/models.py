@@ -169,3 +169,6 @@ class HardRequirement(Base):
     __tablename__ = "hard_requirements"
     owner_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     data: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+
+from . import jobs_models as jobs_models  # noqa: E402, F401

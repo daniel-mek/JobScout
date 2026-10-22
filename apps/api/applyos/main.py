@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session as DBSession
 from . import repositories as repo
 from .config import Settings, settings
 from .db import make_database
+from .jobs_routes import router_for
 from .models import ProfileRevision, RoleFamily, Session, User
 from .schemas import CareerSelection, Credentials, Preferences, ProfileReview, Requirements
 from .security import COOKIE, CSRF_COOKIE, create_session, digest, session_user, throttle
@@ -27,8 +28,8 @@ def create_app(config: Settings | None = None) -> FastAPI:
     config = config or settings()
     engine, sessions = make_database(config)
     app = FastAPI(
-        title="ApplyOS Phase 1 API",
-        version="1.0.0",
+        title="ApplyOS API",
+        version="2.0.0",
         docs_url="/docs" if config.environment != "production" else None,
     )
     app.state.engine, app.state.sessions = engine, sessions
@@ -122,6 +123,7 @@ def create_app(config: Settings | None = None) -> FastAPI:
     def health(db: DB):
         try:
             db.execute(text("SELECT id FROM users LIMIT 1"))
+            db.execute(text("SELECT id FROM source_policies LIMIT 1"))
             return {"status": "healthy", "database": "ready"}
         except SQLAlchemyError:
             raise HTTPException(503, "Database is not ready. Run migrations.") from None
@@ -267,6 +269,7 @@ def create_app(config: Settings | None = None) -> FastAPI:
             "notice": "Your foundation is ready. Personalized job discovery will connect in a later phase.",
         }
 
+    app.include_router(router_for(database, current_user, config))
     return app
 
 

@@ -1,5 +1,7 @@
 # Architecture
 
+Phase 2 (2026-10-22): owner-scoped jobs/sources use `packages/job_sources` adapters and persisted approval checks. Companies, postings, versions, provenance/health, titles, saved source searches and manual run history are relational. The `/jobs` workspace displays source evidence and versions. See [PHASE2.md](PHASE2.md) for transport, retention and pagination boundaries. No scheduler or matching engine is introduced.
+
 Hosting update (2026-10-22): user-authorized Vercel Services configuration prepares the existing web and API as independently built services in one deployment. PostgreSQL remains Neon; private Vercel Blob is an additional storage adapter beside local and S3. The Services feature is beta. Background workers are not introduced or forced into frontend serverless requests. See DEPLOYMENT.md for configuration and current verification boundaries.
 
 ## Decision and scope

@@ -6,6 +6,10 @@ The supplied ApplyOS specification is now preserved in this repository. The exis
 
 Run the new app using [docs/PHASE1.md](docs/PHASE1.md). It includes PostgreSQL migrations, private resume versions, conservative offline parsing, profile review, career paths and separate preferences/hard requirements. The new account dashboard does not yet connect the legacy watcher or migrate legacy application history. No fake job metrics are shown.
 
+## Phase 2 jobs and sources
+
+Open `/jobs` to import jobs, connect employer boards, inspect policies/health, run saved source searches, and review provenance/version history. See [Phase 2 setup and verification](docs/PHASE2.md). External ingestion stays off until policy and board review are recorded. Matching comes in Phase 3; hosting is paused.
+
 ## Product documentation
 
 - [Product specification](docs/PRODUCT_SPEC.md)

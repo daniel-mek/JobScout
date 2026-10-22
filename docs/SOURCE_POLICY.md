@@ -4,7 +4,7 @@
 
 Only an enabled APPROVED source may perform automated ingestion. NEEDS_REVIEW means permission, retention, attribution, or implementation evidence is incomplete; DISABLED means prohibited/unconfigured access must not run. A public endpoint alone is not permission to retain or redistribute descriptions.
 
-SourceRegistry and SourcePolicy are target Phase 2 requirements, not implemented runtime controls. Existing scout fetchers still use direct configuration. This document does not retroactively certify or technically disable them. Migrating those paths behind enforceable policy checks is required before the new application's automated ingestion is enabled.
+Phase 2 implements runtime SourceRegistry/SourcePolicy controls in the authenticated app; see [PHASE2.md](PHASE2.md). Automated defaults remain unapproved. Approval is scoped to explicit board IDs and is only recorded by the operator command. Legacy scout fetchers retain separate configuration; this does not certify or disable them. They are not exposed through the account API.
 
 Each registry entry must retain identifier, display name/category, official documentation URL, policy/terms URL, retrieval method, credential requirements, attribution/source-link obligations, rate configuration, description-storage and redistribution rules, enabled flag, compliance status, last policy-review date, reviewer evidence, and adapter version. Unknown obligations must remain explicit, never inferred approval.
 

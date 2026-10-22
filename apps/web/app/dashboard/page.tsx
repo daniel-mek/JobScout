@@ -117,10 +117,10 @@ export default async function Dashboard() {
         <div>
           <strong>A considered start.</strong>
           <p>
-            This workspace currently covers your account, resume, reviewed
-            profile, and preferences. Personalized job discovery and application
-            workflows will connect in later phases. Your existing JobScout tools
-            remain separate.
+            Your workspace now includes job imports, employer sources, and
+            listing history.
+            <Link href="/jobs"> Open jobs & sources ↗</Link>. Personalized
+            matching and application workflows will connect in later phases.
           </p>
         </div>
       </aside>

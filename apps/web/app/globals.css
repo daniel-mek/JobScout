@@ -1022,3 +1022,68 @@ select:focus {
   width: 100%;
   min-width: 0;
 }
+/* Source ingestion workspace */
+.jobs-tools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.jobs-tools form {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+.jobs-tools label {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+.jobs-tools input,
+.jobs-tools textarea,
+.jobs-tools select {
+  width: 100%;
+  max-width: 100%;
+}
+.job-history {
+  margin-top: 24px;
+}
+.source-entry {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line, #ddd);
+  overflow-wrap: anywhere;
+}
+.job-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.job-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line, #ddd);
+}
+.job-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.job-history details {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line, #ddd);
+}
+.job-history summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+@media (max-width: 800px) {
+  .jobs-tools {
+    grid-template-columns: 1fr;
+  }
+  .job-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

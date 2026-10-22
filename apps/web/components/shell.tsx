@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { LayoutDashboard, Settings2, ArrowUpRight, Sprout } from "lucide-react";
+import {
+  LayoutDashboard,
+  Settings2,
+  ArrowUpRight,
+  Sprout,
+  BriefcaseBusiness,
+} from "lucide-react";
 import { Logout } from "./logout";
 export function Shell({
   children,
@@ -19,6 +25,12 @@ export function Shell({
         </Link>
         <p className="eyebrow">Your workspace</p>
         <nav aria-label="Main navigation">
+          <Link
+            aria-current={active === "jobs" ? "page" : undefined}
+            href="/jobs"
+          >
+            <BriefcaseBusiness size={18} /> Jobs & sources
+          </Link>
           <Link
             aria-current={active === "dashboard" ? "page" : undefined}
             href="/dashboard"

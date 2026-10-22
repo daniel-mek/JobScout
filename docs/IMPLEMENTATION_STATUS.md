@@ -1,8 +1,10 @@
 # Implementation status
 
+Phase 2 update (2026-10-22): implementation and local verification are present; native PostgreSQL/browser CI is pending. `/jobs` supports manual import, employer sources, approved/scoped ingestion, source health, saved source searches, provenance, deduplication, versions and complete-cycle archival. Four ATS adapters plus optional USAJOBS/Adzuna are implemented. No external policy is approved; Remotive is disabled and unreviewed company feeds/JSON-LD stay manual. See [PHASE2.md](PHASE2.md) for exact boundaries. Local checks: 55 API tests, Ruff/mypy, frontend lint/typecheck/build and legacy 163 cases (161 pass/two existing skips). Hosting is paused; Phase 3 has not started.
+
 Hosting work (2026-10-22): IN_PROGRESS. Vercel project and private Blob store exist; free Neon database is connected to Production. Initial database inspection found zero public tables. Schema initialization awaits explicit approval of SQL-editor write mode after automatic approval review rejected that action. Added private Blob adapter, Marketplace PostgreSQL driver normalization, Vercel Services configuration, configurable upload ceiling, and macOS-compatible extraction resource limits (Linux production memory limits remain enforced). Local validation: 25 API tests, Ruff/mypy, frontend lint/typecheck/build, production npm audit (zero known vulnerabilities), and legacy 163-test suite (161 pass, two existing skips). Remote build, new CI, database initialization, real Blob round-trip, and hosted end-to-end verification are not yet complete. No live deployment or production readiness is claimed.
 
-Assessed 2026-10-17. Code baseline: 366005b18d8f28a866ce9f17ba1cd249cca39c38. Scope: Phase 1 is implemented and verified locally and in GitHub CI, including native PostgreSQL and the full browser suite. Phase 2 has not started.
+Initial assessment: 2026-10-17, baseline 366005b18d8f28a866ce9f17ba1cd249cca39c38. Phase 1 is verified locally and in CI. Subsequent Phase 2 and hosting updates above supersede the original assessment where stated.
 
 Status vocabulary: NOT_STARTED, IN_PROGRESS, COMPLETE, PARTIAL, BLOCKED. COMPLETE applies only to the stated scope and verified behavior. At the final product audit, map NOT_STARTED to NOT_IMPLEMENTED and externally blocked items to BLOCKED_EXTERNALLY; do not treat this baseline as that final audit.
 
@@ -14,7 +16,7 @@ Ready to begin Phase 1 implementation: YES. No live AI, ATS, Gmail or Calendar c
 | --- | --- | --- |
 | Preparation | COMPLETE | Full supplied spec preserved; architecture, source policy, security, operations, deployment and gap assessment documented; baseline verified |
 | 1 Foundation/onboarding | COMPLETE | Accounts/sessions/ownership, relational profile records, migrations, PDF/DOCX extraction and review, private resume versions, career preferences/hard requirements, persisted onboarding, and protected dashboard implemented. Local API/browser/static/build checks and hosted API/PostgreSQL/web/browser CI all pass |
-| 2 Sources/ingestion | PARTIAL | Greenhouse/Lever/Ashby readers, new-grad feed, normalized dictionaries and URL dedupe; registry enforcement, SmartRecruiters, formal provenance/versions, secure import and persisted source health missing |
+| 2 Sources/ingestion | IN_PROGRESS | Authenticated registry/policy/board gating, four ATS adapters, optional USAJOBS/Adzuna, normalized relational jobs, provenance, dedupe/version/archive lifecycle, secure manual/URL import, persisted health and run history implemented; PostgreSQL/browser CI pending. External approvals/live calls and employer-specific feeds remain unverified/unconfigured |
 | 3 Matching/eligibility | PARTIAL | Title-based level classifier, filters, one explainable score and availability checks; description-based requirements, confirmed-evidence match, hard-requirement engine, two scores and contradiction caps missing |
 | 4 Discovery/saving | PARTIAL | Ranked New page, Saved/Passed, prep queue and ntfy digest; rich filters, saved searches, in-app notifications and score-based briefs missing |
 | 5 Applications | PARTIAL | CLI/dashboard states, dated history, notes and next action; canonical relational application, precise transition events, immutable job snapshot, Kanban, deadlines and CSV missing |
@@ -52,11 +54,11 @@ Ready to begin Phase 1 implementation: YES. No live AI, ATS, Gmail or Calendar c
 
 1. The target Phase 1 architecture now runs beside the working legacy code. No legacy private-data migration or new-account job discovery integration is included.
 2. Current discovery is full-time IT/CS only by user instruction. Preserve that default; do not restore internship targeting while importing the broader taxonomy.
-3. SourcePolicy is documented but not runtime-enforced. Legacy generic/Workday/Eightfold fetchers need policy review and SSRF work before exposure through the new product.
+3. Phase 2 enforces SourcePolicy in the new application. Legacy generic/Workday/Eightfold fetchers remain separate and must not be exposed through account routes.
 4. Current matching is title-based and cannot resolve entry-level titles demanding five years from the description. This is a Phase 3 gap.
 5. worker/wrangler.toml still references the upstream repository and inherited namespace. Verify/replace before any deployment.
 6. Current deployments, provider credentials, backups and restores have not been checked. Optional credentialed integrations are not prerequisites for Phase 1.
-7. The user subsequently authorized Phase 1. Later phases remain outside this change; the new account dashboard does not yet connect to legacy job/application data.
+7. The user authorized Phases 1 and 2 sequentially. Phase 3 onward remains outside this change; no legacy private application data has been migrated.
 
 ## Phase 1 implementation evidence
 

@@ -2,7 +2,7 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import model_validator
+from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     s3_endpoint_url: str | None = None
     s3_region: str = "us-east-1"
     max_upload_bytes: int = 5 * 1024 * 1024
+    usajobs_api_key: SecretStr = SecretStr("")
+    usajobs_email: SecretStr = SecretStr("")
+    adzuna_app_id: SecretStr = SecretStr("")
+    adzuna_app_key: SecretStr = SecretStr("")
 
     @model_validator(mode="after")
     def production_safe(self) -> "Settings":
