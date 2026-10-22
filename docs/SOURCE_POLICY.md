@@ -12,22 +12,22 @@ Each registry entry must retain identifier, display name/category, official docu
 
 Official API documentation for the four ATS providers was inspected on 2026-10-16 and rechecked during Phase 2 on 2026-10-22. This is a technical documentation review; terms, employer-specific permissions, retention and redistribution review remain incomplete. Consequently no new production registry entry is declared APPROVED here.
 
-| Source | Current code | Official reference / policy review target | Proposed registry status |
+| Source | Current code | Official reference / policy review target | Registry/review status |
 | --- | --- | --- | --- |
-| Greenhouse | Public board list reader | https://docs.greenhouse.io/job-board | NEEDS_REVIEW: complete usage/storage review and runtime gating |
-| Lever | Public postings reader | https://github.com/lever/postings-api | NEEDS_REVIEW: complete usage/storage review and runtime gating |
-| Ashby | Public board reader with isListed filtering | https://developers.ashbyhq.com/docs/public-job-posting-api | NEEDS_REVIEW: complete usage/storage review and runtime gating |
-| SmartRecruiters | Public list/detail adapter; approval pending | https://developers.smartrecruiters.com/docs/posting-api | NEEDS_REVIEW: verify public external destinations, pagination and terms before adapter work |
+| Greenhouse | Public board list reader | https://docs.greenhouse.io/job-board | NEEDS_REVIEW: runtime gated; usage/storage approval pending |
+| Lever | Public postings reader | https://github.com/lever/postings-api | NEEDS_REVIEW: runtime gated; usage/storage approval pending |
+| Ashby | Public board reader with isListed filtering | https://developers.ashbyhq.com/docs/public-job-posting-api | NEEDS_REVIEW: runtime gated; usage/storage approval pending |
+| SmartRecruiters | Public list/detail adapter; approval pending | https://developers.smartrecruiters.com/docs/posting-api | NEEDS_REVIEW: public adapter/pagination tested; terms approval pending |
 | Simplify new-graduate community feed | Enabled in legacy watcher | https://github.com/SimplifyJobs/New-Grad-Positions | NEEDS_REVIEW: review source licensing and downstream storage/redistribution |
 | USAJOBS | Optional credentialed adapter; configuration/approval pending | https://developer.usajobs.gov/ | NEEDS_REVIEW; credentials required before activation |
 | Adzuna | Optional credentialed adapter; configuration/approval pending | https://developer.adzuna.com/ | NEEDS_REVIEW; credentials and attribution/storage terms required |
-| Remotive | Disabled: public terms prohibit signup-gated listings | https://remotive.com/api/remote-jobs | NEEDS_REVIEW; verify current API policy, attribution, linking and redistribution |
+| Remotive | Disabled: public terms prohibit signup-gated listings | https://remotive.com/remote-jobs/api | DISABLED; signup-gated listings conflict with public terms |
 | Workday / Eightfold | Legacy posting-detail code exists | Employer-specific official method must be verified | NEEDS_REVIEW; no universal Workday API assumed |
-| Generic company HTML / JSON-LD / feeds | Legacy HTML fallback exists; no policy registry | Each employer's official documentation and terms | NEEDS_REVIEW by employer; manual import fallback |
+| Generic company HTML / JSON-LD / feeds | Legacy HTML fallback separate; new generic policy remains review-only | Each employer's official documentation and terms | NEEDS_REVIEW by employer; manual import fallback |
 | LinkedIn, Indeed, ZipRecruiter, Glassdoor | No approved ingestion adapter | Official agreement or authorized connector would be required | DISABLED for automated scraping |
 | Internship/community internship feeds | Removed from discovery defaults | Not part of current product discovery scope | DISABLED |
 
-Reference URLs are discovery/review starting points, not evidence of completed terms review. Optional-provider references must be checked again when their phase starts. No credentialed source or live ingestion was tested in this assessment.
+Reference URLs are discovery/review starting points, not evidence of completed terms review. Optional-provider technical references were checked in Phase 2; actual usage/storage permission still needs review. No credentialed source or live ingestion was tested in this assessment.
 
 ## Adapter and data rules
 
