@@ -61,5 +61,30 @@ class S3Storage:
         self.client.delete_object(Bucket=self.bucket, Key=safe_key(key))
 
 
+class VercelBlobStorage:
+    """Private objects only; callers must authorize ownership before reading."""
+
+    def put(self, key: str, content: bytes) -> None:
+        from vercel.blob import sync
+
+        sync.put_blob(
+            safe_key(key), content, access="private", add_random_suffix=False, allow_overwrite=False
+        )
+
+    def read(self, key: str) -> bytes:
+        from vercel.blob import sync
+
+        return bytes(sync.get_blob(safe_key(key), access="private").body)
+
+    def delete(self, key: str) -> None:
+        from vercel.blob import sync
+
+        sync.delete_blob(safe_key(key))
+
+
 def storage_for(config: Settings) -> FileStorage:
-    return S3Storage(config) if config.storage_backend == "s3" else LocalStorage(config.storage_path)
+    if config.storage_backend == "s3":
+        return S3Storage(config)
+    if config.storage_backend == "vercel_blob":
+        return VercelBlobStorage()
+    return LocalStorage(config.storage_path)

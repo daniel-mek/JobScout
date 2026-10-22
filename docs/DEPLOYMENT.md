@@ -1,5 +1,19 @@
 # Deployment
 
+## Vercel setup, 2026-10-22
+
+The user authorized hosting the application and provisioning its dependencies. The `jobscout` project in the `daniel-mekhail` workspace has a private `jobscout-resumes` Blob store and a free `jobscout-db` Neon PostgreSQL database in US East (`iad1`). Neon is connected to Production only. The database was inspected and has no public tables. The initial Alembic migration has been generated for review; execution is pending explicit approval of the SQL editor's write-mode confirmation. No live application deployment is verified yet.
+
+`vercel.json` prepares a Vercel Services deployment (currently beta): the Next.js service retains `apps/web` as its service root, while the Python service builds the existing non-root API Dockerfile from the repository root. This is an explicitly authorized hosting adaptation of the original separate-host recommendation; API, storage, and database abstractions remain portable. Future persistent workers are still outside frontend request execution.
+
+Vercel project Root Directory must be the repository root, with framework detection delegated to Services. Set these Production variables before deployment: `ENVIRONMENT=production`, `COOKIE_SECURE=true`, `STORAGE_BACKEND=vercel_blob`, `PORT=8000`, `MAX_UPLOAD_BYTES=4194304`, and `NEXT_PUBLIC_MAX_UPLOAD_BYTES=4194304`. Neon supplies `DATABASE_URL`; standard PostgreSQL URLs are normalized to the installed psycopg driver. Blob supplies server-only credentials. The API derives the canonical HTTPS origin from `VERCEL_PROJECT_PRODUCTION_URL` unless `WEB_ORIGIN` is explicit. The web service receives `API_INTERNAL_URL` through its runtime service binding, not a build-time hostname.
+
+Top-level ingress routes `/backend/*` to the API, whose service rewrite strips that prefix; all other routes go to Next.js. Keep deployment protection enabled while verification is incomplete. Hosted uploads use a 4 MiB ceiling below Vercel's 4.5 MB request-body limit; local defaults remain 5 MiB. Do not connect preview builds to the production database. A separate preview database/store is required before preview application testing.
+
+Apply migrations once through a reviewed release step, using the unpooled connection or the authenticated Neon SQL editor. For the brand-new empty database only, generate the initial transactional script with `DATABASE_URL=postgresql+psycopg://offline:offline@localhost/offline ENVIRONMENT=test alembic -c apps/api/alembic.ini upgrade head --sql`; verify its Alembic version and eleven role families afterward. Do not rerun the initial CREATE TABLE script on an existing database. No migrations run automatically during API startup or frontend builds.
+
+Before marking hosting complete, verify the remote build, database readiness, signup/login/logout, CSRF rejection, upload/review/persistence, owner-authorized private downloads, and direct anonymous Blob denial. Record the actual deployment URL and evidence here. Backups/restore tests, operational alerting, and later product phases remain separate work.
+
 ## Current implementation
 
 The existing dashboard is a Cloudflare Worker, not a Next.js application. Its npm project is worker/; npm ci installs the lockfile, npm run dev starts Wrangler, npm run deploy publishes it. The Python watcher runs through GitHub Actions and writes state to a separate data branch.

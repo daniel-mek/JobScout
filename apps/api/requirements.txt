@@ -13,3 +13,4 @@ pypdf==6.21.1
 python-docx==1.2.0
 defusedxml==0.7.1
 boto3==1.43.114
+vercel-blob==0.5.0

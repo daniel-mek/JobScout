@@ -5,6 +5,8 @@ const config: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   async rewrites() {
+    // Vercel Services owns ingress there; bindings exist only at runtime.
+    if (process.env.VERCEL && !process.env.API_INTERNAL_URL) return [];
     return [{ source: "/backend/:path*", destination: `${api}/:path*` }];
   },
   async headers() {

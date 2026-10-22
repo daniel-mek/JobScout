@@ -16,6 +16,11 @@ import {
 } from "@/lib/contracts";
 import { ProfileEditor } from "./profile-editor";
 
+const maxUploadBytes = Number(
+  process.env.NEXT_PUBLIC_MAX_UPLOAD_BYTES || 5242880,
+);
+const maxUploadMB = maxUploadBytes / 1024 / 1024;
+
 const labels = {
   upload: "Bring your resume",
   review: "Make it yours",
@@ -103,8 +108,8 @@ export function Onboarding({
         const file = form.get("resume");
         if (!(file instanceof File) || !file.size)
           throw new Error("Choose a PDF or DOCX first.");
-        if (file.size > 5 * 1024 * 1024)
-          throw new Error("Choose a file smaller than 5 MB.");
+        if (file.size > maxUploadBytes)
+          throw new Error(`Choose a file smaller than ${maxUploadMB} MB.`);
         const body = new FormData();
         body.set("file", file);
         await api("/resumes", detailSchema, { method: "POST", body });
@@ -242,8 +247,8 @@ export function Onboarding({
                     />
                   </label>
                   <small>
-                    PDF or DOCX · up to 5 MB · text-based, without macros or
-                    external document links
+                    PDF or DOCX · up to {maxUploadMB} MB · text-based, without
+                    macros or external document links
                   </small>
                 </div>
                 <div className="notice">

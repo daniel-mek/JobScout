@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -21,12 +22,22 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def production_safe(self) -> "Settings":
+        # Marketplace connections use the standard PostgreSQL URL scheme.
+        if self.database_url.startswith(("postgres://", "postgresql://")):
+            self.database_url = self.database_url.replace("://", "+psycopg://", 1).replace(
+                "postgres+psycopg://", "postgresql+psycopg://", 1
+            )
+        if os.getenv("VERCEL_PROJECT_PRODUCTION_URL") and self.web_origin == "http://localhost:3000":
+            self.web_origin = "https://" + os.environ["VERCEL_PROJECT_PRODUCTION_URL"]
         if self.environment == "production":
             if not self.database_url.startswith("postgresql") or not self.cookie_secure:
                 raise ValueError("Production requires PostgreSQL and secure cookies")
-            if not self.web_origin.startswith("https://") or self.storage_backend != "s3":
-                raise ValueError("Production requires an HTTPS origin and private S3 storage")
-        if self.storage_backend not in ("local", "s3"):
+            if not self.web_origin.startswith("https://") or self.storage_backend not in (
+                "s3",
+                "vercel_blob",
+            ):
+                raise ValueError("Production requires an HTTPS origin and private object storage")
+        if self.storage_backend not in ("local", "s3", "vercel_blob"):
             raise ValueError("Unknown storage backend")
         if self.storage_backend == "s3" and not self.s3_bucket:
             raise ValueError("S3_BUCKET is required")

@@ -1,5 +1,7 @@
 # Implementation status
 
+Hosting work (2026-10-22): IN_PROGRESS. Vercel project and private Blob store exist; free Neon database is connected to Production. Initial database inspection found zero public tables. Schema initialization awaits explicit approval of SQL-editor write mode after automatic approval review rejected that action. Added private Blob adapter, Marketplace PostgreSQL driver normalization, Vercel Services configuration, configurable upload ceiling, and macOS-compatible extraction resource limits (Linux production memory limits remain enforced). Local validation: 25 API tests, Ruff/mypy, frontend lint/typecheck/build, production npm audit (zero known vulnerabilities), and legacy 163-test suite (161 pass, two existing skips). Remote build, new CI, database initialization, real Blob round-trip, and hosted end-to-end verification are not yet complete. No live deployment or production readiness is claimed.
+
 Assessed 2026-10-17. Code baseline: 366005b18d8f28a866ce9f17ba1cd249cca39c38. Scope: Phase 1 is implemented and verified locally and in GitHub CI, including native PostgreSQL and the full browser suite. Phase 2 has not started.
 
 Status vocabulary: NOT_STARTED, IN_PROGRESS, COMPLETE, PARTIAL, BLOCKED. COMPLETE applies only to the stated scope and verified behavior. At the final product audit, map NOT_STARTED to NOT_IMPLEMENTED and externally blocked items to BLOCKED_EXTERNALLY; do not treat this baseline as that final audit.

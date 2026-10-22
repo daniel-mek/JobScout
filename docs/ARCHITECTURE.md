@@ -1,5 +1,7 @@
 # Architecture
 
+Hosting update (2026-10-22): user-authorized Vercel Services configuration prepares the existing web and API as independently built services in one deployment. PostgreSQL remains Neon; private Vercel Blob is an additional storage adapter beside local and S3. The Services feature is beta. Background workers are not introduced or forced into frontend serverless requests. See DEPLOYMENT.md for configuration and current verification boundaries.
+
 ## Decision and scope
 
 Assessed 2026-10-17 against commit 366005b18d8f28a866ce9f17ba1cd249cca39c38. ApplyOS is the target product; JobScout is the current repository and runtime. Phase 1 now implements apps/web and apps/api beside the legacy runtime. See PHASE1.md for commands and validation limits.

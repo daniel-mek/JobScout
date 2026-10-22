@@ -57,7 +57,9 @@ def main() -> None:
     try:
         import resource
 
-        resource.setrlimit(resource.RLIMIT_AS, (512 * 1024 * 1024, 512 * 1024 * 1024))
+        # macOS rejects RLIMIT_AS; production containers enforce this on Linux.
+        if sys.platform == "linux":
+            resource.setrlimit(resource.RLIMIT_AS, (512 * 1024 * 1024, 512 * 1024 * 1024))
         resource.setrlimit(resource.RLIMIT_CPU, (8, 8))
         data = sys.stdin.buffer.read(5 * 1024 * 1024 + 1)
         if len(data) > 5 * 1024 * 1024:
