@@ -305,7 +305,10 @@ export function JobsWorkspace({ initial }: { initial: Workspace }) {
             {source.health.last_success && (
               <p>
                 Last success:{" "}
-                {new Date(source.health.last_success).toLocaleString()}
+                {new Date(source.health.last_success).toLocaleString("en-US", {
+                  timeZone: "UTC",
+                })}{" "}
+                UTC
               </p>
             )}
             <div className="job-buttons">
@@ -457,7 +460,10 @@ export function JobsWorkspace({ initial }: { initial: Workspace }) {
         ))}
         {data.runs.slice(0, 10).map((run) => (
           <p key={run.id}>
-            {new Date(run.started_at).toLocaleString()} · {run.state} ·{" "}
+            {new Date(run.started_at).toLocaleString("en-US", {
+              timeZone: "UTC",
+            })}{" "}
+            UTC · {run.state} ·{" "}
             {run.results.map((r) => r.code.replaceAll("_", " ")).join(", ")}
           </p>
         ))}
@@ -480,6 +486,7 @@ export function JobsWorkspace({ initial }: { initial: Workspace }) {
               {policy.attribution}
             </p>
             <p>
+              Approved boards: {policy.approved_boards.join(", ") || "None"} ·
               Adapter v{policy.adapter_version} · Reviewed:{" "}
               {policy.reviewed_at || "Pending"} · Credentials:{" "}
               {policy.credentials.join(", ") || "None"}

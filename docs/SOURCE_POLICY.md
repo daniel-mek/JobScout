@@ -10,18 +10,18 @@ Each registry entry must retain identifier, display name/category, official docu
 
 ## Inventory and review evidence
 
-Official API documentation for the four ATS providers was inspected on 2026-10-16. This is a technical documentation review; terms, employer-specific permissions, retention and redistribution review remain incomplete. Consequently no new production registry entry is declared APPROVED here.
+Official API documentation for the four ATS providers was inspected on 2026-10-16 and rechecked during Phase 2 on 2026-10-22. This is a technical documentation review; terms, employer-specific permissions, retention and redistribution review remain incomplete. Consequently no new production registry entry is declared APPROVED here.
 
 | Source | Current code | Official reference / policy review target | Proposed registry status |
 | --- | --- | --- | --- |
 | Greenhouse | Public board list reader | https://docs.greenhouse.io/job-board | NEEDS_REVIEW: complete usage/storage review and runtime gating |
 | Lever | Public postings reader | https://github.com/lever/postings-api | NEEDS_REVIEW: complete usage/storage review and runtime gating |
 | Ashby | Public board reader with isListed filtering | https://developers.ashbyhq.com/docs/public-job-posting-api | NEEDS_REVIEW: complete usage/storage review and runtime gating |
-| SmartRecruiters | Not implemented | https://developers.smartrecruiters.com/docs/posting-api | NEEDS_REVIEW: verify public external destinations, pagination and terms before adapter work |
+| SmartRecruiters | Public list/detail adapter; approval pending | https://developers.smartrecruiters.com/docs/posting-api | NEEDS_REVIEW: verify public external destinations, pagination and terms before adapter work |
 | Simplify new-graduate community feed | Enabled in legacy watcher | https://github.com/SimplifyJobs/New-Grad-Positions | NEEDS_REVIEW: review source licensing and downstream storage/redistribution |
-| USAJOBS | Not implemented | https://developer.usajobs.gov/ | NEEDS_REVIEW; credentials required before activation |
-| Adzuna | Not implemented | https://developer.adzuna.com/ | NEEDS_REVIEW; credentials and attribution/storage terms required |
-| Remotive | Not implemented | https://remotive.com/api/remote-jobs | NEEDS_REVIEW; verify current API policy, attribution, linking and redistribution |
+| USAJOBS | Optional credentialed adapter; configuration/approval pending | https://developer.usajobs.gov/ | NEEDS_REVIEW; credentials required before activation |
+| Adzuna | Optional credentialed adapter; configuration/approval pending | https://developer.adzuna.com/ | NEEDS_REVIEW; credentials and attribution/storage terms required |
+| Remotive | Disabled: public terms prohibit signup-gated listings | https://remotive.com/api/remote-jobs | NEEDS_REVIEW; verify current API policy, attribution, linking and redistribution |
 | Workday / Eightfold | Legacy posting-detail code exists | Employer-specific official method must be verified | NEEDS_REVIEW; no universal Workday API assumed |
 | Generic company HTML / JSON-LD / feeds | Legacy HTML fallback exists; no policy registry | Each employer's official documentation and terms | NEEDS_REVIEW by employer; manual import fallback |
 | LinkedIn, Indeed, ZipRecruiter, Glassdoor | No approved ingestion adapter | Official agreement or authorized connector would be required | DISABLED for automated scraping |

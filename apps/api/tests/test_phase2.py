@@ -500,3 +500,30 @@ def test_offline_postgresql_migration_and_catalog_snapshot(monkeypatch):
     assert "INSERT INTO source_policies" in sql and "NEEDS_REVIEW" in sql
     assert "98c00bbaf877" in sql
     settings.cache_clear()
+
+
+def test_ashby_salary_and_employment_are_normalized_without_guessing():
+    item = {
+        "id": "x",
+        "title": "Engineer",
+        "jobUrl": "https://jobs.ashbyhq.com/example/x",
+        "employmentType": "FullTime",
+        "compensation": {
+            "summaryComponents": [
+                {
+                    "compensationType": "Salary",
+                    "currencyCode": "USD",
+                    "interval": "1 YEAR",
+                    "minValue": 60000,
+                    "maxValue": 80000,
+                },
+                {"compensationType": "EquityPercentage", "minValue": 1, "maxValue": 2},
+            ]
+        },
+    }
+    row = convert("ashby", item, "Example")
+    assert row.employment_type == "FULL_TIME" and row.salary_min == 60000 and row.salary_period == "1 YEAR"
+    item["compensation"]["summaryComponents"].append(
+        {"compensationType": "Salary", "currencyCode": "GBP", "minValue": 50000}
+    )
+    assert convert("ashby", item, "Example").salary_min is None

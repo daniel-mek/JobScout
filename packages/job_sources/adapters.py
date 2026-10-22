@@ -96,6 +96,19 @@ class Posting(BaseModel):
             raise ValueError("Invalid posting date")
         return date(value)
 
+    @field_validator("employment_type")
+    @classmethod
+    def employment(cls, value):
+        key = re.sub(r"[\s_-]", "", str(value).casefold())
+        return {
+            "fulltime": "FULL_TIME",
+            "parttime": "PART_TIME",
+            "contract": "CONTRACT",
+            "temporary": "TEMPORARY",
+            "intern": "INTERNSHIP",
+            "internship": "INTERNSHIP",
+        }.get(key)
+
 
 def detect(value: str) -> dict:
     """Detect known ATS URLs without fetching an arbitrary career page."""
@@ -192,7 +205,9 @@ def fetch(
             items = payload["jobs"]
             complete = len(items) == payload.get("meta", {}).get("total", len(items))
         elif provider == "ashby":
-            payload = http.get(f"https://api.ashbyhq.com/posting-api/job-board/{board}")
+            payload = http.get(
+                f"https://api.ashbyhq.com/posting-api/job-board/{board}?includeCompensation=true"
+            )
             items = payload["jobs"]
             complete = True
         elif provider == "lever":
@@ -294,6 +309,12 @@ def convert(provider: str, item: dict, company: str) -> Posting:
             salary_period=salary.get("interval"),
         )
     if provider == "ashby":
+        salaries = [
+            component
+            for component in (item.get("compensation") or {}).get("summaryComponents", [])
+            if component.get("compensationType") == "Salary"
+        ]
+        salary = salaries[0] if len(salaries) == 1 else {}
         return Posting(
             external_id=str(item.get("id") or urlsplit(item["jobUrl"]).path.rstrip("/").split("/")[-1]),
             title=item["title"],
@@ -305,6 +326,10 @@ def convert(provider: str, item: dict, company: str) -> Posting:
             description=plain(item.get("descriptionPlain") or item.get("descriptionHtml")),
             application_url=item.get("applyUrl") or item["jobUrl"],
             posted_at=date(item.get("publishedAt")),
+            salary_min=salary.get("minValue"),
+            salary_max=salary.get("maxValue"),
+            currency=salary.get("currencyCode"),
+            salary_period=salary.get("interval"),
         )
     if provider == "smartrecruiters":
         # Public list endpoint only. Never request authenticated/internal postings.
