@@ -27,8 +27,8 @@ jobs:
           cache: pip
           cache-dependency-path: apps/api/requirements.lock
       - run: pip install -r apps/api/requirements.lock -r requirements.txt
-      - run: ruff check apps/api packages/job_sources
-      - run: ruff format --check apps/api packages/job_sources
+      - run: ruff check apps/api packages/job_sources packages/matching
+      - run: ruff format --check apps/api packages/job_sources packages/matching
       - run: mypy apps/api/applyos
       - run: pytest -q apps/api/tests
       - name: PostgreSQL migrations and integration tests

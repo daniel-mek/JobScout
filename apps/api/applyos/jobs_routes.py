@@ -191,6 +191,12 @@ def router_for(database, current_user, config):
     def detail(key: str, db: DB, user: Current):
         return JobService(db, user.id, config).detail(key)
 
+    @router.post("/jobs/{key}/match")
+    def calculate_match(key: str, db: DB, user: Current):
+        from .match_service import match_job
+
+        return match_job(db, user.id, key)
+
     @router.post("/jobs/import-url", status_code=201)
     def import_url(data: URLInput, db: DB, user: Current):
         # The supplied URL is NEVER fetched. Only registered ATS board endpoints run.

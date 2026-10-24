@@ -116,6 +116,23 @@ test("onboarding persists, profile edits and settings survive, upload keeps hist
     page.getByText("example-resume.docx", { exact: true }),
   ).toBeVisible();
   await expect(page.getByText("updated.docx", { exact: true })).toBeVisible();
+  await page.goto("/jobs");
+  await page
+    .getByLabel("Job URL", { exact: true })
+    .fill("https://example.com/match-test");
+  await page
+    .getByLabel("Job title", { exact: true })
+    .fill("Junior Python Engineer");
+  await page.getByLabel("Company", { exact: true }).fill("Example");
+  await page
+    .getByLabel("Description (optional)")
+    .fill("Python required. Minimum 5 years experience required.");
+  await page.getByRole("button", { name: "Save manual job" }).click();
+  await page.getByRole("button", { name: "Calculate current match" }).click();
+  await expect(
+    page.getByRole("heading", { name: /Resume Match:.*Application Priority:/ }),
+  ).toBeVisible();
+  await expect(page.getByText(/outside the early-career target/)).toBeVisible();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/login/);
   await page.goto("/settings");

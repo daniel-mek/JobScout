@@ -64,6 +64,13 @@ def sanitize_policy_history(db: Session, policy: SourcePolicy):
     if policy.description_storage == "allowed":
         return
     source_ids = select(JobSource.id).where(JobSource.policy_id == policy.id)
+    from sqlalchemy import delete
+
+    from .match_models import JobMatch, JobRequirement, JobSkill
+
+    affected_jobs = select(JobSourceRecord.job_id).where(JobSourceRecord.source_id.in_(source_ids))
+    for model in (JobMatch, JobRequirement, JobSkill):
+        db.execute(delete(model).where(model.job_id.in_(affected_jobs)))
     for record in db.scalars(select(JobSourceRecord).where(JobSourceRecord.source_id.in_(source_ids))):
         record.normalized_data = permitted(record.normalized_data, policy)
     for version in db.scalars(select(JobPostingVersion).where(JobPostingVersion.source_id.in_(source_ids))):

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { JobMatch } from "@/components/job-match";
 import { Shell } from "@/components/shell";
 import { requireUser, serverApi } from "@/lib/server";
 import { jobDetailSchema } from "@/lib/jobs-contracts";
@@ -16,6 +17,7 @@ export default async function JobPage({
   );
   return (
     <Shell email={user.email} active="jobs">
+      <JobMatch id={job.id} />
       <Link href="/jobs">← All jobs & sources</Link>
       <section className="dashboard-heading">
         <p className="eyebrow">{job.company}</p>

@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt -c requirements.lock && usera
 COPY apps/__init__.py /app/apps/__init__.py
 COPY apps/api /app/apps/api
 COPY packages/job_sources /app/packages/job_sources
+COPY packages/matching /app/packages/matching
 RUN mkdir -p /app/data && chown -R applyos:applyos /app/data
 USER applyos
 EXPOSE 8000

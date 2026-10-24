@@ -172,3 +172,4 @@ class HardRequirement(Base):
 
 
 from . import jobs_models as jobs_models  # noqa: E402, F401
+from . import match_models as match_models  # noqa: E402, F401
