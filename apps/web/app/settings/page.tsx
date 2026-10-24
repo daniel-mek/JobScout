@@ -3,10 +3,13 @@ import { z } from "zod";
 import { Shell } from "@/components/shell";
 import { requireUser, onboardingState, serverApi } from "@/lib/server";
 import { resumeSchema } from "@/lib/contracts";
+import { ScoringPolicy } from "@/components/scoring-policy";
+import { scoringSchema } from "@/lib/scoring-contracts";
 export default async function Settings() {
   const user = await requireUser();
   const state = await onboardingState();
   const versions = await serverApi("/resumes", z.array(resumeSchema));
+  const scoring = await serverApi("/scoring-policy", scoringSchema);
   return (
     <Shell email={user.email} active="settings">
       <div className="dashboard-heading">
@@ -16,6 +19,7 @@ export default async function Settings() {
         </h1>
         <p>{user.email}</p>
       </div>
+      <ScoringPolicy initial={scoring} />
       {!state.complete && (
         <div className="notice">
           Your setup is in progress.{" "}

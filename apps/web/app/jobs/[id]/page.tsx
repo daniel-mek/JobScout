@@ -17,7 +17,6 @@ export default async function JobPage({
   );
   return (
     <Shell email={user.email} active="jobs">
-      <JobMatch id={job.id} />
       <Link href="/jobs">← All jobs & sources</Link>
       <section className="dashboard-heading">
         <p className="eyebrow">{job.company}</p>
@@ -36,6 +35,7 @@ export default async function JobPage({
           Open original listing ↗
         </a>
       </section>
+      <JobMatch id={job.id} />
       <div className="dashboard-cards">
         <article className="panel">
           <h2>Listing details</h2>

@@ -28,6 +28,7 @@ async function signup(page: import("@playwright/test").Page) {
 test("onboarding persists, profile edits and settings survive, upload keeps history", async ({
   page,
 }) => {
+  test.setTimeout(90000);
   await signup(page);
   await expect(
     page.getByRole("heading", { name: "Bring your resume." }),
@@ -133,6 +134,21 @@ test("onboarding persists, profile edits and settings survive, upload keeps hist
     page.getByRole("heading", { name: /Resume Match:.*Application Priority:/ }),
   ).toBeVisible();
   await expect(page.getByText(/outside the early-career target/)).toBeVisible();
+  await page.goto("/settings");
+  await page.getByText("Scoring weights", { exact: true }).click();
+  await page.getByLabel("Resume skills", { exact: true }).fill("40");
+  await page.getByLabel("Resume experience", { exact: true }).fill("15");
+  await page.getByRole("button", { name: "Save scoring weights" }).click();
+  await expect(page.getByRole("status")).toContainText("Scoring weights saved");
+  await page.reload();
+  await page.getByText("Scoring weights", { exact: true }).click();
+  await expect(page.getByLabel("Resume skills", { exact: true })).toHaveValue(
+    "40",
+  );
+  expect(
+    (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze())
+      .violations,
+  ).toEqual([]);
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/login/);
   await page.goto("/settings");

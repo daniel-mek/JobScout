@@ -55,7 +55,13 @@ def test_evidence_strength_and_missing_preferred_are_distinct():
     data = dict(description="Python required.\nAWS preferred.")
     bare = calculate(data, dict(skills=[dict(name="Python")]), {}, {})
     linked = calculate(
-        data, dict(skills=[dict(name="Python", evidence="Built service", evidence_ref="projects:0")]), {}, {}
+        data,
+        dict(
+            skills=[dict(name="Python", evidence="Built service", evidence_ref="project:0")],
+            projects=[dict(description="Python service")],
+        ),
+        {},
+        {},
     )
     assert linked["resume_match"] > bare["resume_match"]
     assert "preferred" in linked["explanation"]["missing_qualifications"][0]

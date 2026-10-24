@@ -11,6 +11,7 @@ from packages.job_sources.safe_http import SourceError, public_url
 
 from .jobs_models import JobPosting, JobSource, SavedSearch, SearchRun, SearchTitle, SourcePolicy
 from .jobs_service import JobService
+from .match_schemas import ScoringInput
 from .models import User
 
 
@@ -62,6 +63,33 @@ def router_for(database, current_user, config):
     router = APIRouter()
     DB = Annotated[Session, Depends(database)]
     Current = Annotated[User, Depends(current_user)]
+
+    @router.get("/scoring-policy")
+    def scoring_policy(db: DB, user: Current):
+        from .match_service import policy_for
+
+        return policy_for(db, user.id)
+
+    @router.put("/scoring-policy")
+    def update_scoring_policy(data: ScoringInput, db: DB, user: Current):
+        from fastapi import HTTPException
+
+        from .jobs_service import owner_lock
+        from .match_models import ScoringPolicy
+        from .match_service import policy_for
+
+        owner_lock(db, user.id)
+        current = policy_for(db, user.id)
+        if current["revision"] != data.expected_revision:
+            raise HTTPException(409, "Scoring policy changed. Reload and try again.")
+        row = db.get(ScoringPolicy, user.id)
+        if row is None:
+            row = ScoringPolicy(owner_id=user.id)
+            db.add(row)
+        row.revision = current["revision"] + 1
+        row.weights, row.priority_weights = data.weights, data.priority_weights
+        db.commit()
+        return policy_for(db, user.id)
 
     @router.get("/source-registry")
     def registry(db: DB, user: Current):

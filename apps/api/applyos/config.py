@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     usajobs_email: SecretStr = SecretStr("")
     adzuna_app_id: SecretStr = SecretStr("")
     adzuna_app_key: SecretStr = SecretStr("")
+    redis_url: SecretStr = SecretStr("redis://127.0.0.1:6379/0")
 
     @model_validator(mode="after")
     def production_safe(self) -> "Settings":

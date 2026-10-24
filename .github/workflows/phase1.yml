@@ -9,6 +9,9 @@ jobs:
   api:
     runs-on: ubuntu-latest
     services:
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
       postgres:
         image: postgres:17
         env:
@@ -27,13 +30,16 @@ jobs:
           cache: pip
           cache-dependency-path: apps/api/requirements.lock
       - run: pip install -r apps/api/requirements.lock -r requirements.txt
-      - run: ruff check apps/api packages/job_sources packages/matching
-      - run: ruff format --check apps/api packages/job_sources packages/matching
+      - run: ruff check apps/api apps/worker packages/job_sources packages/matching
+      - run: ruff format --check apps/api apps/worker packages/job_sources packages/matching
       - run: mypy apps/api/applyos
       - run: pytest -q apps/api/tests
+        env:
+          TEST_REDIS_URL: redis://localhost:6379/1
       - name: PostgreSQL migrations and integration tests
         env:
           TEST_DATABASE_URL: postgresql+psycopg://applyos:ci-only-password@localhost:5432/applyos_test
+          TEST_REDIS_URL: redis://localhost:6379/2
         run: pytest -q apps/api/tests
       - run: python -m unittest discover -s tests -t .
   web:

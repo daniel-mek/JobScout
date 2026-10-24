@@ -36,3 +36,11 @@ class JobMatch(Base):
     input_hash: Mapped[str] = mapped_column(String(64))
     result: Mapped[dict[str, Any]] = mapped_column(JSON)
     calculated_at: Mapped[str] = mapped_column(String(40), default=now)
+
+
+class ScoringPolicy(Base):
+    __tablename__ = "scoring_policies"
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    weights: Mapped[dict[str, Any]] = mapped_column(JSON)
+    priority_weights: Mapped[dict[str, Any]] = mapped_column(JSON)

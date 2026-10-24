@@ -18,6 +18,7 @@ def make_database(config: Settings):
     engine = create_engine(
         config.database_url,
         pool_pre_ping=True,
+        hide_parameters=True,
         connect_args={"check_same_thread": False} if config.database_url.startswith("sqlite") else {},
     )
     if config.database_url.startswith("sqlite"):

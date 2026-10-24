@@ -15,6 +15,8 @@ const schema = z.object({
     recommendation: z.string(),
     components: z.record(z.string(), z.number()),
     priority_components: z.record(z.string(), z.number()),
+    weights: z.record(z.string(), z.number()),
+    priority_weights: z.record(z.string(), z.number()),
     explanation: z.object({
       strong_matches: z.array(z.string()),
       partial_matches: z.array(z.string()),
@@ -94,13 +96,13 @@ export function JobMatch({ id }: { id: string }) {
             <h3>Resume components</h3>
             {Object.entries(result.components).map(([key, value]) => (
               <p key={key}>
-                {key}: {value}
+                {key}: {value} · weight {result.weights[key]}%
               </p>
             ))}
             <h3>Priority components</h3>
             {Object.entries(result.priority_components).map(([key, value]) => (
               <p key={key}>
-                {key}: {value}
+                {key}: {value} · weight {result.priority_weights[key]}%
               </p>
             ))}
           </details>
