@@ -12,6 +12,8 @@ Open `/jobs` to import jobs, connect employer boards, inspect policies/health, r
 
 ## Product documentation
 
+Phase 4 adds Discover filters/views, saved jobs with notes/deadlines, reversible feedback, saved filter searches, daily briefs and in-app notifications. See [Phase 4 behavior and verification](docs/PHASE4.md). Matching refreshes through the existing worker or an explicit job calculation; hosting remains paused.
+
 Phase 3 adds explainable Resume Match/Application Priority scores, eligibility warnings, confirmed-evidence comparisons, editable scoring weights and background recalculation. See [matching setup and verification](docs/PHASE3.md). Ambiguous facts remain unknown; no application is submitted automatically.
 
 - [Product specification](docs/PRODUCT_SPEC.md)

@@ -1,5 +1,7 @@
 # Architecture
 
+Phase 4 (2026-10-24): relational review/saved-filter/notification records support `/discover`, `/saved-jobs`, `/brief` and `/notifications`. Discovery uses SQL filtering, latest cached match joins and bounded pagination; foreground reads do not recalculate the catalog. Feedback only adjusts explicit visibility/ties, never hard requirements. See [PHASE4.md](PHASE4.md) for verification and boundaries.
+
 Phase 3 (2026-10-23): `packages/matching` supplies deterministic extraction/qualification comparisons and two versioned scores. Scoring policies are owner-scoped and editable. Persistent Celery/Redis matching workers reconcile bounded pages outside API requests; one beat scheduler runs every five minutes. See [PHASE3.md](PHASE3.md) for operational commands, evidence and conservative unknown rules. Worker resources are not automatically deployed.
 
 Phase 2 (2026-10-22): owner-scoped jobs/sources use `packages/job_sources` adapters and persisted approval checks. Companies, postings, versions, provenance/health, titles, saved source searches and manual run history are relational. The `/jobs` workspace displays source evidence and versions. See [PHASE2.md](PHASE2.md) for transport, retention and pagination boundaries. No scheduler or matching engine is introduced.
