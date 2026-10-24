@@ -1,5 +1,7 @@
 # Operations and development commands
 
+Phase 3 matching worker/beat startup, migration and broker persistence requirements are documented in [PHASE3.md](PHASE3.md). Run one beat and the persistent worker to refresh bulk matches; single-job calculation remains available without them. Hosting stays paused.
+
 For source setup, manual imports, policy/retention operations and bounded on-demand ingestion, see [Phase 2 operations](PHASE2.md). No source is automatically approved and no schedule is enabled. Hosting remains paused.
 
 This is the canonical operations document. The existing single-user runtime remains operational. Phase 1 account/resume/onboarding services now run separately; see [PHASE1.md](PHASE1.md) for their setup and checks. See [architecture](ARCHITECTURE.md), [security](SECURITY.md), [source policy](SOURCE_POLICY.md), [deployment](DEPLOYMENT.md), and [implementation status](IMPLEMENTATION_STATUS.md).

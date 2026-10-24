@@ -12,6 +12,8 @@ Open `/jobs` to import jobs, connect employer boards, inspect policies/health, r
 
 ## Product documentation
 
+Phase 3 adds explainable Resume Match/Application Priority scores, eligibility warnings, confirmed-evidence comparisons, editable scoring weights and background recalculation. See [matching setup and verification](docs/PHASE3.md). Ambiguous facts remain unknown; no application is submitted automatically.
+
 - [Product specification](docs/PRODUCT_SPEC.md)
 - [Architecture and reuse plan](docs/ARCHITECTURE.md)
 - [Source policy](docs/SOURCE_POLICY.md)
