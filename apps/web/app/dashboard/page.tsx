@@ -119,8 +119,8 @@ export default async function Dashboard() {
           <p>
             Your workspace now includes job imports, employer sources, and
             listing history.
-            <Link href="/jobs"> Open jobs & sources ↗</Link>. Personalized
-            matching and application workflows will connect in later phases.
+            <Link href="/discover"> Discover matched jobs ↗</Link> and keep a
+            saved list. Application workflows will connect in a later phase.
           </p>
         </div>
       </aside>

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { api } from "@/lib/api";
 import { discoverySchema, reviewSchema } from "@/lib/discovery-contracts";
 type Data = z.infer<typeof discoverySchema>;
-export const reasons = [
+const reasons = [
   "TOO_FAR",
   "WRONG_ROLE",
   "TOO_SENIOR",
@@ -29,7 +29,7 @@ export function ReviewControls({
   const [review, setReview] = useState(initial);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  const [reason, setReason] = useState("OTHER");
+  const [reason, setReason] = useState(initial?.reason || "OTHER");
   const router = useRouter();
   async function update(body: object) {
     setBusy(true);
@@ -42,7 +42,8 @@ export function ReviewControls({
         }),
       );
       setMessage("Job preferences saved.");
-      router.refresh();
+      if ("saved" in body || "feedback" in body || "reviewed" in body)
+        router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not save.");
     } finally {

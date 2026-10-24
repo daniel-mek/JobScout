@@ -266,7 +266,7 @@ def create_app(config: Settings | None = None) -> FastAPI:
             "onboarding": state,
             "profile": ProfileService(db, user.id).current(),
             "resume_versions": len(repo.versions_for(db, user.id)),
-            "notice": "Your foundation is ready. Personalized job discovery will connect in a later phase.",
+            "notice": "Your profile is ready. Explore matched jobs in Discover and keep a saved list.",
         }
 
     app.include_router(router_for(database, current_user, config))

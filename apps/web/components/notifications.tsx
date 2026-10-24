@@ -3,14 +3,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { z } from "zod";
 import { api } from "@/lib/api";
-export const notificationSchema = z.object({
-  id: z.string(),
-  kind: z.string(),
-  job_id: z.string().nullable(),
-  created_at: z.string(),
-  read: z.boolean(),
-});
-export const preferenceSchema = z.object({
+type NotificationItem = {
+  id: string;
+  kind: string;
+  job_id: string | null;
+  created_at: string;
+  read: boolean;
+};
+const preferenceSchema = z.object({
   disabled_types: z.array(z.string()),
   available_types: z.array(z.string()),
 });
@@ -18,7 +18,7 @@ export function Notifications({
   initial,
   preferences,
 }: {
-  initial: z.infer<typeof notificationSchema>[];
+  initial: NotificationItem[];
   preferences: z.infer<typeof preferenceSchema>;
 }) {
   const [items, setItems] = useState(initial);

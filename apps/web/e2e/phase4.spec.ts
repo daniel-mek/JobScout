@@ -40,7 +40,8 @@ test("discovery saves notes and deadlines, filters, feedback undo and notificati
   await page.getByRole("button", { name: "Save notes" }).click();
   await expect(page.getByRole("status")).toContainText("Job preferences saved");
   await page.reload();
-  await page.getByText("Saved notes & deadline", { exact: true }).click();
+  if (!(await page.getByLabel("Notes", { exact: true }).isVisible()))
+    await page.getByText("Saved notes & deadline", { exact: true }).click();
   await expect(page.getByLabel("Notes", { exact: true })).toHaveValue(
     "Check the original qualifications",
   );
