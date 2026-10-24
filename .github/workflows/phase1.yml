@@ -63,6 +63,9 @@ jobs:
       - run: npm run test:e2e
         env:
           E2E_PRODUCTION: "1"
+      - name: Browser failure context
+        if: failure()
+        run: find apps/web/test-results -name error-context.md -exec sed -n '1,220p' {} \;
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

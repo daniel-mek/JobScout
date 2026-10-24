@@ -95,8 +95,8 @@ export function ReviewControls({
         )}
       </div>
       {review?.saved && (
-        <details>
-          <summary>Saved notes & deadline</summary>
+        <section>
+          <h3>Saved notes & deadline</h3>
           <p>
             Saved with listing version {review.job_revision} on{" "}
             {review.saved_at?.slice(0, 10)}
@@ -111,25 +111,23 @@ export function ReviewControls({
               });
             }}
           >
-            <label>
-              Notes
-              <textarea
-                name="notes"
-                defaultValue={review.notes}
-                maxLength={6000}
-              />
-            </label>
-            <label>
-              Optional deadline
-              <input
-                type="date"
-                name="deadline"
-                defaultValue={review.deadline || ""}
-              />
-            </label>
+            <label htmlFor={`notes-${id}`}>Notes</label>
+            <textarea
+              id={`notes-${id}`}
+              name="notes"
+              defaultValue={review.notes}
+              maxLength={6000}
+            />
+            <label htmlFor={`deadline-${id}`}>Optional deadline</label>
+            <input
+              id={`deadline-${id}`}
+              type="date"
+              name="deadline"
+              defaultValue={review.deadline || ""}
+            />
             <button disabled={busy}>Save notes</button>
           </form>
-        </details>
+        </section>
       )}
       <p role="status">{message}</p>
     </div>
