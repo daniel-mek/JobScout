@@ -357,6 +357,10 @@ class JobService:
             )
         run.results, run.finished_at = results, now()
         run.state = "complete" if all(x["code"] == "complete" for x in results) else "partial"
+        if search_id:
+            from .discovery import notify
+
+            notify(self.db, self.owner, "search:" + run.id, "SAVED_SEARCH_COMPLETE")
         self.db.commit()
         return self.run_view(run)
 

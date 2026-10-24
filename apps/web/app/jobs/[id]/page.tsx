@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { JobMatch } from "@/components/job-match";
+import { ReviewControls } from "@/components/discovery-workspace";
+import { reviewSchema } from "@/lib/discovery-contracts";
 import { Shell } from "@/components/shell";
 import { requireUser, serverApi } from "@/lib/server";
 import { jobDetailSchema } from "@/lib/jobs-contracts";
@@ -14,6 +16,10 @@ export default async function JobPage({
   const job = await serverApi(
     `/jobs/${encodeURIComponent(id)}`,
     jobDetailSchema,
+  );
+  const review = await serverApi(
+    `/jobs/${encodeURIComponent(id)}/review`,
+    reviewSchema.nullable(),
   );
   return (
     <Shell email={user.email} active="jobs">
@@ -36,6 +42,7 @@ export default async function JobPage({
         </a>
       </section>
       <JobMatch id={job.id} />
+      <ReviewControls id={job.id} initial={review} />
       <div className="dashboard-cards">
         <article className="panel">
           <h2>Listing details</h2>

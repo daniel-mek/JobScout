@@ -26,6 +26,30 @@ export function Shell({
         <p className="eyebrow">Your workspace</p>
         <nav aria-label="Main navigation">
           <Link
+            href="/discover"
+            aria-current={active === "discover" ? "page" : undefined}
+          >
+            Discover
+          </Link>
+          <Link
+            href="/saved-jobs"
+            aria-current={active === "saved" ? "page" : undefined}
+          >
+            Saved jobs
+          </Link>
+          <Link
+            href="/brief"
+            aria-current={active === "brief" ? "page" : undefined}
+          >
+            Daily brief
+          </Link>
+          <Link
+            href="/notifications"
+            aria-current={active === "notifications" ? "page" : undefined}
+          >
+            Notifications
+          </Link>
+          <Link
             aria-current={active === "jobs" ? "page" : undefined}
             href="/jobs"
           >

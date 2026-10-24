@@ -79,6 +79,16 @@ def match_job(db, owner, key):
         result=result,
     )
     db.add(row)
+    from .discovery import notify
+
+    if result["application_priority"] >= 70 and result["eligibility"] != "INELIGIBLE":
+        notify(db, owner, f"high:{key}:{job.revision}", "NEW_HIGH_MATCH_JOB", key)
+    if (
+        result["priority_components"]["freshness"] >= 85
+        and result["application_priority"] >= 55
+        and result["eligibility"] != "INELIGIBLE"
+    ):
+        notify(db, owner, f"fresh:{key}:{job.revision}", "FRESH_OPPORTUNITY", key)
     db.commit()
     return view(row)
 

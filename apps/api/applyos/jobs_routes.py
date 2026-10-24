@@ -9,6 +9,8 @@ from packages.job_sources.adapters import Posting, detect
 from packages.job_sources.catalog import ADAPTERS
 from packages.job_sources.safe_http import SourceError, public_url
 
+from .discovery import KINDS, Filters, ReviewInput, SearchInput, daily_brief, discover, review_job
+from .discovery_models import JobReview, Notification, NotificationPreference
 from .jobs_models import JobPosting, JobSource, SavedSearch, SearchRun, SearchTitle, SourcePolicy
 from .jobs_service import JobService
 from .match_schemas import ScoringInput
@@ -63,6 +65,102 @@ def router_for(database, current_user, config):
     router = APIRouter()
     DB = Annotated[Session, Depends(database)]
     Current = Annotated[User, Depends(current_user)]
+
+    @router.get("/discover")
+    def discovery(db: DB, user: Current, filters: Annotated[Filters, Query()]):
+        return discover(db, user.id, filters)
+
+    @router.get("/discovery-searches")
+    def discovery_searches(db: DB, user: Current):
+        from .discovery_models import SavedDiscoverySearch
+
+        return [
+            dict(id=row.id, name=row.name, filters=row.filters)
+            for row in db.scalars(
+                select(SavedDiscoverySearch)
+                .where(SavedDiscoverySearch.owner_id == user.id)
+                .order_by(SavedDiscoverySearch.name)
+                .limit(100)
+            )
+        ]
+
+    @router.post("/discovery-searches", status_code=201)
+    def create_discovery_search(data: SearchInput, db: DB, user: Current):
+        from .discovery_models import SavedDiscoverySearch
+
+        row = SavedDiscoverySearch(
+            owner_id=user.id,
+            name=data.name,
+            filters=data.filters.model_dump(
+                exclude={"offset", "limit"}, exclude_none=True, exclude_defaults=True
+            ),
+        )
+        db.add(row)
+        db.commit()
+        return dict(id=row.id, name=row.name, filters=row.filters)
+
+    @router.delete("/discovery-searches/{key}")
+    def delete_discovery_search(key: str, db: DB, user: Current):
+        from .discovery_models import SavedDiscoverySearch
+
+        row = JobService(db, user.id).owned(SavedDiscoverySearch, key)
+        db.delete(row)
+        db.commit()
+        return dict(deleted=True)
+
+    @router.get("/jobs/{key}/review")
+    def get_review(key: str, db: DB, user: Current):
+        from .discovery import review_view
+
+        JobService(db, user.id).owned(JobPosting, key)
+        row = db.get(JobReview, (user.id, key))
+        return review_view(row) if row else None
+
+    @router.put("/jobs/{key}/review")
+    def review(key: str, data: ReviewInput, db: DB, user: Current):
+        return review_job(db, user.id, key, data)
+
+    @router.get("/daily-brief")
+    def brief(db: DB, user: Current):
+        return daily_brief(db, user.id)
+
+    @router.get("/notifications")
+    def notifications(db: DB, user: Current, offset: int = Query(0, ge=0), unread: bool = False):
+        query = select(Notification).where(Notification.owner_id == user.id)
+        if unread:
+            query = query.where(Notification.read.is_(False))
+        return [
+            dict(id=row.id, kind=row.kind, job_id=row.job_id, created_at=row.created_at, read=row.read)
+            for row in db.scalars(
+                query.order_by(Notification.created_at.desc(), Notification.id).offset(offset).limit(50)
+            )
+        ]
+
+    @router.patch("/notifications/{key}")
+    def read_notification(key: str, db: DB, user: Current, read: bool = True):
+        row = JobService(db, user.id).owned(Notification, key)
+        row.read = read
+        db.commit()
+        return dict(id=row.id, read=row.read)
+
+    @router.get("/notification-preferences")
+    def notification_preferences(db: DB, user: Current):
+        row = db.get(NotificationPreference, user.id)
+        return dict(disabled_types=row.disabled_types if row else [], available_types=sorted(KINDS))
+
+    @router.put("/notification-preferences")
+    def update_notification_preferences(data: list[str], db: DB, user: Current):
+        from fastapi import HTTPException
+
+        if len(data) > len(KINDS) or set(data) - KINDS:
+            raise HTTPException(422, "Unknown notification type")
+        row = db.get(NotificationPreference, user.id)
+        if row is None:
+            row = NotificationPreference(owner_id=user.id)
+            db.add(row)
+        row.disabled_types = sorted(set(data))
+        db.commit()
+        return dict(disabled_types=row.disabled_types, available_types=sorted(KINDS))
 
     @router.get("/scoring-policy")
     def scoring_policy(db: DB, user: Current):
