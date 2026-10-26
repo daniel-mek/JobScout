@@ -16,7 +16,7 @@
     "api": {
       "root": ".",
       "runtime": "container",
-      "entrypoint": "apps/api/Dockerfile",
+      "entrypoint": "Dockerfile.api",
       "rewrites": [{ "source": "/backend/:path(.*)?", "destination": "/:path" }]
     }
   },
