@@ -64,6 +64,14 @@ def sanitize_policy_history(db: Session, policy: SourcePolicy):
     if policy.description_storage == "allowed":
         return
     source_ids = select(JobSource.id).where(JobSource.policy_id == policy.id)
+    from .application_models import ApplicationSnapshot
+
+    for snapshot in db.scalars(
+        select(ApplicationSnapshot).where(ApplicationSnapshot.source_id.in_(source_ids))
+    ):
+        snapshot.data = permitted(snapshot.data, policy)
+        snapshot.match = None
+        snapshot.restriction = "Archived content removed to honor the current source storage policy."
     from sqlalchemy import delete
 
     from .match_models import JobMatch, JobRequirement, JobSkill

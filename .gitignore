@@ -4,6 +4,8 @@
 # A template for me/ lives in me.example/.
 me/
 applications/
+!apps/web/app/applications/
+!apps/web/app/applications/**
 
 # Secrets. ntfy topic, dashboard password, anything with a token in it.
 .env

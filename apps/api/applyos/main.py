@@ -270,6 +270,9 @@ def create_app(config: Settings | None = None) -> FastAPI:
         }
 
     app.include_router(router_for(database, current_user, config))
+    from .application_routes import router_for as application_router
+
+    app.include_router(application_router(database, current_user))
     return app
 
 

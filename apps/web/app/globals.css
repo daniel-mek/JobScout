@@ -1023,6 +1023,108 @@ select:focus {
   min-width: 0;
 }
 /* Source ingestion workspace */
+.application-prep {
+  margin: 24px 0;
+}
+.application-status {
+  text-transform: capitalize;
+  font-weight: 700;
+}
+.application-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px;
+}
+.application-filters label,
+.status-menu {
+  display: grid;
+  gap: 6px;
+}
+.application-form {
+  display: grid;
+  gap: 10px;
+}
+.application-form input,
+.application-form select,
+.application-form textarea {
+  width: 100%;
+  min-width: 0;
+}
+.application-form .checkbox-label {
+  display: flex;
+  align-items: start;
+  gap: 10px;
+}
+.application-form input[type="checkbox"] {
+  width: auto;
+  margin-top: 5px;
+}
+.application-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 18px;
+  align-items: start;
+}
+.pipeline-column {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  min-height: 160px;
+  background: #f4f5f1;
+}
+.pipeline-column h2 {
+  font-size: 17px;
+  text-transform: capitalize;
+}
+.pipeline-column h2 span {
+  font-weight: 400;
+}
+.pipeline-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+  overflow-wrap: anywhere;
+}
+.pipeline-card h3 {
+  font-size: 17px;
+}
+.pipeline-card select {
+  width: 100%;
+}
+.application-table {
+  overflow-x: auto;
+  margin: 20px 0;
+}
+.application-table table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.application-table td,
+.application-table th {
+  text-align: left;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.application-table caption {
+  text-align: left;
+  font-weight: 600;
+  padding: 12px;
+}
+.application-attention {
+  color: #724200;
+}
+.application-events,
+.application-timeline {
+  padding-left: 22px;
+}
+.application-events li,
+.application-timeline li {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
 .jobs-tools {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

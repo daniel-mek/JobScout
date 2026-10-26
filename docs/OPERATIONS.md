@@ -1,5 +1,7 @@
 # Operations and development commands
 
+Phase 5 application tracking adds migration `3e91abf9209b`; run the normal Alembic release step before serving application routes. Snapshot retention is included in the existing operator policy purge. Follow-up suggestions are calculated on demand, without a new schedule or external delivery. See [PHASE5.md](PHASE5.md) for limits and verification. Hosting remains paused.
+
 Phase 4 discovery/saved-job/brief/notification behavior and migration evidence are documented in [PHASE4.md](PHASE4.md). Apply both Phase 4 migrations through the normal release step. Browser CI now tests the production build via E2E_PRODUCTION=1. Hosting remains paused.
 
 Phase 3 matching worker/beat startup, migration and broker persistence requirements are documented in [PHASE3.md](PHASE3.md). Run one beat and the persistent worker to refresh bulk matches; single-job calculation remains available without them. Hosting stays paused.

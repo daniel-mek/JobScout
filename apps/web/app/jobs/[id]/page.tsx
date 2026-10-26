@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PrepareApplication } from "@/components/prepare-application";
 import { JobMatch } from "@/components/job-match";
 import { ReviewControls } from "@/components/discovery-workspace";
 import { reviewSchema } from "@/lib/discovery-contracts";
@@ -42,6 +43,7 @@ export default async function JobPage({
         </a>
       </section>
       <JobMatch id={job.id} />
+      <PrepareApplication jobId={job.id} />
       <ReviewControls id={job.id} initial={review} />
       <div className="dashboard-cards">
         <article className="panel">

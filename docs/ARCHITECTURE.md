@@ -1,5 +1,7 @@
 # Architecture
 
+Phase 5 (2026-10-26): owner-scoped relational applications, status histories, snapshots and events are served through separate application routes/services. Snapshot capture and status changes share a transaction; owner locking and optimistic revisions protect edits. Source restrictions govern archive capture/read/purge. `/applications` adds Kanban/list and CSV; detail pages retain resume selection, notes, deadlines and next actions. See [PHASE5.md](PHASE5.md).
+
 Phase 4 (2026-10-24): relational review/saved-filter/notification records support `/discover`, `/saved-jobs`, `/brief` and `/notifications`. Discovery uses SQL filtering, latest cached match joins and bounded pagination; foreground reads do not recalculate the catalog. Feedback only adjusts explicit visibility/ties, never hard requirements. See [PHASE4.md](PHASE4.md) for verification and boundaries.
 
 Phase 3 (2026-10-23): `packages/matching` supplies deterministic extraction/qualification comparisons and two versioned scores. Scoring policies are owner-scoped and editable. Persistent Celery/Redis matching workers reconcile bounded pages outside API requests; one beat scheduler runs every five minutes. See [PHASE3.md](PHASE3.md) for operational commands, evidence and conservative unknown rules. Worker resources are not automatically deployed.
