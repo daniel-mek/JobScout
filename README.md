@@ -12,6 +12,8 @@ Open `/jobs` to import jobs, connect employer boards, inspect policies/health, r
 
 ## Product documentation
 
+Phase 5 adds application tracking with Kanban/list views, status history, job/match snapshots, confirmed submission and resume selection, notes, deadlines, next actions, follow-up suggestions and CSV export. See [Phase 5 behavior and verification](docs/PHASE5.md). All six production-browser flows and 96 tests each on SQLite/PostgreSQL pass; hosting remains paused.
+
 Phase 4 adds Discover filters/views, saved jobs with notes/deadlines, reversible feedback, saved filter searches, daily briefs and in-app notifications. See [Phase 4 behavior and verification](docs/PHASE4.md). Matching refreshes through the existing worker or an explicit job calculation; hosting remains paused.
 
 Phase 3 adds explainable Resume Match/Application Priority scores, eligibility warnings, confirmed-evidence comparisons, editable scoring weights and background recalculation. See [matching setup and verification](docs/PHASE3.md). Ambiguous facts remain unknown; no application is submitted automatically.
