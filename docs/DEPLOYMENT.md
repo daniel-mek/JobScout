@@ -1,5 +1,13 @@
 # Deployment
 
+## Hosted checkpoint, 2026-10-27
+
+Production deployment `dpl_3wN6P76v2pteotmQM7DNVky7LCAL` is READY at https://jobscout-peach.vercel.app, code `14c13d0579a59782c2a6b6e72d930ac620a95789`. The project uses repository-root Services configuration and production HTTPS/secure-cookie/private-Blob settings. `Dockerfile.api` is at the repository root so Vercel's container build includes the full monorepo context. An explicit root rewrite fixes homepage routing.
+
+The user approved initialization. The previously empty database was migrated atomically through Phase 5 using the authenticated Neon query editor. Its prepared-statement interface required one DO block, omitting transaction wrappers and the Alembic INSERT RETURNING output; rejected attempts rolled back. Verification returned Alembic `3e91abf9209b` and 11 role families. Editor read-only mode was restored. No migrations run automatically on future deployments.
+
+Live checks: homepage and login HTTP 200; API health HTTP 200 with database ready; anonymous auth/me HTTP 401; synthetic test-account signup and authenticated onboarding render succeeded in local Chrome. A synthetic-resume browser upload stalled before attachment, so live Blob write/read, anonymous Blob denial, resume parsing/download and the full hosted application journey remain unverified. Persistent Redis/Celery deployment, backup/restore and production monitoring remain pending. This checkpoint supersedes the earlier empty-database/paused-hosting notes below; it is not a claim of full production readiness.
+
 ## Vercel setup, 2026-10-22
 
 The user authorized hosting the application and provisioning its dependencies. The `jobscout` project in the `daniel-mekhail` workspace has a private `jobscout-resumes` Blob store and a free `jobscout-db` Neon PostgreSQL database in US East (`iad1`). Neon is connected to Production only. The database was inspected and has no public tables. The initial Alembic migration has been generated for review; execution is pending explicit approval of the SQL editor's write-mode confirmation. No live application deployment is verified yet.
