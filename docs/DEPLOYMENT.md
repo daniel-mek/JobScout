@@ -2,6 +2,8 @@
 
 ## Hosted checkpoint, 2026-10-27
 
+2026-10-28 verification update: a fresh synthetic account exercised the live HTTPS API. Signup and DOCX upload returned 201; authenticated private download returned 200 and matched all 36,654 original bytes; profile confirmation returned 200 and resume listing retained one version. An independent anonymous download returned 401. Logout returned 200 and the revoked session returned 401. The local browser picker still produced an empty file input, so these are direct hosted API/storage checks rather than a completed browser upload journey. Anonymous access to the raw Blob URL and background worker hosting remain unverified/pending.
+
 Production deployment `dpl_3wN6P76v2pteotmQM7DNVky7LCAL` is READY at https://jobscout-peach.vercel.app, code `14c13d0579a59782c2a6b6e72d930ac620a95789`. The project uses repository-root Services configuration and production HTTPS/secure-cookie/private-Blob settings. `Dockerfile.api` is at the repository root so Vercel's container build includes the full monorepo context. An explicit root rewrite fixes homepage routing.
 
 The user approved initialization. The previously empty database was migrated atomically through Phase 5 using the authenticated Neon query editor. Its prepared-statement interface required one DO block, omitting transaction wrappers and the Alembic INSERT RETURNING output; rejected attempts rolled back. Verification returned Alembic `3e91abf9209b` and 11 role families. Editor read-only mode was restored. No migrations run automatically on future deployments.
