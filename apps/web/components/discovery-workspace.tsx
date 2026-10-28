@@ -335,8 +335,7 @@ export function DiscoveryWorkspace({
               : "No listings match this view"}
           </h2>
           <p>
-            No listings match these filters. Try a broader view or add a job to
-            your workspace.
+            Try a broader view or add a job to your workspace.
           </p>
           <div className="job-buttons">
             <Link href={saved ? "/discover" : "/discover?view=for_you"}>
