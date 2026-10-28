@@ -56,6 +56,22 @@ export function JobsWorkspace({ initial }: { initial: Workspace }) {
   const [sourceURL, setSourceURL] = useState("");
   const [offset, setOffset] = useState(0);
   const router = useRouter();
+  function importBlocker(source: Source) {
+    if (!source.enabled)
+      return "This employer is paused. Enable it to import listings.";
+    const policy = data.policies.find((p) => p.id === source.provider);
+    if (
+      !policy?.enabled ||
+      policy.status !== "APPROVED" ||
+      !policy.approved_boards.some(
+        (board) => board === "*" || board === source.board,
+      )
+    )
+      return "Imports are waiting for source access review. Add individual jobs manually while review is pending.";
+    if (source.health.state === "configuration_required")
+      return "This source needs server credentials before it can import listings.";
+    return "";
+  }
 
   async function refresh(page = offset) {
     const [jobs, sources, policies, runs, searches] = await Promise.all([
@@ -101,7 +117,7 @@ export function JobsWorkspace({ initial }: { initial: Workspace }) {
         </p>
       )}
       <div className="jobs-tools" aria-busy={busy}>
-        <section className="panel">
+        <section className="panel" id="add-job">
           <h2>Add a job</h2>
           <p>Try a supported employer link, or enter the details yourself.</p>
           <form
@@ -187,7 +203,7 @@ export function JobsWorkspace({ initial }: { initial: Workspace }) {
             </button>
           </form>
         </section>
-        <section className="panel">
+        <section className="panel" id="connect-source">
           <h2>Connect an employer source</h2>
           <p>Sources need an approved policy before they can fetch listings.</p>
           <label>
@@ -238,7 +254,7 @@ export function JobsWorkspace({ initial }: { initial: Workspace }) {
                   }),
                 });
                 setMessage(
-                  "Source saved. Its policy and health are shown below.",
+                  "Employer connected. Check its import readiness below; connecting alone does not import jobs.",
                 );
                 await refresh();
               });
@@ -302,6 +318,9 @@ export function JobsWorkspace({ initial }: { initial: Workspace }) {
               {source.health.code.replaceAll("_", " ")} · Last count:{" "}
               {source.health.last_count}
             </p>
+            {source.provider !== "manual" && importBlocker(source) && (
+              <p>{importBlocker(source)}</p>
+            )}
             {source.health.last_success && (
               <p>
                 Last success:{" "}
@@ -315,7 +334,9 @@ export function JobsWorkspace({ initial }: { initial: Workspace }) {
               <button
                 className="button secondary"
                 disabled={
-                  busy || !source.enabled || source.provider === "manual"
+                  busy ||
+                  !!importBlocker(source) ||
+                  source.provider === "manual"
                 }
                 onClick={() =>
                   void perform(async () => {

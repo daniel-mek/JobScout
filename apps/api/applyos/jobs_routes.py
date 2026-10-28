@@ -2,7 +2,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from packages.job_sources.adapters import Posting, detect
@@ -65,6 +65,27 @@ def router_for(database, current_user, config):
     router = APIRouter()
     DB = Annotated[Session, Depends(database)]
     Current = Annotated[User, Depends(current_user)]
+
+    @router.get("/discovery-status")
+    def discovery_status(db: DB, user: Current):
+        sources = JobService(db, user.id, config).sources()
+        configured = [s for s in sources if s["provider"] != "manual"]
+        ready = 0
+        for source in configured:
+            policy = db.get(SourcePolicy, source["provider"])
+            assert policy is not None
+            credentials = JobService(db, user.id, config).credentials
+            if (
+                source["enabled"]
+                and policy.enabled
+                and policy.status == "APPROVED"
+                and (source["board"] in policy.approved_boards or "*" in policy.approved_boards)
+                and source["provider"] in ADAPTERS
+                and all(credentials.get(key) for key in policy.credentials)
+            ):
+                ready += 1
+        total = db.scalar(select(func.count()).select_from(JobPosting).where(JobPosting.owner_id == user.id))
+        return dict(jobs=total, connected_sources=len(configured), ready_sources=ready)
 
     @router.get("/discover")
     def discovery(db: DB, user: Current, filters: Annotated[Filters, Query()]):

@@ -139,11 +139,13 @@ export function DiscoveryWorkspace({
   query,
   roles,
   saved = false,
+  emptyCatalog = false,
 }: {
   data: Data;
   query: Record<string, string>;
   roles: { id: string; name: string }[];
   saved?: boolean;
+  emptyCatalog?: boolean;
 }) {
   const next = (offset: number) => {
     const parameters = new URLSearchParams(query);
@@ -156,8 +158,8 @@ export function DiscoveryWorkspace({
         <p className="eyebrow">Your opportunity list</p>
         <h1>{saved ? "Saved jobs" : "Discover"}</h1>
         <p>
-          {data.total} listings · Scores reflect their recorded calculation
-          time. Background matching refreshes them when the worker runs.
+          {data.total} {saved ? "saved jobs" : "listings in this view"} · Open a
+          job to review its requirements and match.
         </p>
       </section>
       <form className="panel" method="get">
@@ -325,11 +327,24 @@ export function DiscoveryWorkspace({
         <button>Apply filters</button>{" "}
         <Link href={saved ? "/saved-jobs" : "/discover"}>Reset filters</Link>
       </form>
-      {!data.items.length && (
-        <p>
-          No listings match these filters. Import jobs or adjust the filters;
-          unknown scores are not fabricated.
-        </p>
+      {!data.items.length && !emptyCatalog && (
+        <section className="panel job-history">
+          <h2>
+            {saved
+              ? "Your saved list is ready for its first job"
+              : "No listings match this view"}
+          </h2>
+          <p>
+            No listings match these filters. Try a broader view or add a job to
+            your workspace.
+          </p>
+          <div className="job-buttons">
+            <Link href={saved ? "/discover" : "/discover?view=for_you"}>
+              {saved ? "Find jobs to save" : "Clear filters"}
+            </Link>
+            <Link href="/jobs#add-job">Add a job</Link>
+          </div>
+        </section>
       )}
       {data.items.map((job) => (
         <article className="panel job-history" key={job.id}>

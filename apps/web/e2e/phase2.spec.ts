@@ -62,12 +62,11 @@ test("manual job import persists with provenance, versions and source health", a
   await expect(
     page.getByText(/lever · example · policy: NEEDS_REVIEW/),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Sync source", exact: true })
-    .first()
-    .click();
   await expect(
-    page.getByText("0 listings · source not approved", { exact: true }),
+    page.getByRole("button", { name: "Sync source", exact: true }).first(),
+  ).toBeDisabled();
+  await expect(
+    page.getByText(/Imports are waiting for source access review/),
   ).toBeVisible();
   await page.getByRole("button", { name: "Save search", exact: true }).click();
   await expect(

@@ -1,4 +1,9 @@
 import { z } from "zod";
+export const discoveryStatusSchema = z.object({
+  jobs: z.number(),
+  connected_sources: z.number(),
+  ready_sources: z.number(),
+});
 
 export const jobSchema = z.object({
   id: z.string(),

@@ -13,6 +13,16 @@ test("discovery saves notes and deadlines, filters, feedback undo and notificati
     .fill("A test-only passphrase 42");
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).toHaveURL(/onboarding/);
+  await page.goto("/discover");
+  await expect(
+    page.getByRole("heading", { name: "Let’s build your opportunity list" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Add your first job" }),
+  ).toHaveAttribute("href", "/jobs#add-job");
+  await expect(
+    page.getByRole("heading", { name: "No listings match this view" }),
+  ).toHaveCount(0);
   await page.goto("/jobs");
   await page
     .getByLabel("Job URL", { exact: true })
