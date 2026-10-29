@@ -40,17 +40,15 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
           <i>↗</i>
         </Link>
         <div>
-          <p className="eyebrow light">
-            A little clarity. A lot of possibility.
-          </p>
+          <p className="eyebrow light">YOUR SEARCH. YOUR NEXT MOVE.</p>
           <h1>
-            Your next chapter
+            Less searching.
             <br />
-            <em>starts with you.</em>
+            <em>More possibility.</em>
           </h1>
           <p>
-            A thoughtful home for your experience, your ambitions, and the
-            opportunities ahead.
+            Discover roles that fit your experience, understand your matches,
+            and keep every application in one place.
           </p>
           <ul>
             <li>
@@ -64,7 +62,7 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
             </li>
           </ul>
         </div>
-        <small>Built for the beginning of something good.</small>
+        <small>A clearer path from discovery to application.</small>
       </aside>
       <main id="main" className="auth-main">
         <div className="auth-card">

@@ -59,6 +59,7 @@ test("discovery saves notes and deadlines, filters, feedback undo and notificati
     "Check the original qualifications",
   );
   await expect(page.getByLabel("Optional deadline")).toHaveValue("2026-11-12");
+  await page.getByText("Dismiss job", { exact: true }).click();
   await page
     .getByRole("button", { name: "Not interested", exact: true })
     .click();
@@ -73,6 +74,12 @@ test("discovery saves notes and deadlines, filters, feedback undo and notificati
     0,
   );
   await page.goto("/discover");
+  await expect(
+    page.getByLabel("Minimum match", { exact: true }),
+  ).not.toBeVisible();
+  await page.getByText("More filters", { exact: false }).click();
+  await expect(page.getByLabel("Minimum match", { exact: true })).toBeVisible();
+  await page.getByText("More filters", { exact: false }).click();
   await page.getByLabel("Title", { exact: true }).fill("Missing title");
   await page.getByRole("button", { name: "Apply filters" }).click();
   await expect(page).toHaveURL(/title=Missing/);

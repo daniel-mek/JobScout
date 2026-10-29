@@ -1,5 +1,11 @@
 "use client";
 import Link from "next/link";
+import {
+  MapPin,
+  BriefcaseBusiness,
+  ArrowUpRight,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
@@ -52,7 +58,7 @@ export function ReviewControls({
   }
   return (
     <div>
-      <div className="job-buttons">
+      <div className="job-buttons review-actions">
         <button
           disabled={busy}
           onClick={() => void update({ saved: !review?.saved })}
@@ -71,20 +77,30 @@ export function ReviewControls({
         >
           {review?.reviewed ? "Mark unreviewed" : "Mark reviewed"}
         </button>
-        <label>
-          Dismiss reason
-          <select value={reason} onChange={(e) => setReason(e.target.value)}>
-            {reasons.map((r) => (
-              <option key={r}>{r}</option>
-            ))}
-          </select>
-        </label>
-        <button
-          disabled={busy}
-          onClick={() => void update({ feedback: "NOT_INTERESTED", reason })}
-        >
-          Not interested
-        </button>
+        <details className="dismiss-controls">
+          <summary>Dismiss job</summary>
+          <div className="job-buttons">
+            <label>
+              Dismiss reason
+              <select
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              >
+                {reasons.map((r) => (
+                  <option key={r}>{r}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              disabled={busy}
+              onClick={() =>
+                void update({ feedback: "NOT_INTERESTED", reason })
+              }
+            >
+              Not interested
+            </button>
+          </div>
+        </details>
         {review?.feedback && (
           <button
             disabled={busy}
@@ -147,6 +163,9 @@ export function DiscoveryWorkspace({
   saved?: boolean;
   emptyCatalog?: boolean;
 }) {
+  const advanced = Object.keys(query).some(
+    (key) => !["view", "title", "company", "location", "offset"].includes(key),
+  );
   const next = (offset: number) => {
     const parameters = new URLSearchParams(query);
     parameters.set("offset", String(offset));
@@ -162,7 +181,35 @@ export function DiscoveryWorkspace({
           job to review its requirements and match.
         </p>
       </section>
-      <form className="panel" method="get">
+      <nav className="discovery-tabs" aria-label="Job views">
+        {[
+          ["for_you", "For you"],
+          ["fresh", "Fresh opportunities"],
+          ["excellent", "Excellent matches"],
+          ["reach", "Reasonable reaches"],
+        ].map(([value, label]) => {
+          const params = new URLSearchParams(query);
+          params.set("view", value);
+          params.delete("offset");
+          return (
+            <Link
+              key={value}
+              href={`${saved ? "/saved-jobs" : "/discover"}?${params}`}
+              aria-current={
+                (query.view || "for_you") === value ? "page" : undefined
+              }
+            >
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+      <form
+        className="panel discovery-filters"
+        method="get"
+        role="search"
+        aria-label="Filter jobs"
+      >
         <div className="jobs-tools">
           <label>
             View
@@ -194,138 +241,150 @@ export function DiscoveryWorkspace({
               />
             </label>
           ))}
-          {(
-            [
+        </div>
+        <details className="advanced-filters" open={advanced}>
+          <summary>
+            <SlidersHorizontal size={16} aria-hidden="true" /> More filters{" "}
+            <span>Salary, work style, match score & more</span>
+          </summary>
+          <div className="jobs-tools">
+            {(
               [
-                "source",
-                "Source provider",
                 [
-                  "manual",
-                  "greenhouse",
-                  "lever",
-                  "ashby",
-                  "smartrecruiters",
-                  "usajobs",
-                  "adzuna",
+                  "source",
+                  "Source provider",
+                  [
+                    "manual",
+                    "greenhouse",
+                    "lever",
+                    "ashby",
+                    "smartrecruiters",
+                    "usajobs",
+                    "adzuna",
+                  ],
                 ],
-              ],
-              [
-                "recommendation",
-                "Recommendation",
                 [
-                  "EXCELLENT_MATCH",
-                  "STRONG_APPLY",
-                  "APPLY",
-                  "REASONABLE_REACH",
-                  "LONG_SHOT",
-                  "SKIP",
+                  "recommendation",
+                  "Recommendation",
+                  [
+                    "EXCELLENT_MATCH",
+                    "STRONG_APPLY",
+                    "APPLY",
+                    "REASONABLE_REACH",
+                    "LONG_SHOT",
+                    "SKIP",
+                  ],
                 ],
-              ],
-              [
-                "early_career",
-                "Early-career category",
                 [
-                  "NEW_GRAD",
-                  "TRUE_ENTRY_LEVEL",
-                  "EARLY_CAREER",
-                  "REASONABLE_REACH",
-                  "MID_LEVEL",
-                  "SENIOR",
-                  "UNKNOWN",
+                  "early_career",
+                  "Early-career category",
+                  [
+                    "NEW_GRAD",
+                    "TRUE_ENTRY_LEVEL",
+                    "EARLY_CAREER",
+                    "REASONABLE_REACH",
+                    "MID_LEVEL",
+                    "SENIOR",
+                    "UNKNOWN",
+                  ],
                 ],
-              ],
-            ] as const
-          ).map(([name, label, options]) => (
-            <label key={name}>
-              {label}
-              <select name={name} defaultValue={query[name] || ""}>
-                <option value="">Any</option>
-                {options.map((option) => (
-                  <option key={option} value={option}>
-                    {option.replaceAll("_", " ")}
+              ] as const
+            ).map(([name, label, options]) => (
+              <label key={name}>
+                {label}
+                <select name={name} defaultValue={query[name] || ""}>
+                  <option value="">Any</option>
+                  {options.map((option) => (
+                    <option key={option} value={option}>
+                      {option.replaceAll("_", " ")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+            <label>
+              Role family
+              <select name="role_family" defaultValue={query.role_family || ""}>
+                <option value="">All roles</option>
+                {roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
                   </option>
                 ))}
               </select>
             </label>
-          ))}
-          <label>
-            Role family
-            <select name="role_family" defaultValue={query.role_family || ""}>
-              <option value="">All roles</option>
-              {roles.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Work arrangement
-            <select name="arrangement" defaultValue={query.arrangement || ""}>
-              <option value="">Any arrangement</option>
-              {["REMOTE", "HYBRID", "ONSITE"].map((v) => (
-                <option key={v}>{v}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Employment type
-            <select
-              name="employment_type"
-              defaultValue={query.employment_type || ""}
-            >
-              <option value="">Any employment</option>
-              {["FULL_TIME", "PART_TIME", "CONTRACT", "TEMPORARY"].map((v) => (
-                <option key={v}>{v}</option>
-              ))}
-            </select>
-          </label>
-          {[
-            ["min_match", "Minimum match", 100],
-            ["min_priority", "Minimum priority", 100],
-            ["min_salary", "Minimum annual salary", 10000000],
-            ["freshness_days", "Posted within days", 365],
-          ].map(([name, label, max]) => (
-            <label key={String(name)}>
-              {label}
-              <input
-                type="number"
-                name={String(name)}
-                min={0}
-                max={Number(max)}
-                defaultValue={query[String(name)] || ""}
-              />
-            </label>
-          ))}
-          <label>
-            Salary currency
-            <input
-              name="currency"
-              defaultValue={query.currency || "USD"}
-              maxLength={3}
-            />
-          </label>
-          <label>
-            Review state
-            <select name="reviewed" defaultValue={query.reviewed || ""}>
-              <option value="">Any review state</option>
-              <option value="true">Reviewed</option>
-              <option value="false">Unreviewed</option>
-            </select>
-          </label>
-          {!saved && (
             <label>
-              Saved state
-              <select name="saved" defaultValue={query.saved || ""}>
-                <option value="">Any saved state</option>
-                <option value="true">Saved</option>
-                <option value="false">Not saved</option>
+              Work arrangement
+              <select name="arrangement" defaultValue={query.arrangement || ""}>
+                <option value="">Any arrangement</option>
+                {["REMOTE", "HYBRID", "ONSITE"].map((v) => (
+                  <option key={v}>{v}</option>
+                ))}
               </select>
             </label>
-          )}
+            <label>
+              Employment type
+              <select
+                name="employment_type"
+                defaultValue={query.employment_type || ""}
+              >
+                <option value="">Any employment</option>
+                {["FULL_TIME", "PART_TIME", "CONTRACT", "TEMPORARY"].map(
+                  (v) => (
+                    <option key={v}>{v}</option>
+                  ),
+                )}
+              </select>
+            </label>
+            {[
+              ["min_match", "Minimum match", 100],
+              ["min_priority", "Minimum priority", 100],
+              ["min_salary", "Minimum annual salary", 10000000],
+              ["freshness_days", "Posted within days", 365],
+            ].map(([name, label, max]) => (
+              <label key={String(name)}>
+                {label}
+                <input
+                  type="number"
+                  name={String(name)}
+                  min={0}
+                  max={Number(max)}
+                  defaultValue={query[String(name)] || ""}
+                />
+              </label>
+            ))}
+            <label>
+              Salary currency
+              <input
+                name="currency"
+                defaultValue={query.currency || "USD"}
+                maxLength={3}
+              />
+            </label>
+            <label>
+              Review state
+              <select name="reviewed" defaultValue={query.reviewed || ""}>
+                <option value="">Any review state</option>
+                <option value="true">Reviewed</option>
+                <option value="false">Unreviewed</option>
+              </select>
+            </label>
+            {!saved && (
+              <label>
+                Saved state
+                <select name="saved" defaultValue={query.saved || ""}>
+                  <option value="">Any saved state</option>
+                  <option value="true">Saved</option>
+                  <option value="false">Not saved</option>
+                </select>
+              </label>
+            )}
+          </div>
+        </details>
+        <div className="filter-actions">
+          <button>Apply filters</button>{" "}
+          <Link href={saved ? "/saved-jobs" : "/discover"}>Reset filters</Link>
         </div>
-        <button>Apply filters</button>{" "}
-        <Link href={saved ? "/saved-jobs" : "/discover"}>Reset filters</Link>
       </form>
       {!data.items.length && !emptyCatalog && (
         <section className="panel job-history">
@@ -334,9 +393,7 @@ export function DiscoveryWorkspace({
               ? "Your saved list is ready for its first job"
               : "No listings match this view"}
           </h2>
-          <p>
-            Try a broader view or add a job to your workspace.
-          </p>
+          <p>Try a broader view or add a job to your workspace.</p>
           <div className="job-buttons">
             <Link href={saved ? "/discover" : "/discover?view=for_you"}>
               {saved ? "Find jobs to save" : "Clear filters"}
@@ -346,12 +403,29 @@ export function DiscoveryWorkspace({
         </section>
       )}
       {data.items.map((job) => (
-        <article className="panel job-history" key={job.id}>
-          <p className="eyebrow">{job.company}</p>
-          <h2>
-            <Link href={`/jobs/${job.id}`}>{job.title}</Link>
-          </h2>
-          <p>
+        <article className="panel job-history discovery-card" key={job.id}>
+          <div className="job-card-heading">
+            <span className="company-monogram" aria-hidden="true">
+              {job.company.slice(0, 1).toUpperCase()}
+            </span>
+            <div>
+              <p className="eyebrow">{job.company}</p>
+              <h2>
+                <Link href={`/jobs/${job.id}`}>{job.title}</Link>
+              </h2>
+            </div>
+            {job.match && (
+              <div className="match-badge">
+                <strong>
+                  {job.match.resume_match}
+                  <small>/100</small>
+                </strong>
+                <span>Resume match</span>
+              </div>
+            )}
+          </div>
+          <p className="job-meta">
+            <MapPin size={14} aria-hidden="true" />{" "}
             {job.location || "Location unknown"} ·{" "}
             {job.arrangement || "Arrangement unknown"} ·{" "}
             {job.employment_type || "Employment unknown"} ·{" "}
@@ -373,8 +447,9 @@ export function DiscoveryWorkspace({
             days ago ({job.discovered_at.slice(0, 10)}) · {job.sources.length}{" "}
             sources
           </p>
-          <p>
-            Salary {job.salary_min ?? "unknown"} – {job.salary_max ?? "unknown"}{" "}
+          <p className="salary-line">
+            <BriefcaseBusiness size={14} aria-hidden="true" /> Salary{" "}
+            {job.salary_min ?? "unknown"} – {job.salary_max ?? "unknown"}{" "}
             {job.currency || ""} {job.salary_period || ""}
           </p>
           {job.match ? (
@@ -384,8 +459,9 @@ export function DiscoveryWorkspace({
                 {job.match.application_priority}/100
               </p>
               <p>
-                {job.match.early_career} · {job.match.recommendation} ·{" "}
-                {job.match.eligibility}
+                {job.match.early_career.replaceAll("_", " ")} ·{" "}
+                {job.match.recommendation.replaceAll("_", " ")} ·{" "}
+                {job.match.eligibility.replaceAll("_", " ")}
               </p>
               <p>
                 Calculated {job.match_calculated_at?.slice(0, 19)} UTC
@@ -396,8 +472,10 @@ export function DiscoveryWorkspace({
           ) : (
             <p>Match pending. Open View Match to calculate this job now.</p>
           )}
-          <p>
-            <Link href={`/jobs/${job.id}`}>View Match</Link> ·{" "}
+          <div className="job-card-links">
+            <Link className="button-link small" href={`/jobs/${job.id}`}>
+              View Match <ArrowUpRight size={15} aria-hidden="true" />
+            </Link>{" "}
             <a
               href={job.application_url}
               target="_blank"
@@ -405,7 +483,7 @@ export function DiscoveryWorkspace({
             >
               Open Application ↗
             </a>
-          </p>
+          </div>
           <p>
             {job.sources.map((source, i) => (
               <span key={i}>

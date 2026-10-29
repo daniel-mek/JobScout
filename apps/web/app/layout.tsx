@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
-  title: "ApplyOS · Your next chapter",
-  description: "A considered approach to your early-career job search.",
+  title: "ApplyOS · Find your next role",
+  description:
+    "Discover jobs, understand your matches, and track your applications.",
 };
 export default function RootLayout({
   children,

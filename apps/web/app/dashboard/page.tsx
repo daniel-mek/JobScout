@@ -27,10 +27,18 @@ export default async function Dashboard() {
           <span>.</span>
         </h1>
         <p>
-          Here’s where your next chapter begins. Your experience and search
-          settings are ready.
+          Your profile is ready. Find a role, review your match, and track your
+          next move.
         </p>
       </section>
+      <div className="job-buttons dashboard-shortcuts">
+        <Link className="button-link" href="/discover">
+          Find your next role <ArrowUpRight size={16} />
+        </Link>
+        <Link className="button-link secondary" href="/applications">
+          View applications
+        </Link>
+      </div>
       <div className="ready-banner">
         <CheckCircle2 />
         <div>
@@ -120,7 +128,8 @@ export default async function Dashboard() {
             Your workspace now includes job imports, employer sources, and
             listing history.
             <Link href="/discover"> Discover matched jobs ↗</Link> and keep a
-            saved list. Application workflows will connect in a later phase.
+            saved list. <Link href="/applications">Track applications ↗</Link>,
+            notes, deadlines, and next actions in one place.
           </p>
         </div>
       </aside>

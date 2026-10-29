@@ -85,3 +85,9 @@ Ready to begin Phase 1 implementation: YES. No live AI, ATS, Gmail or Calendar c
 ## Original Phase 1 boundary (historical)
 
 Phase 1 is COMPLETE for the specified foundation/onboarding scope; local and hosted checks passed. No Phase 2 ingestion, scoring, contact, Gmail/Calendar, or interview features were added. Keep the legacy watcher and application data separate until an explicit migration/integration phase. See [PHASE1.md](PHASE1.md) for local setup and host configuration.
+
+### Jobright-inspired workspace refresh (2026-10-29)
+
+Reworked the existing ApplyOS presentation around discovery: a white sidebar with consistent navigation icons, teal active states, compact page headings, direct dashboard discovery/application links, responsive view tabs that preserve filters, a four-field quick search with expandable advanced filters, clearer job cards with real resume-match badges, and optional dismissal controls. Updated authentication, onboarding and shared panels through the same design tokens. Moved saved-search management below discovery results and corrected the dashboard's stale future-application copy. Existing owner-scoped API, source attribution, score calculations and approval gates are unchanged; no external job data or later-phase AI functionality was added.
+
+Verification in progress: production Next.js build/TypeScript and ESLint pass. Legacy baseline: 163 cases, 161 pass and two existing private-fixture skips. Local Playwright could start both services but cannot launch because the bundled Chromium executable is absent; remote CI browser verification is required before claiming browser flows pass.

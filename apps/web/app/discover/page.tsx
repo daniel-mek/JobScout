@@ -61,7 +61,6 @@ export default async function Discover({
   return (
     <Shell email={user.email} active="discover">
       <DiscoverySetup status={status} />
-      <SavedDiscoverySearches initial={searches} query={query} />
       <DiscoveryWorkspace
         key={new URLSearchParams(query).toString()}
         data={data}
@@ -69,6 +68,7 @@ export default async function Discover({
         roles={roles}
         emptyCatalog={status.jobs === 0}
       />
+      <SavedDiscoverySearches initial={searches} query={query} />
     </Shell>
   );
 }

@@ -3,7 +3,12 @@ import {
   LayoutDashboard,
   Settings2,
   ArrowUpRight,
-  Sprout,
+  Compass,
+  Bookmark,
+  Bell,
+  CalendarDays,
+  ListChecks,
+  Search,
   BriefcaseBusiness,
 } from "lucide-react";
 import { Logout } from "./logout";
@@ -25,62 +30,71 @@ export function Shell({
         </Link>
         <p className="eyebrow">Your workspace</p>
         <nav aria-label="Main navigation">
-          <Link
-            href="/applications"
-            aria-current={active === "applications" ? "page" : undefined}
-          >
-            Applications
-          </Link>
-          <Link
-            href="/discover"
-            aria-current={active === "discover" ? "page" : undefined}
-          >
-            Discover
-          </Link>
-          <Link
-            href="/saved-jobs"
-            aria-current={active === "saved" ? "page" : undefined}
-          >
-            Saved jobs
-          </Link>
-          <Link
-            href="/brief"
-            aria-current={active === "brief" ? "page" : undefined}
-          >
-            Daily brief
-          </Link>
-          <Link
-            href="/notifications"
-            aria-current={active === "notifications" ? "page" : undefined}
-          >
-            Notifications
-          </Link>
-          <Link
-            aria-current={active === "jobs" ? "page" : undefined}
-            href="/jobs"
-          >
-            <BriefcaseBusiness size={18} /> Jobs & sources
-          </Link>
-          <Link
-            aria-current={active === "dashboard" ? "page" : undefined}
-            href="/dashboard"
-          >
-            <LayoutDashboard size={18} /> Dashboard
-          </Link>
-          <Link
-            aria-current={active === "settings" ? "page" : undefined}
-            href="/settings"
-          >
-            <Settings2 size={18} /> Profile & settings
-          </Link>
+          {[
+            {
+              href: "/discover",
+              key: "discover",
+              label: "Discover",
+              icon: Compass,
+            },
+            {
+              href: "/saved-jobs",
+              key: "saved",
+              label: "Saved jobs",
+              icon: Bookmark,
+            },
+            {
+              href: "/applications",
+              key: "applications",
+              label: "Applications",
+              icon: ListChecks,
+            },
+            {
+              href: "/brief",
+              key: "brief",
+              label: "Daily brief",
+              icon: CalendarDays,
+            },
+            {
+              href: "/notifications",
+              key: "notifications",
+              label: "Notifications",
+              icon: Bell,
+            },
+            {
+              href: "/jobs",
+              key: "jobs",
+              label: "Jobs & sources",
+              icon: BriefcaseBusiness,
+            },
+            {
+              href: "/dashboard",
+              key: "dashboard",
+              label: "Dashboard",
+              icon: LayoutDashboard,
+            },
+            {
+              href: "/settings",
+              key: "settings",
+              label: "Profile & settings",
+              icon: Settings2,
+            },
+          ].map(({ href, key, label, icon: Icon }) => (
+            <Link
+              key={key}
+              href={href}
+              aria-current={active === key ? "page" : undefined}
+            >
+              <Icon size={18} aria-hidden="true" /> {label}
+            </Link>
+          ))}
         </nav>
         <div className="sidebar-note">
-          <Sprout size={22} />
-          <p>
-            Thoughtful steps.
-            <br />
-            Better opportunities.
-          </p>
+          <Search size={20} aria-hidden="true" />
+          <div>
+            <strong>A focused search</strong>
+            <p>Find your fit. Save your shortlist. Keep moving.</p>
+          </div>
         </div>
         <div className="account">
           <span className="avatar">{email[0].toUpperCase()}</span>
@@ -90,7 +104,18 @@ export function Shell({
       </aside>
       <main id="main" className="dashboard-main">
         <header className="topbar">
-          <span>YOUR NEXT CHAPTER</span>
+          <span>
+            WORKSPACE <span className="topbar-divider">/</span>{" "}
+            {active === "saved"
+              ? "Saved jobs"
+              : active === "jobs"
+                ? "Jobs & sources"
+                : active === "settings"
+                  ? "Profile & settings"
+                  : active === "brief"
+                    ? "Daily brief"
+                    : active.charAt(0).toUpperCase() + active.slice(1)}
+          </span>
           <Link href="/settings">
             Your profile <ArrowUpRight size={15} />
           </Link>

@@ -10,7 +10,7 @@ export function DiscoverySetup({
   if (status.jobs > 0) return null;
   return (
     <section
-      className="panel job-history"
+      className="panel job-history discovery-setup"
       aria-labelledby="discovery-setup-title"
     >
       <p className="eyebrow">Get started</p>
