@@ -1719,3 +1719,14 @@ select {
     padding: 20px 16px;
   }
 }
+
+.pipeline-card[draggable="true"] {
+  cursor: grab;
+}
+.pipeline-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+.pipeline-card a,
+.pipeline-card select {
+  cursor: pointer;
+}

@@ -31,14 +31,12 @@ test("application preparation, submission, snapshots, deadlines, Kanban and CSV 
     .fill("A test-only passphrase 42");
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).toHaveURL(/onboarding/);
-  await page
-    .getByLabel("Choose your resume")
-    .setInputFiles({
-      name: "example.docx",
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      buffer: resume,
-    });
+  await page.getByLabel("Choose your resume").setInputFiles({
+    name: "example.docx",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    buffer: resume,
+  });
   await page.getByRole("button", { name: "Save & continue" }).click();
   await page.getByLabel("I reviewed this profile").check();
   await page
@@ -129,9 +127,15 @@ test("application preparation, submission, snapshots, deadlines, Kanban and CSV 
   await expect(
     page.getByLabel("Move Junior Platform Engineer", { exact: true }),
   ).toHaveValue("INTERVIEW");
-  // Drag-and-drop and the non-drag menu invoke the same validated transition.
+  await expect(page.getByRole("status")).toContainText("moved to interview.");
+  await expect(
+    page.getByLabel("Move Junior Platform Engineer", { exact: true }),
+  ).toBeEnabled();
+  // Drag from the card padding, away from nested links and the native select.
   const card = page.locator(".pipeline-card");
-  await card.dragTo(page.getByRole("region", { name: "offer", exact: true }));
+  await card.dragTo(page.getByRole("region", { name: "offer", exact: true }), {
+    sourcePosition: { x: 12, y: 12 },
+  });
   await expect(
     page.getByLabel("Move Junior Platform Engineer", { exact: true }),
   ).toHaveValue("OFFER");

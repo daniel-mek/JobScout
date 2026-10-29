@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { api } from "@/lib/api";
@@ -21,7 +21,9 @@ export function ApplicationBoard({
   filters: Record<string, string>;
 }) {
   const [mode, setMode] = useState("board");
-  const [busy, setBusy] = useState(false);
+  const [saving, setBusy] = useState(false);
+  const [refreshing, startTransition] = useTransition();
+  const busy = saving || refreshing;
   const [message, setMessage] = useState("");
   const router = useRouter();
   async function move(row: Application, status: Status) {
@@ -38,7 +40,7 @@ export function ApplicationBoard({
         body: JSON.stringify({ expected_revision: row.revision, status }),
       });
       setMessage(`${row.title} moved to ${statusLabel(status)}.`);
-      router.refresh();
+      startTransition(() => router.refresh());
     } catch (e) {
       setMessage(
         e instanceof Error ? e.message : "Could not move application.",
