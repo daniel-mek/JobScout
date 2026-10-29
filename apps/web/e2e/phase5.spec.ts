@@ -133,7 +133,11 @@ test("application preparation, submission, snapshots, deadlines, Kanban and CSV 
   ).toBeEnabled();
   // Drag from the card padding, away from nested links and the native select.
   const card = page.locator(".pipeline-card");
-  await card.dragTo(page.getByRole("region", { name: "offer", exact: true }), {
+  const offerColumn = page.getByRole("region", { name: "offer", exact: true });
+  // Bring the destination into view before mouse-down, rather than scrolling
+  // the document underneath an active native HTML drag.
+  await offerColumn.scrollIntoViewIfNeeded();
+  await card.dragTo(offerColumn, {
     sourcePosition: { x: 12, y: 12 },
   });
   await expect(
